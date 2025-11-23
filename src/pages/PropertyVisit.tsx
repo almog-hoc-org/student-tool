@@ -14,6 +14,7 @@ import {
   PropertyLegalPlanning,
   PropertyVisitSummary,
 } from '@/types/property-visit';
+import { he } from '@/lib/translations/he';
 
 const PropertyVisit = () => {
   const [basicInfo, setBasicInfo] = useState<PropertyBasicInfo>({
@@ -60,18 +61,36 @@ const PropertyVisit = () => {
   };
 
   const getScoreLabel = (score: number) => {
-    if (score < 50) return { text: 'Needs major work / risky', variant: 'destructive' as const };
-    if (score < 75) return { text: 'Has potential with reservations', variant: 'secondary' as const };
-    return { text: 'Strong property overall', variant: 'default' as const };
+    if (score < 50) return { text: he.propertyVisit.scoreLabels.poor, variant: 'destructive' as const };
+    if (score < 75) return { text: he.propertyVisit.scoreLabels.fair, variant: 'secondary' as const };
+    return { text: he.propertyVisit.scoreLabels.good, variant: 'default' as const };
+  };
+
+  const conditionLabels: Record<keyof PropertyCondition, string> = {
+    wallsConditionScore: he.propertyVisit.wallsConditionScore,
+    dampnessOrMoldScore: he.propertyVisit.dampnessOrMoldScore,
+    electricityPanelScore: he.propertyVisit.electricityPanelScore,
+    plumbingScore: he.propertyVisit.plumbingScore,
+    windowsAndInsulationScore: he.propertyVisit.windowsAndInsulationScore,
+    kitchenConditionScore: he.propertyVisit.kitchenConditionScore,
+    bathroomConditionScore: he.propertyVisit.bathroomConditionScore,
+  };
+
+  const environmentLabels: Record<keyof PropertyEnvironment, string> = {
+    noiseLevelScore: he.propertyVisit.noiseLevelScore,
+    parkingAvailabilityScore: he.propertyVisit.parkingAvailabilityScore,
+    publicTransportScore: he.propertyVisit.publicTransportScore,
+    proximityToServicesScore: he.propertyVisit.proximityToServicesScore,
+    neighborhoodFeelScore: he.propertyVisit.neighborhoodFeelScore,
   };
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">Property Visit Helper</CardTitle>
+          <CardTitle className="text-2xl">{he.propertyVisit.title}</CardTitle>
           <CardDescription>
-            A guided checklist to help you inspect a property thoroughly and receive a comprehensive score.
+            {he.propertyVisit.description}
           </CardDescription>
         </CardHeader>
       </Card>
@@ -79,27 +98,27 @@ const PropertyVisit = () => {
       {/* Basic Info */}
       <Card>
         <CardHeader>
-          <CardTitle>Basic Information</CardTitle>
+          <CardTitle>{he.propertyVisit.basicInfoTitle}</CardTitle>
         </CardHeader>
         <CardContent className="grid md:grid-cols-2 gap-4">
           <div>
-            <Label>Address</Label>
+            <Label>{he.propertyVisit.address}</Label>
             <Input
               value={basicInfo.address}
               onChange={(e) => setBasicInfo({ ...basicInfo, address: e.target.value })}
-              placeholder="e.g. 123 Main Street"
+              placeholder="למשל רחוב הרצל 123"
             />
           </div>
           <div>
-            <Label>City</Label>
+            <Label>{he.propertyVisit.city}</Label>
             <Input
               value={basicInfo.city}
               onChange={(e) => setBasicInfo({ ...basicInfo, city: e.target.value })}
-              placeholder="e.g. Tel Aviv"
+              placeholder="למשל תל אביב"
             />
           </div>
           <div>
-            <Label>Floor</Label>
+            <Label>{he.propertyVisit.floor}</Label>
             <Input
               type="number"
               value={basicInfo.floor || ''}
@@ -107,7 +126,7 @@ const PropertyVisit = () => {
             />
           </div>
           <div>
-            <Label>Total Floors</Label>
+            <Label>{he.propertyVisit.totalFloors}</Label>
             <Input
               type="number"
               value={basicInfo.totalFloors || ''}
@@ -115,7 +134,7 @@ const PropertyVisit = () => {
             />
           </div>
           <div>
-            <Label>Registered Area (sqm)</Label>
+            <Label>{he.propertyVisit.registeredAreaSqm}</Label>
             <Input
               type="number"
               value={basicInfo.registeredAreaSqm || ''}
@@ -123,33 +142,33 @@ const PropertyVisit = () => {
             />
           </div>
           <div>
-            <Label>Directions</Label>
+            <Label>{he.propertyVisit.directions}</Label>
             <Input
               value={basicInfo.directions}
               onChange={(e) => setBasicInfo({ ...basicInfo, directions: e.target.value })}
-              placeholder="e.g. South-West"
+              placeholder="למשל דרום-מערב"
             />
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2">
             <Switch
               checked={basicInfo.hasElevator}
               onCheckedChange={(checked) => setBasicInfo({ ...basicInfo, hasElevator: checked })}
             />
-            <Label>Has Elevator</Label>
+            <Label>{he.propertyVisit.hasElevator}</Label>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2">
             <Switch
               checked={basicInfo.hasParking}
               onCheckedChange={(checked) => setBasicInfo({ ...basicInfo, hasParking: checked })}
             />
-            <Label>Has Parking</Label>
+            <Label>{he.propertyVisit.hasParking}</Label>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2">
             <Switch
               checked={basicInfo.hasStorage}
               onCheckedChange={(checked) => setBasicInfo({ ...basicInfo, hasStorage: checked })}
             />
-            <Label>Has Storage</Label>
+            <Label>{he.propertyVisit.hasStorage}</Label>
           </div>
         </CardContent>
       </Card>
@@ -157,19 +176,14 @@ const PropertyVisit = () => {
       {/* Physical Condition */}
       <Card>
         <CardHeader>
-          <CardTitle>Physical Condition (Rate 1-10)</CardTitle>
-          <CardDescription>10 = Excellent, 1 = Very Poor</CardDescription>
+          <CardTitle>{he.propertyVisit.conditionTitle} (דרג 1-10)</CardTitle>
+          <CardDescription>10 = מצוין, 1 = גרוע מאוד</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {Object.entries(condition).map(([key, value]) => (
             <div key={key}>
               <div className="flex justify-between mb-2">
-                <Label>
-                  {key
-                    .replace(/([A-Z])/g, ' $1')
-                    .replace(/^./, (str) => str.toUpperCase())
-                    .replace('Score', '')}
-                </Label>
+                <Label>{conditionLabels[key as keyof PropertyCondition]}</Label>
                 <span className="font-semibold">{value}/10</span>
               </div>
               <Slider
@@ -187,19 +201,14 @@ const PropertyVisit = () => {
       {/* Environment */}
       <Card>
         <CardHeader>
-          <CardTitle>Environment & Location (Rate 1-10)</CardTitle>
-          <CardDescription>10 = Excellent, 1 = Very Poor</CardDescription>
+          <CardTitle>{he.propertyVisit.environmentTitle} (דרג 1-10)</CardTitle>
+          <CardDescription>10 = מצוין, 1 = גרוע מאוד</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {Object.entries(environment).map(([key, value]) => (
             <div key={key}>
               <div className="flex justify-between mb-2">
-                <Label>
-                  {key
-                    .replace(/([A-Z])/g, ' $1')
-                    .replace(/^./, (str) => str.toUpperCase())
-                    .replace('Score', '')}
-                </Label>
+                <Label>{environmentLabels[key as keyof PropertyEnvironment]}</Label>
                 <span className="font-semibold">{value}/10</span>
               </div>
               <Slider
@@ -216,7 +225,7 @@ const PropertyVisit = () => {
 
       <div className="flex justify-center">
         <Button onClick={handleCalculate} size="lg" className="px-8">
-          Calculate Property Score
+          {he.common.calculate}
         </Button>
       </div>
 
@@ -224,7 +233,7 @@ const PropertyVisit = () => {
       {results && (
         <Card className="border-primary">
           <CardHeader>
-            <CardTitle className="text-2xl">Property Score Results</CardTitle>
+            <CardTitle className="text-2xl">{he.propertyVisit.resultsTitle}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="text-center">
@@ -239,7 +248,7 @@ const PropertyVisit = () => {
             <div className="grid md:grid-cols-3 gap-4">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-sm text-muted-foreground">Condition Score</CardTitle>
+                  <CardTitle className="text-sm text-muted-foreground">{he.propertyVisit.conditionScore}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center gap-2">
@@ -256,7 +265,7 @@ const PropertyVisit = () => {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-sm text-muted-foreground">Environment Score</CardTitle>
+                  <CardTitle className="text-sm text-muted-foreground">{he.propertyVisit.environmentScore}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center gap-2">
@@ -273,7 +282,7 @@ const PropertyVisit = () => {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-sm text-muted-foreground">Basic Features Score</CardTitle>
+                  <CardTitle className="text-sm text-muted-foreground">{he.propertyVisit.basicFeaturesScore}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center gap-2">

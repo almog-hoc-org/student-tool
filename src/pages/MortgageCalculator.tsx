@@ -7,12 +7,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { calculateMortgage } from '@/lib/calculations/mortgage-calculator';
 import { MortgageTrack, MortgageCalculatorOutput, MortgageTrackType } from '@/types/mortgage-calculator';
 import { Plus, Trash2 } from 'lucide-react';
+import { he } from '@/lib/translations/he';
+import { formatCurrency, formatPercent } from '@/lib/validation/validators';
 
 const MortgageCalculator = () => {
   const [tracks, setTracks] = useState<MortgageTrack[]>([
     {
       id: '1',
-      name: 'Fixed Unlinked',
+      name: he.mortgageCalculator.trackTypeOptions.fixedUnlinked,
       type: 'fixedUnlinked',
       principal: 0,
       annualInterestRate: 0,
@@ -25,7 +27,7 @@ const MortgageCalculator = () => {
   const addTrack = () => {
     const newTrack: MortgageTrack = {
       id: Date.now().toString(),
-      name: 'New Track',
+      name: he.mortgageCalculator.trackName,
       type: 'fixedUnlinked',
       principal: 0,
       annualInterestRate: 0,
@@ -47,28 +49,20 @@ const MortgageCalculator = () => {
     setResults(output);
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-IL', {
-      style: 'currency',
-      currency: 'ILS',
-      minimumFractionDigits: 0,
-    }).format(value);
-  };
-
   const trackTypeLabels: Record<MortgageTrackType, string> = {
-    fixedUnlinked: 'Fixed Unlinked',
-    fixedLinked: 'Fixed Linked (CPI)',
-    prime: 'Prime',
-    variableLinked: 'Variable Linked',
+    fixedUnlinked: he.mortgageCalculator.trackTypeOptions.fixedUnlinked,
+    fixedLinked: he.mortgageCalculator.trackTypeOptions.fixedLinked,
+    prime: he.mortgageCalculator.trackTypeOptions.prime,
+    variableLinked: he.mortgageCalculator.trackTypeOptions.variableLinked,
   };
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">Mortgage Calculator</CardTitle>
+          <CardTitle className="text-2xl">{he.mortgageCalculator.title}</CardTitle>
           <CardDescription>
-            Build your mortgage mix from multiple tracks and see total monthly payments and interest costs.
+            {he.mortgageCalculator.description}
           </CardDescription>
         </CardHeader>
       </Card>
@@ -77,7 +71,7 @@ const MortgageCalculator = () => {
         <Card key={track.id}>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>Track {index + 1}</CardTitle>
+              <CardTitle>מסלול {index + 1}</CardTitle>
               {tracks.length > 1 && (
                 <Button
                   variant="ghost"
@@ -92,16 +86,16 @@ const MortgageCalculator = () => {
           </CardHeader>
           <CardContent className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
-              <Label>Track Name</Label>
+              <Label>{he.mortgageCalculator.trackName}</Label>
               <Input
                 value={track.name}
                 onChange={(e) => updateTrack(track.id, { name: e.target.value })}
-                placeholder="e.g. Fixed Unlinked"
+                placeholder={he.mortgageCalculator.trackTypeOptions.fixedUnlinked}
               />
             </div>
 
             <div>
-              <Label>Track Type</Label>
+              <Label>{he.mortgageCalculator.trackType}</Label>
               <Select
                 value={track.type}
                 onValueChange={(value: MortgageTrackType) => updateTrack(track.id, { type: value })}
@@ -110,42 +104,42 @@ const MortgageCalculator = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="fixedUnlinked">Fixed Unlinked</SelectItem>
-                  <SelectItem value="fixedLinked">Fixed Linked (CPI)</SelectItem>
-                  <SelectItem value="prime">Prime</SelectItem>
-                  <SelectItem value="variableLinked">Variable Linked</SelectItem>
+                  <SelectItem value="fixedUnlinked">{he.mortgageCalculator.trackTypeOptions.fixedUnlinked}</SelectItem>
+                  <SelectItem value="fixedLinked">{he.mortgageCalculator.trackTypeOptions.fixedLinked}</SelectItem>
+                  <SelectItem value="prime">{he.mortgageCalculator.trackTypeOptions.prime}</SelectItem>
+                  <SelectItem value="variableLinked">{he.mortgageCalculator.trackTypeOptions.variableLinked}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div>
-              <Label>Principal Amount (₪)</Label>
+              <Label>{he.mortgageCalculator.principal} ({he.common.currency})</Label>
               <Input
                 type="number"
                 value={track.principal || ''}
                 onChange={(e) => updateTrack(track.id, { principal: Number(e.target.value) })}
-                placeholder="e.g. 500000"
+                placeholder="למשל 500000"
               />
             </div>
 
             <div>
-              <Label>Annual Interest Rate (%)</Label>
+              <Label>{he.mortgageCalculator.annualInterestRate}</Label>
               <Input
                 type="number"
                 step="0.1"
                 value={track.annualInterestRate || ''}
                 onChange={(e) => updateTrack(track.id, { annualInterestRate: Number(e.target.value) })}
-                placeholder="e.g. 3.5"
+                placeholder="למשל 3.5"
               />
             </div>
 
             <div>
-              <Label>Years</Label>
+              <Label>{he.mortgageCalculator.years}</Label>
               <Input
                 type="number"
                 value={track.years}
                 onChange={(e) => updateTrack(track.id, { years: Number(e.target.value) })}
-                placeholder="e.g. 20"
+                placeholder="למשל 20"
               />
             </div>
           </CardContent>
@@ -154,24 +148,24 @@ const MortgageCalculator = () => {
 
       <div className="flex gap-4 justify-center">
         <Button onClick={addTrack} variant="outline">
-          <Plus className="h-4 w-4 mr-2" />
-          Add Track
+          <Plus className="h-4 w-4 ml-2" />
+          {he.common.addTrack}
         </Button>
         <Button onClick={handleCalculate} size="lg" className="px-8">
-          Calculate Mortgage
+          {he.common.calculate}
         </Button>
       </div>
 
       {results && (
         <Card className="border-primary">
           <CardHeader>
-            <CardTitle className="text-2xl">Mortgage Calculation Results</CardTitle>
+            <CardTitle className="text-2xl">{he.mortgageCalculator.resultsTitle}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid md:grid-cols-2 gap-4">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-sm text-muted-foreground">Total Monthly Payment</CardTitle>
+                  <CardTitle className="text-sm text-muted-foreground">{he.mortgageCalculator.totalMonthlyPayment}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-3xl font-bold text-primary">
@@ -182,7 +176,7 @@ const MortgageCalculator = () => {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-sm text-muted-foreground">Weighted Average Interest</CardTitle>
+                  <CardTitle className="text-sm text-muted-foreground">{he.mortgageCalculator.weightedAverageInterest}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-3xl font-bold text-primary">
@@ -193,7 +187,7 @@ const MortgageCalculator = () => {
             </div>
 
             <div>
-              <h3 className="text-lg font-semibold mb-4">Track Breakdown</h3>
+              <h3 className="text-lg font-semibold mb-4">{he.mortgageCalculator.trackResultsTitle}</h3>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {results.tracks.map((trackResult, index) => {
                   const track = tracks.find((t) => t.id === trackResult.trackId)!;
@@ -205,11 +199,11 @@ const MortgageCalculator = () => {
                       </CardHeader>
                       <CardContent className="space-y-2">
                         <div>
-                          <p className="text-sm text-muted-foreground">Monthly Payment</p>
+                          <p className="text-sm text-muted-foreground">{he.mortgageCalculator.monthlyPayment}</p>
                           <p className="text-lg font-semibold">{formatCurrency(trackResult.monthlyPayment)}</p>
                         </div>
                         <div>
-                          <p className="text-sm text-muted-foreground">Total Interest</p>
+                          <p className="text-sm text-muted-foreground">{he.mortgageCalculator.totalInterestPaid}</p>
                           <p className="text-lg font-semibold">{formatCurrency(trackResult.totalInterestPaid)}</p>
                         </div>
                       </CardContent>

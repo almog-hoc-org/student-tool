@@ -7,6 +7,8 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { calculateRenovationFeasibility } from '@/lib/calculations/renovation-feasibility';
 import { RenovationInputs, RenovationOutput } from '@/types/renovation-feasibility';
+import { he } from '@/lib/translations/he';
+import { formatCurrency, formatPercent } from '@/lib/validation/validators';
 
 const RenovationFeasibility = () => {
   const [input, setInput] = useState<RenovationInputs>({
@@ -25,62 +27,56 @@ const RenovationFeasibility = () => {
     setResults(output);
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-IL', {
-      style: 'currency',
-      currency: 'ILS',
-      minimumFractionDigits: 0,
-    }).format(value);
-  };
-
-  const formatPercent = (value: number) => {
-    return `${(value * 100).toFixed(2)}%`;
+  const classificationVariant = (classification: string) => {
+    if (classification === 'Very Attractive') return 'default';
+    if (classification === 'Worth Considering') return 'secondary';
+    return 'destructive';
   };
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">Renovation Feasibility</CardTitle>
+          <CardTitle className="text-2xl">{he.renovationFeasibility.title}</CardTitle>
           <CardDescription>
-            Check if renovating a property is economically worthwhile in terms of value uplift and ROI.
+            {he.renovationFeasibility.description}
           </CardDescription>
         </CardHeader>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Property Valuation</CardTitle>
+          <CardTitle>{he.renovationFeasibility.inputsTitle}</CardTitle>
         </CardHeader>
         <CardContent className="grid md:grid-cols-2 gap-4">
           <div>
-            <Label>Current Property Value (₪)</Label>
+            <Label>{he.renovationFeasibility.currentValue} ({he.common.currency})</Label>
             <Input
               type="number"
-              placeholder="e.g. 1200000"
+              placeholder="למשל 1200000"
               value={input.currentValue || ''}
               onChange={(e) => setInput({ ...input, currentValue: Number(e.target.value) })}
             />
           </div>
           <div>
-            <Label>Post-Renovation Value (₪)</Label>
+            <Label>{he.renovationFeasibility.postRenovationValue} ({he.common.currency})</Label>
             <Input
               type="number"
-              placeholder="e.g. 1500000"
+              placeholder="למשל 1500000"
               value={input.postRenovationValue || ''}
               onChange={(e) => setInput({ ...input, postRenovationValue: Number(e.target.value) })}
             />
           </div>
           <div>
-            <Label>Renovation Base Cost (₪)</Label>
+            <Label>{he.renovationFeasibility.renovationBaseCost} ({he.common.currency})</Label>
             <Input
               type="number"
-              placeholder="e.g. 200000"
+              placeholder="למשל 200000"
               value={input.renovationBaseCost || ''}
               onChange={(e) => setInput({ ...input, renovationBaseCost: Number(e.target.value) })}
             />
             <p className="text-xs text-muted-foreground mt-1">
-              We'll add 15% contingency automatically
+              נוסיף אוטומטית 15% מרווח ביטחון
             </p>
           </div>
         </CardContent>
@@ -88,33 +84,33 @@ const RenovationFeasibility = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Rental Income (Optional)</CardTitle>
+          <CardTitle>הכנסה משכירות (אופציונלי)</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2">
             <Switch
               checked={input.isForRental}
               onCheckedChange={(checked) => setInput({ ...input, isForRental: checked })}
             />
-            <Label>This is a rental property</Label>
+            <Label>{he.renovationFeasibility.isForRental}</Label>
           </div>
 
           {input.isForRental && (
             <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <Label>Monthly Rent Before (₪)</Label>
+                <Label>{he.renovationFeasibility.monthlyRentBefore} ({he.common.currency})</Label>
                 <Input
                   type="number"
-                  placeholder="e.g. 4000"
+                  placeholder="למשל 4000"
                   value={input.monthlyRentBefore || ''}
                   onChange={(e) => setInput({ ...input, monthlyRentBefore: Number(e.target.value) })}
                 />
               </div>
               <div>
-                <Label>Monthly Rent After (₪)</Label>
+                <Label>{he.renovationFeasibility.monthlyRentAfter} ({he.common.currency})</Label>
                 <Input
                   type="number"
-                  placeholder="e.g. 6000"
+                  placeholder="למשל 6000"
                   value={input.monthlyRentAfter || ''}
                   onChange={(e) => setInput({ ...input, monthlyRentAfter: Number(e.target.value) })}
                 />
@@ -126,7 +122,7 @@ const RenovationFeasibility = () => {
 
       <div className="flex justify-center">
         <Button onClick={handleCalculate} size="lg" className="px-8">
-          Calculate Feasibility
+          {he.common.calculate}
         </Button>
       </div>
 
@@ -134,14 +130,14 @@ const RenovationFeasibility = () => {
       {results && (
         <Card className="border-primary">
           <CardHeader>
-            <CardTitle className="text-2xl">Renovation Feasibility Results</CardTitle>
+            <CardTitle className="text-2xl">{he.renovationFeasibility.resultsTitle}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-sm text-muted-foreground">Total Renovation Cost</CardTitle>
-                  <CardDescription>Including 15% contingency</CardDescription>
+                  <CardTitle className="text-sm text-muted-foreground">{he.renovationFeasibility.totalRenovationCost}</CardTitle>
+                  <CardDescription>כולל 15% מרווח ביטחון</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <p className="text-2xl font-bold">{formatCurrency(results.totalRenovationCost)}</p>
@@ -150,7 +146,7 @@ const RenovationFeasibility = () => {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-sm text-muted-foreground">Value Uplift</CardTitle>
+                  <CardTitle className="text-sm text-muted-foreground">{he.renovationFeasibility.valueUplift}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-2xl font-bold text-primary">{formatCurrency(results.valueUplift)}</p>
@@ -159,7 +155,7 @@ const RenovationFeasibility = () => {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-sm text-muted-foreground">Paper Profit</CardTitle>
+                  <CardTitle className="text-sm text-muted-foreground">{he.renovationFeasibility.paperProfit}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className={`text-2xl font-bold ${results.paperProfit >= 0 ? 'text-primary' : 'text-destructive'}`}>
@@ -172,7 +168,7 @@ const RenovationFeasibility = () => {
                 <>
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-sm text-muted-foreground">Yearly Rent Increase</CardTitle>
+                      <CardTitle className="text-sm text-muted-foreground">{he.renovationFeasibility.rentUpliftYear}</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <p className="text-2xl font-bold text-primary">{formatCurrency(results.rentUpliftYear)}</p>
@@ -182,7 +178,7 @@ const RenovationFeasibility = () => {
                   {results.renovationYield !== undefined && (
                     <Card>
                       <CardHeader>
-                        <CardTitle className="text-sm text-muted-foreground">Renovation Yield</CardTitle>
+                        <CardTitle className="text-sm text-muted-foreground">{he.renovationFeasibility.renovationYield}</CardTitle>
                       </CardHeader>
                       <CardContent>
                         <p className="text-2xl font-bold text-primary">{formatPercent(results.renovationYield)}</p>
@@ -194,20 +190,14 @@ const RenovationFeasibility = () => {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-sm text-muted-foreground">Classification</CardTitle>
+                  <CardTitle className="text-sm text-muted-foreground">{he.renovationFeasibility.classification}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Badge
-                    variant={
-                      results.classification === 'Very Attractive'
-                        ? 'default'
-                        : results.classification === 'Worth Considering'
-                        ? 'secondary'
-                        : 'destructive'
-                    }
+                    variant={classificationVariant(results.classification)}
                     className="text-base px-3 py-1"
                   >
-                    {results.classification}
+                    {he.renovationFeasibility.classificationLabels[results.classification as keyof typeof he.renovationFeasibility.classificationLabels]}
                   </Badge>
                 </CardContent>
               </Card>
@@ -215,59 +205,28 @@ const RenovationFeasibility = () => {
 
             <Card className="bg-accent">
               <CardHeader>
-                <CardTitle>Recommendation</CardTitle>
+                <CardTitle>המלצה</CardTitle>
               </CardHeader>
               <CardContent>
                 {results.classification === 'Not Worth It' && (
-                  <div>
-                    <p className="text-destructive mb-2">
-                      ⚠️ This renovation does not appear economically viable based on the numbers provided.
-                    </p>
-                    <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                      <li>Consider negotiating lower renovation costs</li>
-                      <li>Re-evaluate the post-renovation value estimate</li>
-                      <li>If it's for rental, explore ways to increase rent potential</li>
-                    </ul>
-                  </div>
+                  <p className="text-destructive">
+                    {he.renovationFeasibility.explanationNotWorth}
+                  </p>
                 )}
-
                 {results.classification === 'Borderline' && (
-                  <div>
-                    <p className="text-muted-foreground mb-2">
-                      💡 This renovation shows marginal returns. Proceed with caution.
-                    </p>
-                    <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                      <li>Double-check all cost estimates</li>
-                      <li>Ensure market value assessments are accurate</li>
-                      <li>Consider if non-financial benefits justify the investment</li>
-                    </ul>
-                  </div>
+                  <p className="text-muted-foreground">
+                    {he.renovationFeasibility.explanationBorderline}
+                  </p>
                 )}
-
                 {results.classification === 'Worth Considering' && (
-                  <div>
-                    <p className="text-primary mb-2">
-                      ✓ This renovation shows reasonable returns and may be worth pursuing.
-                    </p>
-                    <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                      <li>Get detailed quotes from contractors</li>
-                      <li>Verify market comps for post-renovation value</li>
-                      <li>Plan for unexpected costs and delays</li>
-                    </ul>
-                  </div>
+                  <p className="text-primary">
+                    {he.renovationFeasibility.explanationWorthConsidering}
+                  </p>
                 )}
-
                 {results.classification === 'Very Attractive' && (
-                  <div>
-                    <p className="text-primary mb-2">
-                      ✓✓ This renovation shows excellent returns and appears to be a strong opportunity!
-                    </p>
-                    <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                      <li>Move forward with detailed planning and contractor quotes</li>
-                      <li>Ensure permits and approvals are in order</li>
-                      <li>Have a contingency fund for unexpected issues</li>
-                    </ul>
-                  </div>
+                  <p className="text-primary">
+                    {he.renovationFeasibility.explanationVeryAttractive}
+                  </p>
                 )}
               </CardContent>
             </Card>
