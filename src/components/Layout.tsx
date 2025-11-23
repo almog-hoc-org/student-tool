@@ -8,15 +8,16 @@ import {
   Clock,
   FileText,
 } from 'lucide-react';
+import { he } from '@/lib/translations/he';
 
 const navigation = [
-  { name: 'Financial Checkup', href: '/', icon: Calculator },
-  { name: 'Deal Business Plan', href: '/deal-business-plan', icon: Building2 },
-  { name: 'Mortgage Calculator', href: '/mortgage-calculator', icon: CreditCard },
-  { name: 'Property Visit Helper', href: '/property-visit', icon: ClipboardCheck },
-  { name: 'Renovation Feasibility', href: '/renovation-feasibility', icon: Wrench },
-  { name: 'Urban Renewal Timeline', href: '/urban-renewal', icon: Clock },
-  { name: 'Transaction Timeline', href: '/transaction-timeline', icon: FileText },
+  { name: he.nav.financialCheckup, href: '/', icon: Calculator },
+  { name: he.nav.dealBusinessPlan, href: '/deal-business-plan', icon: Building2 },
+  { name: he.nav.mortgageCalculator, href: '/mortgage-calculator', icon: CreditCard },
+  { name: he.nav.propertyVisit, href: '/property-visit', icon: ClipboardCheck },
+  { name: he.nav.renovationFeasibility, href: '/renovation-feasibility', icon: Wrench },
+  { name: he.nav.urbanRenewal, href: '/urban-renewal', icon: Clock },
+  { name: he.nav.transactionTimeline, href: '/transaction-timeline', icon: FileText },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -25,8 +26,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* Header */}
       <header className="border-b border-border bg-card">
         <div className="container mx-auto px-4 py-6">
-          <h1 className="text-3xl font-bold text-foreground">The Road to Apartment</h1>
-          <p className="text-muted-foreground mt-1">Tools Portal for Property Buyers</p>
+          <h1 className="text-3xl font-bold text-foreground">הדרך לדירה</h1>
+          <p className="text-muted-foreground mt-1">פורטל כלים למשקיעי נדל״ן</p>
         </div>
       </header>
 
@@ -60,8 +61,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* Footer */}
       <footer className="border-t border-border bg-card mt-12">
         <div className="container mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
-          <p>The Road to Apartment Tools Portal</p>
-          <p className="mt-1">© 2025 · For educational purposes only · Not financial or legal advice</p>
+          <p>פורטל כלים – הדרך לדירה</p>
+          <p className="mt-1">© 2025 · למטרות חינוכיות בלבד · אינו מהווה ייעוץ פיננסי או משפטי</p>
         </div>
       </footer>
     </div>
