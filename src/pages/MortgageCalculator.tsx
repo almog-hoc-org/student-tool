@@ -242,34 +242,35 @@ const MortgageCalculator = () => {
             <CardContent className="space-y-6">
               <div>
                 <h3 className="text-xl font-semibold mb-4">{he.mortgageCalculator.trackResultsTitle}</h3>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {results.tracks.map((trackResult, index) => {
-                  const track = tracks.find((t) => t.id === trackResult.trackId)!;
-                  const iconColors = ['bg-blue-500', 'bg-emerald-500', 'bg-orange-500', 'bg-purple-500'];
-                  return (
-                    <Card key={trackResult.trackId} className="border-0 shadow-md hover:shadow-lg transition-shadow">
-                      <CardHeader className="pb-3">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className={`w-8 h-8 ${iconColors[index % 4]} rounded-lg flex items-center justify-center`}>
-                            <Calculator className="w-4 h-4 text-white" />
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {results.tracks.map((trackResult, index) => {
+                    const track = tracks.find((t) => t.id === trackResult.trackId)!;
+                    const iconColors = ['bg-blue-500', 'bg-emerald-500', 'bg-orange-500', 'bg-purple-500'];
+                    return (
+                      <Card key={trackResult.trackId} className="border-0 shadow-md hover:shadow-lg transition-shadow">
+                        <CardHeader className="pb-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className={`w-8 h-8 ${iconColors[index % 4]} rounded-lg flex items-center justify-center`}>
+                              <Calculator className="w-4 h-4 text-white" />
+                            </div>
+                            <CardTitle className="text-base">{track.name}</CardTitle>
                           </div>
-                          <CardTitle className="text-base">{track.name}</CardTitle>
-                        </div>
-                        <CardDescription>{trackTypeLabels[track.type]}</CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        <div className="p-3 bg-primary/5 rounded-lg">
-                          <p className="text-xs text-muted-foreground mb-1">{he.mortgageCalculator.monthlyPayment}</p>
-                          <p className="text-xl font-bold text-primary">{formatCurrency(trackResult.monthlyPayment)}</p>
-                        </div>
-                        <div className="p-3 bg-muted/50 rounded-lg">
-                          <p className="text-xs text-muted-foreground mb-1">{he.mortgageCalculator.totalInterestPaid}</p>
-                          <p className="text-lg font-semibold">{formatCurrency(trackResult.totalInterestPaid)}</p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
+                          <CardDescription>{trackTypeLabels[track.type]}</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <div className="p-3 bg-primary/5 rounded-lg">
+                            <p className="text-xs text-muted-foreground mb-1">{he.mortgageCalculator.monthlyPayment}</p>
+                            <p className="text-xl font-bold text-primary">{formatCurrency(trackResult.monthlyPayment)}</p>
+                          </div>
+                          <div className="p-3 bg-muted/50 rounded-lg">
+                            <p className="text-xs text-muted-foreground mb-1">{he.mortgageCalculator.totalInterestPaid}</p>
+                            <p className="text-lg font-semibold">{formatCurrency(trackResult.totalInterestPaid)}</p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
               </div>
             </CardContent>
           </Card>

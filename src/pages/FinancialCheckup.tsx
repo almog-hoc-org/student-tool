@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { calculateFinancialCheckup } from '@/lib/calculations/financial-checkup';
 import { FinancialCheckupInput, FinancialCheckupOutput } from '@/types/financial-checkup';
 import { StatsCard } from '@/components/StatsCard';
+import { saveCalculation } from '@/lib/storage/calculator-history';
 import { 
   AlertCircle, 
   CheckCircle, 
@@ -72,6 +73,15 @@ const FinancialCheckup = () => {
   const handleCalculate = () => {
     const output = calculateFinancialCheckup(input);
     setResults(output);
+    
+    // Save to history
+    saveCalculation({
+      type: 'financial-checkup',
+      title: he.financialCheckup.title,
+      result: `תזרים פנוי: ${formatCurrency(output.freeCashFlow)} | דירוג: ${output.readinessLabel}`,
+      input,
+    });
+    
     // Scroll to results
     setTimeout(() => {
       document.getElementById('results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
