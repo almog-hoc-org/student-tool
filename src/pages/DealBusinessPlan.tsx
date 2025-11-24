@@ -9,6 +9,9 @@ import { calculateDealBusinessPlan } from '@/lib/calculations/deal-business-plan
 import { DealBusinessPlanInput, DealBusinessPlanOutput, DealType } from '@/types/deal-business-plan';
 import { he } from '@/lib/translations/he';
 import { formatCurrency, formatPercent } from '@/lib/validation/validators';
+import { StatsCard } from '@/components/StatsCard';
+import { Building2, Wallet, TrendingUp, Calculator } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 const DealBusinessPlan = () => {
   const [dealType, setDealType] = useState<DealType>('rental');
@@ -54,22 +57,57 @@ const DealBusinessPlan = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl">{he.dealBusinessPlan.title}</CardTitle>
-          <CardDescription>
+    <div className="space-y-6 pb-8">
+      <Card className="border-0 shadow-lg">
+        <CardHeader className="bg-gradient-to-r from-primary/5 via-background to-secondary/5">
+          <CardTitle className="text-3xl font-bold">{he.dealBusinessPlan.title}</CardTitle>
+          <CardDescription className="text-base">
             {he.dealBusinessPlan.description}
           </CardDescription>
         </CardHeader>
       </Card>
 
+      {/* KPI Cards - Show after calculation */}
+      {results && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 animate-in slide-in-from-bottom duration-500">
+          <StatsCard
+            title={he.dealBusinessPlan.totalDealCost}
+            value={formatCurrency(results.totalDealCost)}
+            icon={Building2}
+            iconColor="blue"
+          />
+          <StatsCard
+            title={he.dealBusinessPlan.equityInvested}
+            value={formatCurrency(input.financing.equityInvested)}
+            icon={Wallet}
+            iconColor="orange"
+          />
+          <StatsCard
+            title={dealType === 'rental' ? he.dealBusinessPlan.cocYield : he.dealBusinessPlan.annualizedRoi}
+            value={dealType === 'rental' ? formatPercent(results.cocYield || 0) : formatPercent(results.annualizedRoi || 0)}
+            icon={TrendingUp}
+            iconColor="green"
+          />
+          <StatsCard
+            title={he.dealBusinessPlan.classification}
+            value={he.dealBusinessPlan.classificationLabels[results.classification as keyof typeof he.dealBusinessPlan.classificationLabels]}
+            icon={Calculator}
+            iconColor="purple"
+          />
+        </div>
+      )}
+
       {/* Step 1: Deal Type */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{he.dealBusinessPlan.dealTypeTitle}</CardTitle>
+      <Card className="border-0 shadow-lg">
+        <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950">
+          <CardTitle className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
+              <Calculator className="w-5 h-5 text-primary-foreground" />
+            </div>
+            {he.dealBusinessPlan.dealTypeTitle}
+          </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <Label>{he.dealBusinessPlan.dealType}</Label>
           <Select
             value={dealType}
@@ -78,7 +116,7 @@ const DealBusinessPlan = () => {
               setInput({ ...input, basic: { ...input.basic, dealType: value } });
             }}
           >
-            <SelectTrigger>
+            <SelectTrigger className="mt-2">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -90,12 +128,19 @@ const DealBusinessPlan = () => {
         </CardContent>
       </Card>
 
-      {/* Step 2: Basic Deal Inputs */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{he.dealBusinessPlan.basicInfoTitle}</CardTitle>
-        </CardHeader>
-        <CardContent className="grid md:grid-cols-2 gap-4">
+      {/* Step 2 & 3: Two column layout */}
+      <div className="grid md:grid-cols-2 gap-6">
+        {/* Basic Deal Inputs */}
+        <Card className="border-0 shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-emerald-50 to-background dark:from-emerald-950 dark:to-background">
+            <CardTitle className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center">
+                <Building2 className="w-5 h-5 text-white" />
+              </div>
+              {he.dealBusinessPlan.basicInfoTitle}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 pt-6">
           <div>
             <Label>{he.dealBusinessPlan.purchasePrice} ({he.common.currency})</Label>
             <Input
@@ -134,15 +179,20 @@ const DealBusinessPlan = () => {
               />
             </div>
           )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      {/* Step 3: Financing */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{he.dealBusinessPlan.financingTitle}</CardTitle>
-        </CardHeader>
-        <CardContent className="grid md:grid-cols-2 gap-4">
+        {/* Financing */}
+        <Card className="border-0 shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-orange-50 to-background dark:from-orange-950 dark:to-background">
+            <CardTitle className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center">
+                <Wallet className="w-5 h-5 text-white" />
+              </div>
+              {he.dealBusinessPlan.financingTitle}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 pt-6">
           <div>
             <Label>{he.dealBusinessPlan.equityInvested} ({he.common.currency})</Label>
             <Input
@@ -170,16 +220,22 @@ const DealBusinessPlan = () => {
               onChange={(e) => setInput({ ...input, financing: { ...input.financing, mortgageMonthlyPayment: Number(e.target.value) } })}
             />
           </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Step 4: Rental Inputs */}
       {dealType === 'rental' && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{he.dealBusinessPlan.rentalInputsTitle}</CardTitle>
+        <Card className="border-0 shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-blue-50 to-background dark:from-blue-950 dark:to-background">
+            <CardTitle className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-white" />
+              </div>
+              {he.dealBusinessPlan.rentalInputsTitle}
+            </CardTitle>
           </CardHeader>
-          <CardContent className="grid md:grid-cols-2 gap-4">
+          <CardContent className="grid md:grid-cols-2 gap-4 pt-6">
             <div>
               <Label>{he.dealBusinessPlan.expectedMonthlyRent} ({he.common.currency})</Label>
               <Input
@@ -270,11 +326,16 @@ const DealBusinessPlan = () => {
 
       {/* Step 4: Flip Inputs */}
       {dealType === 'flip' && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{he.dealBusinessPlan.flipInputsTitle}</CardTitle>
+        <Card className="border-0 shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-purple-50 to-background dark:from-purple-950 dark:to-background">
+            <CardTitle className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-purple-500 rounded-xl flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-white" />
+              </div>
+              {he.dealBusinessPlan.flipInputsTitle}
+            </CardTitle>
           </CardHeader>
-          <CardContent className="grid md:grid-cols-2 gap-4">
+          <CardContent className="grid md:grid-cols-2 gap-4 pt-6">
             <div>
               <Label>{he.dealBusinessPlan.expectedSalePrice} ({he.common.currency})</Label>
               <Input
@@ -307,20 +368,83 @@ const DealBusinessPlan = () => {
         </Card>
       )}
 
-      <div className="flex justify-center">
-        <Button onClick={handleCalculate} size="lg" className="px-8">
+      <div className="flex justify-center sticky bottom-8 z-10">
+        <Button onClick={handleCalculate} size="lg" className="px-12 py-6 text-lg shadow-2xl rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
+          <Calculator className="ml-2 h-5 w-5" />
           {he.common.calculate}
         </Button>
       </div>
 
       {/* Results */}
       {results && (
-        <Card className="border-primary">
-          <CardHeader>
-            <CardTitle className="text-2xl">{he.dealBusinessPlan.resultsTitle}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="space-y-6 animate-in slide-in-from-bottom duration-500">
+          {/* Visual Chart for Rental */}
+          {dealType === 'rental' && results.netCashflowAnnual !== undefined && (
+            <Card className="border-0 shadow-xl">
+              <CardHeader>
+                <CardTitle className="text-2xl">ניתוח תזרים מזומנים</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart
+                    data={[
+                      {
+                        name: 'הכנסה שנתית',
+                        value: (input.rental?.expectedMonthlyRent || 0) * 12 * (input.rental?.occupancyRate || 0.95),
+                      },
+                      {
+                        name: 'הוצאות + משכנתא',
+                        value: (input.rental?.expectedMonthlyRent || 0) * 12 * (input.rental?.occupancyRate || 0.95) - results.netCashflowAnnual,
+                      },
+                      {
+                        name: 'תזרים נקי',
+                        value: results.netCashflowAnnual,
+                      },
+                    ]}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                    <Bar dataKey="value" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Visual Chart for Flip */}
+          {dealType === 'flip' && results.grossProfit !== undefined && (
+            <Card className="border-0 shadow-xl">
+              <CardHeader>
+                <CardTitle className="text-2xl">ניתוח עסקת היפוך</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart
+                    data={[
+                      { name: 'עלות כוללת', value: results.totalDealCost },
+                      { name: 'מחיר מכירה', value: input.flip?.expectedSalePrice || 0 },
+                      { name: 'רווח גולמי', value: results.grossProfit },
+                    ]}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                    <Bar dataKey="value" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          )}
+
+          <Card className="border-0 shadow-xl bg-gradient-to-br from-primary/5 to-secondary/5">
+            <CardHeader>
+              <CardTitle className="text-3xl">{he.dealBusinessPlan.resultsTitle}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
               <Card>
                 <CardHeader>
                   <CardTitle className="text-sm text-muted-foreground">{he.dealBusinessPlan.totalDealCost}</CardTitle>
@@ -402,11 +526,11 @@ const DealBusinessPlan = () => {
               </Card>
             </div>
 
-            <Card className="bg-accent">
+            <Card className="bg-accent/50 border-0">
               <CardHeader>
-                <CardTitle>{he.common.summary}</CardTitle>
+                <CardTitle className="text-xl">{he.common.summary}</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="text-base">
                 {results.classification === 'Weak' && (
                   <p className="text-destructive">
                     {he.dealBusinessPlan.explanationWeak}
@@ -428,6 +552,7 @@ const DealBusinessPlan = () => {
             </Card>
           </CardContent>
         </Card>
+        </div>
       )}
     </div>
   );

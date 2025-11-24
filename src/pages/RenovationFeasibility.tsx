@@ -9,6 +9,9 @@ import { calculateRenovationFeasibility } from '@/lib/calculations/renovation-fe
 import { RenovationInputs, RenovationOutput } from '@/types/renovation-feasibility';
 import { he } from '@/lib/translations/he';
 import { formatCurrency, formatPercent } from '@/lib/validation/validators';
+import { StatsCard } from '@/components/StatsCard';
+import { Hammer, TrendingUp, DollarSign, Calculator } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 const RenovationFeasibility = () => {
   const [input, setInput] = useState<RenovationInputs>({
@@ -34,21 +37,57 @@ const RenovationFeasibility = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl">{he.renovationFeasibility.title}</CardTitle>
-          <CardDescription>
+    <div className="space-y-6 pb-8">
+      <Card className="border-0 shadow-lg">
+        <CardHeader className="bg-gradient-to-r from-primary/5 via-background to-secondary/5">
+          <CardTitle className="text-3xl font-bold">{he.renovationFeasibility.title}</CardTitle>
+          <CardDescription className="text-base">
             {he.renovationFeasibility.description}
           </CardDescription>
         </CardHeader>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{he.renovationFeasibility.inputsTitle}</CardTitle>
-        </CardHeader>
-        <CardContent className="grid md:grid-cols-2 gap-4">
+      {/* KPI Cards - Show after calculation */}
+      {results && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 animate-in slide-in-from-bottom duration-500">
+          <StatsCard
+            title={he.renovationFeasibility.totalRenovationCost}
+            value={formatCurrency(results.totalRenovationCost)}
+            icon={Hammer}
+            iconColor="orange"
+          />
+          <StatsCard
+            title={he.renovationFeasibility.valueUplift}
+            value={formatCurrency(results.valueUplift)}
+            icon={TrendingUp}
+            iconColor="green"
+          />
+          <StatsCard
+            title={he.renovationFeasibility.paperProfit}
+            value={formatCurrency(results.paperProfit)}
+            icon={DollarSign}
+            iconColor={results.paperProfit >= 0 ? 'green' : 'orange'}
+          />
+          <StatsCard
+            title={he.renovationFeasibility.classification}
+            value={he.renovationFeasibility.classificationLabels[results.classification as keyof typeof he.renovationFeasibility.classificationLabels]}
+            icon={Calculator}
+            iconColor="purple"
+          />
+        </div>
+      )}
+
+      <div className="grid md:grid-cols-2 gap-6">
+        <Card className="border-0 shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-blue-50 to-background dark:from-blue-950 dark:to-background">
+            <CardTitle className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center">
+                <DollarSign className="w-5 h-5 text-white" />
+              </div>
+              {he.renovationFeasibility.inputsTitle}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 pt-6">
           <div>
             <Label>{he.renovationFeasibility.currentValue} ({he.common.currency})</Label>
             <Input
@@ -75,18 +114,23 @@ const RenovationFeasibility = () => {
               value={input.renovationBaseCost || ''}
               onChange={(e) => setInput({ ...input, renovationBaseCost: Number(e.target.value) })}
             />
-            <p className="text-xs text-muted-foreground mt-1">
-              נוסיף אוטומטית 15% מרווח ביטחון
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+              <p className="text-xs text-muted-foreground mt-1">
+                נוסיף אוטומטית 15% מרווח ביטחון
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>הכנסה משכירות (אופציונלי)</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+        <Card className="border-0 shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-emerald-50 to-background dark:from-emerald-950 dark:to-background">
+            <CardTitle className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-white" />
+              </div>
+              הכנסה משכירות (אופציונלי)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 pt-6">
           <div className="flex items-center gap-2">
             <Switch
               checked={input.isForRental}
@@ -116,23 +160,51 @@ const RenovationFeasibility = () => {
                 />
               </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
-      <div className="flex justify-center">
-        <Button onClick={handleCalculate} size="lg" className="px-8">
+      <div className="flex justify-center sticky bottom-8 z-10">
+        <Button onClick={handleCalculate} size="lg" className="px-12 py-6 text-lg shadow-2xl rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
+          <Calculator className="ml-2 h-5 w-5" />
           {he.common.calculate}
         </Button>
       </div>
 
       {/* Results */}
       {results && (
-        <Card className="border-primary">
-          <CardHeader>
-            <CardTitle className="text-2xl">{he.renovationFeasibility.resultsTitle}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
+        <div className="space-y-6 animate-in slide-in-from-bottom duration-500">
+          {/* Before/After Chart */}
+          <Card className="border-0 shadow-xl">
+            <CardHeader>
+              <CardTitle className="text-2xl">השוואה: לפני ואחרי שיפוץ</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart
+                  data={[
+                    { category: 'ערך נוכחי', value: input.currentValue },
+                    { category: 'עלות שיפוץ', value: results.totalRenovationCost },
+                    { category: 'ערך לאחר שיפוץ', value: input.postRenovationValue },
+                    { category: 'רווח נייר', value: results.paperProfit >= 0 ? results.paperProfit : 0 },
+                  ]}
+                >
+                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                  <XAxis dataKey="category" />
+                  <YAxis />
+                  <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                  <Bar dataKey="value" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-xl bg-gradient-to-br from-primary/5 to-secondary/5">
+            <CardHeader>
+              <CardTitle className="text-3xl">{he.renovationFeasibility.resultsTitle}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card>
                 <CardHeader>
@@ -201,13 +273,13 @@ const RenovationFeasibility = () => {
                   </Badge>
                 </CardContent>
               </Card>
-            </div>
+              </div>
 
-            <Card className="bg-accent">
-              <CardHeader>
-                <CardTitle>המלצה</CardTitle>
-              </CardHeader>
-              <CardContent>
+              <Card className="bg-accent/50 border-0">
+                <CardHeader>
+                  <CardTitle className="text-xl">המלצה</CardTitle>
+                </CardHeader>
+                <CardContent className="text-base">
                 {results.classification === 'Not Worth It' && (
                   <p className="text-destructive">
                     {he.renovationFeasibility.explanationNotWorth}
@@ -228,13 +300,13 @@ const RenovationFeasibility = () => {
                     {he.renovationFeasibility.explanationVeryAttractive}
                   </p>
                 )}
-              </CardContent>
-            </Card>
-          </CardContent>
-        </Card>
+                </CardContent>
+              </Card>
+            </CardContent>
+          </Card>
+        </div>
       )}
     </div>
   );
-};
 
 export default RenovationFeasibility;

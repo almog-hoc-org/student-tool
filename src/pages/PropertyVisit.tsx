@@ -15,6 +15,9 @@ import {
   PropertyVisitSummary,
 } from '@/types/property-visit';
 import { he } from '@/lib/translations/he';
+import { StatsCard } from '@/components/StatsCard';
+import { Building2, Home, MapPin, Award, Calculator } from 'lucide-react';
+import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, Tooltip } from 'recharts';
 
 const PropertyVisit = () => {
   const [basicInfo, setBasicInfo] = useState<PropertyBasicInfo>({
@@ -85,22 +88,57 @@ const PropertyVisit = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl">{he.propertyVisit.title}</CardTitle>
-          <CardDescription>
+    <div className="space-y-6 pb-8">
+      <Card className="border-0 shadow-lg">
+        <CardHeader className="bg-gradient-to-r from-primary/5 via-background to-secondary/5">
+          <CardTitle className="text-3xl font-bold">{he.propertyVisit.title}</CardTitle>
+          <CardDescription className="text-base">
             {he.propertyVisit.description}
           </CardDescription>
         </CardHeader>
       </Card>
 
+      {/* KPI Cards - Show after calculation */}
+      {results && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 animate-in slide-in-from-bottom duration-500">
+          <StatsCard
+            title={he.propertyVisit.resultsTitle}
+            value={`${Math.round(results.overallPropertyScore)}/100`}
+            icon={Award}
+            iconColor="blue"
+          />
+          <StatsCard
+            title={he.propertyVisit.conditionScore}
+            value={`${Math.round(results.conditionScoreWeighted)}/40`}
+            icon={Home}
+            iconColor="green"
+          />
+          <StatsCard
+            title={he.propertyVisit.environmentScore}
+            value={`${Math.round(results.environmentScoreWeighted)}/30`}
+            icon={MapPin}
+            iconColor="orange"
+          />
+          <StatsCard
+            title={he.propertyVisit.basicFeaturesScore}
+            value={`${Math.round(results.basicFeaturesScoreWeighted)}/30`}
+            icon={Building2}
+            iconColor="purple"
+          />
+        </div>
+      )}
+
       {/* Basic Info */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{he.propertyVisit.basicInfoTitle}</CardTitle>
+      <Card className="border-0 shadow-lg">
+        <CardHeader className="bg-gradient-to-r from-blue-50 to-background dark:from-blue-950 dark:to-background">
+          <CardTitle className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center">
+              <Building2 className="w-5 h-5 text-white" />
+            </div>
+            {he.propertyVisit.basicInfoTitle}
+          </CardTitle>
         </CardHeader>
-        <CardContent className="grid md:grid-cols-2 gap-4">
+        <CardContent className="grid md:grid-cols-2 gap-4 pt-6">
           <div>
             <Label>{he.propertyVisit.address}</Label>
             <Input
@@ -174,12 +212,17 @@ const PropertyVisit = () => {
       </Card>
 
       {/* Physical Condition */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{he.propertyVisit.conditionTitle} (דרג 1-10)</CardTitle>
+      <Card className="border-0 shadow-lg">
+        <CardHeader className="bg-gradient-to-r from-emerald-50 to-background dark:from-emerald-950 dark:to-background">
+          <CardTitle className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center">
+              <Home className="w-5 h-5 text-white" />
+            </div>
+            {he.propertyVisit.conditionTitle} (דרג 1-10)
+          </CardTitle>
           <CardDescription>10 = מצוין, 1 = גרוע מאוד</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 pt-6">
           {Object.entries(condition).map(([key, value]) => (
             <div key={key}>
               <div className="flex justify-between mb-2">
@@ -199,12 +242,17 @@ const PropertyVisit = () => {
       </Card>
 
       {/* Environment */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{he.propertyVisit.environmentTitle} (דרג 1-10)</CardTitle>
+      <Card className="border-0 shadow-lg">
+        <CardHeader className="bg-gradient-to-r from-orange-50 to-background dark:from-orange-950 dark:to-background">
+          <CardTitle className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center">
+              <MapPin className="w-5 h-5 text-white" />
+            </div>
+            {he.propertyVisit.environmentTitle} (דרג 1-10)
+          </CardTitle>
           <CardDescription>10 = מצוין, 1 = גרוע מאוד</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 pt-6">
           {Object.entries(environment).map(([key, value]) => (
             <div key={key}>
               <div className="flex justify-between mb-2">
@@ -223,82 +271,131 @@ const PropertyVisit = () => {
         </CardContent>
       </Card>
 
-      <div className="flex justify-center">
-        <Button onClick={handleCalculate} size="lg" className="px-8">
+      <div className="flex justify-center sticky bottom-8 z-10">
+        <Button onClick={handleCalculate} size="lg" className="px-12 py-6 text-lg shadow-2xl rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
+          <Calculator className="ml-2 h-5 w-5" />
           {he.common.calculate}
         </Button>
       </div>
 
       {/* Results */}
       {results && (
-        <Card className="border-primary">
-          <CardHeader>
-            <CardTitle className="text-2xl">{he.propertyVisit.resultsTitle}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="text-center">
-              <p className="text-6xl font-bold text-primary mb-4">
-                {Math.round(results.overallPropertyScore)}/100
-              </p>
-              <Badge variant={getScoreLabel(results.overallPropertyScore).variant} className="text-lg px-4 py-2">
-                {getScoreLabel(results.overallPropertyScore).text}
-              </Badge>
-            </div>
+        <div className="space-y-6 animate-in slide-in-from-bottom duration-500">
+          {/* Radar Chart */}
+          <Card className="border-0 shadow-xl">
+            <CardHeader>
+              <CardTitle className="text-2xl">ניתוח ויזואלי של הנכס</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={400}>
+                <RadarChart
+                  data={[
+                    ...Object.entries(condition).map(([key, value]) => ({
+                      category: conditionLabels[key as keyof PropertyCondition],
+                      score: value,
+                    })),
+                    ...Object.entries(environment).map(([key, value]) => ({
+                      category: environmentLabels[key as keyof PropertyEnvironment],
+                      score: value,
+                    })),
+                  ]}
+                >
+                  <PolarGrid className="opacity-30" />
+                  <PolarAngleAxis dataKey="category" className="text-xs" />
+                  <PolarRadiusAxis angle={90} domain={[0, 10]} />
+                  <Radar name="ציון" dataKey="score" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.6} />
+                  <Tooltip />
+                </RadarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
 
-            <div className="grid md:grid-cols-3 gap-4">
-              <Card>
+          <Card className="border-0 shadow-xl bg-gradient-to-br from-primary/5 to-secondary/5">
+            <CardHeader>
+              <CardTitle className="text-3xl">{he.propertyVisit.resultsTitle}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="text-center p-8 bg-background/50 rounded-2xl">
+                <p className="text-7xl font-bold bg-gradient-to-br from-primary to-primary/60 bg-clip-text text-transparent mb-4">
+                  {Math.round(results.overallPropertyScore)}/100
+                </p>
+                <Badge variant={getScoreLabel(results.overallPropertyScore).variant} className="text-lg px-6 py-2">
+                  {getScoreLabel(results.overallPropertyScore).text}
+                </Badge>
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-4">
+              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-emerald-50 to-background dark:from-emerald-950 dark:to-background">
                 <CardHeader>
-                  <CardTitle className="text-sm text-muted-foreground">{he.propertyVisit.conditionScore}</CardTitle>
+                  <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
+                    <Home className="w-4 h-4" />
+                    {he.propertyVisit.conditionScore}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 bg-muted rounded-full h-2">
-                      <div
-                        className="bg-primary h-2 rounded-full"
-                        style={{ width: `${results.conditionScoreWeighted * 2.5}%` }}
-                      />
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 bg-muted rounded-full h-3">
+                        <div
+                          className="bg-gradient-to-r from-emerald-500 to-emerald-600 h-3 rounded-full transition-all duration-500"
+                          style={{ width: `${results.conditionScoreWeighted * 2.5}%` }}
+                        />
+                      </div>
+                      <span className="text-lg font-bold">{Math.round(results.conditionScoreWeighted)}/40</span>
                     </div>
-                    <span className="text-sm font-semibold">{Math.round(results.conditionScoreWeighted)}/40</span>
+                    <p className="text-xs text-muted-foreground text-center">{((results.conditionScoreWeighted / 40) * 100).toFixed(0)}%</p>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-orange-50 to-background dark:from-orange-950 dark:to-background">
                 <CardHeader>
-                  <CardTitle className="text-sm text-muted-foreground">{he.propertyVisit.environmentScore}</CardTitle>
+                  <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
+                    <MapPin className="w-4 h-4" />
+                    {he.propertyVisit.environmentScore}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 bg-muted rounded-full h-2">
-                      <div
-                        className="bg-primary h-2 rounded-full"
-                        style={{ width: `${(results.environmentScoreWeighted / 30) * 100}%` }}
-                      />
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 bg-muted rounded-full h-3">
+                        <div
+                          className="bg-gradient-to-r from-orange-500 to-orange-600 h-3 rounded-full transition-all duration-500"
+                          style={{ width: `${(results.environmentScoreWeighted / 30) * 100}%` }}
+                        />
+                      </div>
+                      <span className="text-lg font-bold">{Math.round(results.environmentScoreWeighted)}/30</span>
                     </div>
-                    <span className="text-sm font-semibold">{Math.round(results.environmentScoreWeighted)}/30</span>
+                    <p className="text-xs text-muted-foreground text-center">{((results.environmentScoreWeighted / 30) * 100).toFixed(0)}%</p>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-purple-50 to-background dark:from-purple-950 dark:to-background">
                 <CardHeader>
-                  <CardTitle className="text-sm text-muted-foreground">{he.propertyVisit.basicFeaturesScore}</CardTitle>
+                  <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
+                    <Building2 className="w-4 h-4" />
+                    {he.propertyVisit.basicFeaturesScore}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 bg-muted rounded-full h-2">
-                      <div
-                        className="bg-primary h-2 rounded-full"
-                        style={{ width: `${(results.basicFeaturesScoreWeighted / 30) * 100}%` }}
-                      />
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 bg-muted rounded-full h-3">
+                        <div
+                          className="bg-gradient-to-r from-purple-500 to-purple-600 h-3 rounded-full transition-all duration-500"
+                          style={{ width: `${(results.basicFeaturesScoreWeighted / 30) * 100}%` }}
+                        />
+                      </div>
+                      <span className="text-lg font-bold">{Math.round(results.basicFeaturesScoreWeighted)}/30</span>
                     </div>
-                    <span className="text-sm font-semibold">{Math.round(results.basicFeaturesScoreWeighted)}/30</span>
+                    <p className="text-xs text-muted-foreground text-center">{((results.basicFeaturesScoreWeighted / 30) * 100).toFixed(0)}%</p>
                   </div>
                 </CardContent>
               </Card>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       )}
     </div>
   );
