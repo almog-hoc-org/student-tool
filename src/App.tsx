@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Layout } from "@/components/Layout";
 import { ScrollToTop } from "@/components/ScrollToTop";
+import Index from "./pages/Index";
 import FinancialCheckup from "./pages/FinancialCheckup";
 import DealBusinessPlan from "./pages/DealBusinessPlan";
 import MortgageCalculator from "./pages/MortgageCalculator";
@@ -26,7 +27,8 @@ const App = () => (
         <Layout>
           <div className="animate-fade-in">
             <Routes>
-              <Route path="/" element={<FinancialCheckup />} />
+              <Route path="/" element={<Index />} />
+              <Route path="/financial-checkup" element={<FinancialCheckup />} />
               <Route path="/deal-business-plan" element={<DealBusinessPlan />} />
               <Route path="/mortgage-calculator" element={<MortgageCalculator />} />
               <Route path="/property-visit" element={<PropertyVisit />} />

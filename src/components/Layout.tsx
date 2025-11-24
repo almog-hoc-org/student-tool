@@ -12,7 +12,8 @@ import {
 import { he } from '@/lib/translations/he';
 
 const navigation = [
-  { name: he.nav.financialCheckup, href: '/', icon: Calculator },
+  { name: 'דף הבית', href: '/', icon: Home },
+  { name: he.nav.financialCheckup, href: '/financial-checkup', icon: Calculator },
   { name: he.nav.dealBusinessPlan, href: '/deal-business-plan', icon: Building2 },
   { name: he.nav.mortgageCalculator, href: '/mortgage-calculator', icon: CreditCard },
   { name: he.nav.propertyVisit, href: '/property-visit', icon: ClipboardCheck },

@@ -393,6 +393,7 @@ const PropertyVisit = () => {
                   </div>
                 </CardContent>
               </Card>
+              </div>
             </CardContent>
           </Card>
         </div>

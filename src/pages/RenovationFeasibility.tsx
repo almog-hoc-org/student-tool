@@ -308,5 +308,6 @@ const RenovationFeasibility = () => {
       )}
     </div>
   );
+};
 
 export default RenovationFeasibility;
