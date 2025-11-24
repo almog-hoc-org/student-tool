@@ -7,9 +7,10 @@ import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { calculateTransactionCosts } from '@/lib/calculations/transaction-timeline';
 import { TransactionCostCalculatorOutput } from '@/types/timelines';
-import { Clock, DollarSign } from 'lucide-react';
+import { Clock, DollarSign, Calculator, Wallet } from 'lucide-react';
 import { he } from '@/lib/translations/he';
 import { formatCurrency } from '@/lib/validation/validators';
+import { StatsCard } from '@/components/StatsCard';
 
 const TransactionTimeline = () => {
   const [purchasePrice, setPurchasePrice] = useState<number>(0);
@@ -25,70 +26,107 @@ const TransactionTimeline = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl">{he.transactionTimeline.title}</CardTitle>
-          <CardDescription>
+    <div className="space-y-6 pb-8">
+      <Card className="border-0 shadow-lg">
+        <CardHeader className="bg-gradient-to-r from-primary/5 via-background to-secondary/5">
+          <CardTitle className="text-3xl font-bold">{he.transactionTimeline.title}</CardTitle>
+          <CardDescription className="text-base">
             {he.transactionTimeline.description}
           </CardDescription>
         </CardHeader>
       </Card>
 
-      <Card className="bg-accent">
+      {/* KPI Cards - Show after calculation */}
+      {results && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-in slide-in-from-bottom duration-500">
+          <StatsCard
+            title={he.transactionTimeline.purchasePrice}
+            value={formatCurrency(purchasePrice)}
+            icon={DollarSign}
+            iconColor="blue"
+          />
+          <StatsCard
+            title={he.transactionTimeline.estimatedSideCosts}
+            value={formatCurrency(results.estimatedSideCosts)}
+            icon={Wallet}
+            iconColor="orange"
+          />
+          <StatsCard
+            title={he.transactionTimeline.totalCost}
+            value={formatCurrency(results.totalCost)}
+            icon={Calculator}
+            iconColor="green"
+          />
+        </div>
+      )}
+
+      <Card className="bg-gradient-to-r from-primary/10 to-secondary/10 border-0 shadow-lg">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-3 text-xl">
+            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
+              <Clock className="h-5 w-5 text-primary-foreground" />
+            </div>
             ציר זמן כולל טיפוסי
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-lg font-semibold text-primary">3-6 חודשים</p>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-3xl font-bold text-primary mb-2">3-6 חודשים</p>
+          <p className="text-base text-muted-foreground">
             מתחילת החיפוש ועד קבלת המפתחות. משך הזמן משתנה בהתאם למורכבות המימון, סוג הנכס ותנאי השוק.
           </p>
         </CardContent>
       </Card>
 
-      <div className="space-y-2">
-        <h3 className="text-xl font-semibold">שלבי העסקה</h3>
-        <Accordion type="single" collapsible defaultValue="step-1">
-          {he.transactionTimeline.steps.map((step, index) => (
-            <AccordionItem key={index} value={`step-${index + 1}`}>
-              <AccordionTrigger className="hover:no-underline">
-                <div className="flex items-center gap-4 text-right w-full">
-                  <Badge variant="outline" className="shrink-0">
-                    שלב {index + 1}
-                  </Badge>
-                  <div className="flex-1">
-                    <p className="font-semibold">{step.name}</p>
-                    <p className="text-sm text-muted-foreground">{step.timing}</p>
+      <div className="space-y-4">
+        <h3 className="text-2xl font-bold">שלבי העסקה</h3>
+        <Accordion type="single" collapsible defaultValue="step-1" className="space-y-3">
+          {he.transactionTimeline.steps.map((step, index) => {
+            const stepColors = ['from-blue-50', 'from-emerald-50', 'from-orange-50', 'from-purple-50', 'from-pink-50', 'from-indigo-50'];
+            return (
+              <AccordionItem key={index} value={`step-${index + 1}`} className="border-0 shadow-md rounded-lg overflow-hidden">
+                <AccordionTrigger className={`hover:no-underline bg-gradient-to-r ${stepColors[index % 6]} to-background dark:${stepColors[index % 6].replace('50', '950')} dark:to-background px-6`}>
+                  <div className="flex items-center gap-4 text-right w-full">
+                    <Badge variant="outline" className="shrink-0 text-base px-3 py-1">
+                      {index + 1}
+                    </Badge>
+                    <div className="flex-1">
+                      <p className="font-bold text-lg">{step.name}</p>
+                      <p className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
+                        <Clock className="h-3 w-3" />
+                        {step.timing}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent>
-                <div className="pt-4 space-y-4">
-                  <p className="text-sm">{step.description}</p>
+                </AccordionTrigger>
+                <AccordionContent className="px-6">
+                  <div className="pt-4 space-y-4">
+                    <p className="text-base leading-relaxed">{step.description}</p>
 
-                  <div>
-                    <h4 className="font-semibold flex items-center gap-2 mb-2">
-                      <DollarSign className="h-4 w-4 text-primary" />
-                      עלויות טיפוסיות
-                    </h4>
-                    <p className="text-sm text-muted-foreground">{step.costs}</p>
+                    <div className="p-4 bg-primary/5 rounded-lg">
+                      <h4 className="font-semibold flex items-center gap-2 mb-2 text-base">
+                        <DollarSign className="h-5 w-5 text-primary" />
+                        עלויות טיפוסיות
+                      </h4>
+                      <p className="text-sm text-muted-foreground">{step.costs}</p>
+                    </div>
                   </div>
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          ))}
+                </AccordionContent>
+              </AccordionItem>
+            );
+          })}
         </Accordion>
       </div>
 
       {/* Cost Calculator */}
-      <Card className="border-primary">
+      <Card className="border-0 shadow-xl bg-gradient-to-br from-primary/5 to-secondary/5">
         <CardHeader>
-          <CardTitle>{he.transactionTimeline.costCalculatorTitle}</CardTitle>
-          <CardDescription>
+          <CardTitle className="flex items-center gap-3 text-2xl">
+            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
+              <Calculator className="h-5 w-5 text-primary-foreground" />
+            </div>
+            {he.transactionTimeline.costCalculatorTitle}
+          </CardTitle>
+          <CardDescription className="text-base">
             הערך את סך העלויות הנלוות לרכישת נכס (מיסים, משפטי, מתווך וכו')
           </CardDescription>
         </CardHeader>
@@ -119,40 +157,19 @@ const TransactionTimeline = () => {
           </div>
 
           <div className="flex justify-center">
-            <Button onClick={handleCalculate} className="px-8">
+            <Button onClick={handleCalculate} size="lg" className="px-12 py-6 text-lg shadow-xl rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
+              <Calculator className="ml-2 h-5 w-5" />
               {he.common.calculate}
             </Button>
           </div>
-
-          {results && (
-            <div className="grid md:grid-cols-2 gap-4 pt-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm text-muted-foreground">{he.transactionTimeline.estimatedSideCosts}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-2xl font-bold text-primary">{formatCurrency(results.estimatedSideCosts)}</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm text-muted-foreground">{he.transactionTimeline.totalCost}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-2xl font-bold">{formatCurrency(results.totalCost)}</p>
-                </CardContent>
-              </Card>
-            </div>
-          )}
         </CardContent>
       </Card>
 
-      <Card className="bg-accent">
+      <Card className="bg-gradient-to-r from-accent/50 to-accent/30 border-0 shadow-lg">
         <CardHeader>
-          <CardTitle>טיפים חשובים</CardTitle>
+          <CardTitle className="text-xl">טיפים חשובים</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2 text-sm">
+        <CardContent className="space-y-3 text-base">
           <p>
             • תמיד תקצב עלויות נלוות (6-10% ממחיר הרכישה) בנוסף למחיר הרכישה וההון העצמי.
           </p>
