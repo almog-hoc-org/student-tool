@@ -8,8 +8,10 @@ import {
   Clock,
   FileText,
   Home,
+  History as HistoryIcon,
 } from 'lucide-react';
 import { he } from '@/lib/translations/he';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 const navigation = [
   { name: 'דף הבית', href: '/', icon: Home },
@@ -20,6 +22,7 @@ const navigation = [
   { name: he.nav.renovationFeasibility, href: '/renovation-feasibility', icon: Wrench },
   { name: he.nav.urbanRenewal, href: '/urban-renewal', icon: Clock },
   { name: he.nav.transactionTimeline, href: '/transaction-timeline', icon: FileText },
+  { name: 'היסטוריה', href: '/history', icon: HistoryIcon },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -67,6 +70,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <h1 className="text-2xl lg:text-3xl font-bold text-foreground">הדרך לדירה</h1>
                 <p className="text-muted-foreground text-sm mt-0.5">פורטל כלים למשקיעי נדל״ן</p>
               </div>
+              <ThemeToggle />
             </div>
           </div>
         </header>
