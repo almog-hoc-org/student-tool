@@ -14,6 +14,7 @@ import RenovationFeasibility from "./pages/RenovationFeasibility";
 import UrbanRenewal from "./pages/UrbanRenewal";
 import TransactionTimeline from "./pages/TransactionTimeline";
 import History from "./pages/History";
+import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,8 +28,9 @@ const App = () => (
         <ScrollToTop />
         <Layout>
           <div className="animate-fade-in">
-            <Routes>
-              <Route path="/" element={<Index />} />
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/calculators" element={<Index />} />
               <Route path="/financial-checkup" element={<FinancialCheckup />} />
               <Route path="/deal-business-plan" element={<DealBusinessPlan />} />
               <Route path="/mortgage-calculator" element={<MortgageCalculator />} />

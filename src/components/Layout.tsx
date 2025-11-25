@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { he } from '@/lib/translations/he';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { NotificationCenter } from '@/components/NotificationCenter';
 
 const navigation = [
   { name: 'דף הבית', href: '/', icon: Home },
@@ -70,7 +71,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <h1 className="text-2xl lg:text-3xl font-bold text-foreground">הדרך לדירה</h1>
                 <p className="text-muted-foreground text-sm mt-0.5">פורטל כלים למשקיעי נדל״ן</p>
               </div>
-              <ThemeToggle />
+              <div className="flex items-center gap-2">
+                <NotificationCenter />
+                <ThemeToggle />
+              </div>
             </div>
           </div>
         </header>
