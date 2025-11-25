@@ -4,7 +4,9 @@ import { Button } from '@/components/ui/button';
 import { AnimatedStatsCard } from '@/components/AnimatedStatsCard';
 import { LineChart } from '@/components/charts/LineChart';
 import { RadarChart } from '@/components/charts/RadarChart';
+import { RecommendationCard } from '@/components/RecommendationCard';
 import { getCalculationHistory, CalculationHistory } from '@/lib/storage/calculator-history';
+import { analyzeUserBehavior, Recommendation } from '@/lib/recommendations/analyzer';
 import { 
   TrendingUp, 
   Calculator, 
@@ -21,6 +23,7 @@ export default function Dashboard() {
   const [history, setHistory] = useState<CalculationHistory[]>([]);
   const [activityData, setActivityData] = useState<any[]>([]);
   const [categoryData, setCategoryData] = useState<any[]>([]);
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
 
   useEffect(() => {
     const data = getCalculationHistory();
@@ -61,6 +64,10 @@ export default function Dashboard() {
     ];
 
     setCategoryData(categories);
+
+    // Generate recommendations
+    const userRecommendations = analyzeUserBehavior(data);
+    setRecommendations(userRecommendations);
   }, []);
 
   const totalCalculations = history.length;
@@ -141,6 +148,9 @@ export default function Dashboard() {
           animateNumber
         />
       </div>
+
+      {/* Recommendations */}
+      <RecommendationCard recommendations={recommendations} />
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
