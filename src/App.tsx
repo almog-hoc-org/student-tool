@@ -13,6 +13,7 @@ import PropertyVisit from "./pages/PropertyVisit";
 import RenovationFeasibility from "./pages/RenovationFeasibility";
 import UrbanRenewal from "./pages/UrbanRenewal";
 import TransactionTimeline from "./pages/TransactionTimeline";
+import History from "./pages/History";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +36,7 @@ const App = () => (
               <Route path="/renovation-feasibility" element={<RenovationFeasibility />} />
               <Route path="/urban-renewal" element={<UrbanRenewal />} />
               <Route path="/transaction-timeline" element={<TransactionTimeline />} />
+              <Route path="/history" element={<History />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
