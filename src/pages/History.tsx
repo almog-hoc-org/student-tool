@@ -28,9 +28,12 @@ import {
   clearHistory,
   CalculationHistory,
 } from '@/lib/storage/calculator-history';
-import { History as HistoryIcon, Trash2, Calculator, FileText, Download } from 'lucide-react';
+import { History as HistoryIcon, Trash2, Calculator, FileText, Download, ArrowLeftRight } from 'lucide-react';
 import { formatCurrency } from '@/lib/validation/validators';
 import { toast } from '@/hooks/use-toast';
+import { ShareButton } from '@/components/ShareButton';
+import { ComparisonView } from '@/components/ComparisonView';
+import { AnimatedStatsCard } from '@/components/AnimatedStatsCard';
 
 const typeLabels: Record<CalculationHistory['type'], string> = {
   mortgage: 'משכנתא',
@@ -55,6 +58,8 @@ const typeColors: Record<CalculationHistory['type'], string> = {
 export default function History() {
   const [history, setHistory] = useState<CalculationHistory[]>(getCalculationHistory());
   const [selectedType, setSelectedType] = useState<'all' | CalculationHistory['type']>('all');
+  const [selectedForComparison, setSelectedForComparison] = useState<string[]>([]);
+  const [showComparison, setShowComparison] = useState(false);
 
   const handleDelete = (id: string) => {
     deleteCalculation(id);
@@ -73,6 +78,20 @@ export default function History() {
       description: 'כל החישובים הוסרו',
     });
   };
+
+  const toggleComparisonSelection = (id: string) => {
+    setSelectedForComparison(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const handleCompare = () => {
+    if (selectedForComparison.length >= 2) {
+      setShowComparison(true);
+    }
+  };
+
+  const comparisonItems = history.filter(h => selectedForComparison.includes(h.id));
 
   const filteredHistory =
     selectedType === 'all' ? history : history.filter((item) => item.type === selectedType);
@@ -130,51 +149,71 @@ export default function History() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-gradient-to-br from-primary/10 to-primary/5">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">סה"כ חישובים</p>
-                <p className="text-3xl font-bold">{stats.total}</p>
-              </div>
-              <Calculator className="w-10 h-10 text-primary opacity-50" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-blue-500/10 to-blue-500/5">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">משכנתאות</p>
-                <p className="text-3xl font-bold">{stats.mortgage}</p>
-              </div>
-              <FileText className="w-10 h-10 text-blue-500 opacity-50" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-green-500/10 to-green-500/5">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">צ'ק-אפ</p>
-                <p className="text-3xl font-bold">{stats['financial-checkup']}</p>
-              </div>
-              <FileText className="w-10 h-10 text-green-500 opacity-50" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-purple-500/10 to-purple-500/5">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">עסקאות</p>
-                <p className="text-3xl font-bold">{stats.deal}</p>
-              </div>
-              <FileText className="w-10 h-10 text-purple-500 opacity-50" />
-            </div>
-          </CardContent>
-        </Card>
+        <AnimatedStatsCard
+          title="סה&quot;כ חישובים"
+          value={stats.total}
+          icon={Calculator}
+          iconColor="blue"
+          delay={0}
+          animateNumber={true}
+        />
+        <AnimatedStatsCard
+          title="משכנתאות"
+          value={stats.mortgage}
+          icon={FileText}
+          iconColor="green"
+          delay={0.1}
+          animateNumber={true}
+        />
+        <AnimatedStatsCard
+          title="צ'ק-אפ"
+          value={stats['financial-checkup']}
+          icon={FileText}
+          iconColor="orange"
+          delay={0.2}
+          animateNumber={true}
+        />
+        <AnimatedStatsCard
+          title="עסקאות"
+          value={stats.deal}
+          icon={FileText}
+          iconColor="purple"
+          delay={0.3}
+          animateNumber={true}
+        />
       </div>
+
+      {/* Comparison Mode Controls */}
+      {selectedForComparison.length > 0 && (
+        <Card className="border-primary/50 bg-primary/5">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <ArrowLeftRight className="h-5 w-5 text-primary" />
+                <span className="font-medium">
+                  נבחרו {selectedForComparison.length} חישובים להשוואה
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setSelectedForComparison([])}
+                >
+                  נקה בחירה
+                </Button>
+                <Button 
+                  size="sm"
+                  onClick={handleCompare}
+                  disabled={selectedForComparison.length < 2}
+                >
+                  השווה
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* History Table */}
       <Card className="border-0 shadow-lg">
@@ -232,7 +271,20 @@ export default function History() {
                     <TableCell className="max-w-xs truncate">{item.title}</TableCell>
                     <TableCell className="font-semibold">{item.result}</TableCell>
                     <TableCell className="text-left">
+                      <Button
+                        variant={selectedForComparison.includes(item.id) ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => toggleComparisonSelection(item.id)}
+                      >
+                        <ArrowLeftRight className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                    <TableCell className="text-left">
                       <div className="flex items-center gap-2">
+                        <ShareButton
+                          title={item.title}
+                          text={item.result}
+                        />
                         <Button variant="ghost" size="sm">
                           <Download className="h-4 w-4" />
                         </Button>
@@ -266,6 +318,17 @@ export default function History() {
           )}
         </CardContent>
       </Card>
+
+      {/* Comparison Modal */}
+      {showComparison && (
+        <ComparisonView 
+          items={comparisonItems} 
+          onClose={() => {
+            setShowComparison(false);
+            setSelectedForComparison([]);
+          }}
+        />
+      )}
     </div>
   );
 }
