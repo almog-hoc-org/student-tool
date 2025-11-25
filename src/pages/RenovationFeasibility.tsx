@@ -10,8 +10,10 @@ import { RenovationInputs, RenovationOutput } from '@/types/renovation-feasibili
 import { he } from '@/lib/translations/he';
 import { formatCurrency, formatPercent } from '@/lib/validation/validators';
 import { StatsCard } from '@/components/StatsCard';
-import { Hammer, TrendingUp, DollarSign, Calculator } from 'lucide-react';
+import { Hammer, TrendingUp, DollarSign, Calculator, Loader2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { saveCalculation } from '@/lib/storage/calculator-history';
+import { toast } from '@/hooks/use-toast';
 
 const RenovationFeasibility = () => {
   const [input, setInput] = useState<RenovationInputs>({
@@ -24,10 +26,30 @@ const RenovationFeasibility = () => {
   });
 
   const [results, setResults] = useState<RenovationOutput | null>(null);
+  const [isCalculating, setIsCalculating] = useState(false);
 
-  const handleCalculate = () => {
+  const handleCalculate = async () => {
+    setIsCalculating(true);
+    
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
     const output = calculateRenovationFeasibility(input);
     setResults(output);
+    
+    // Save to history
+    saveCalculation({
+      type: 'renovation',
+      title: `שיפוץ ${formatCurrency(input.currentValue)}`,
+      result: `רווח: ${formatCurrency(output.paperProfit)}`,
+      input,
+    });
+    
+    toast({
+      title: "החישוב הושלם בהצלחה",
+      description: "התוצאות נשמרו בהיסטוריה",
+    });
+    
+    setIsCalculating(false);
   };
 
   const classificationVariant = (classification: string) => {
@@ -166,9 +188,18 @@ const RenovationFeasibility = () => {
       </div>
 
       <div className="flex justify-center sticky bottom-8 z-10">
-        <Button onClick={handleCalculate} size="lg" className="px-12 py-6 text-lg shadow-2xl rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
-          <Calculator className="ml-2 h-5 w-5" />
-          {he.common.calculate}
+        <Button onClick={handleCalculate} size="lg" disabled={isCalculating} className="px-12 py-6 text-lg shadow-2xl rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
+          {isCalculating ? (
+            <>
+              <Loader2 className="ml-2 h-5 w-5 animate-spin" />
+              מחשב...
+            </>
+          ) : (
+            <>
+              <Calculator className="ml-2 h-5 w-5" />
+              {he.common.calculate}
+            </>
+          )}
         </Button>
       </div>
 

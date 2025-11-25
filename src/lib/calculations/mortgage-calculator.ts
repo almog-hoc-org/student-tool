@@ -39,6 +39,11 @@ export function calculateMortgage(
     0
   );
 
+  const totalInterestPaid = results.reduce(
+    (sum, t) => sum + t.totalInterestPaid,
+    0
+  );
+
   const totalPrincipal = input.tracks.reduce((sum, t) => sum + t.principal, 0);
 
   let weightedAverageInterest = 0;
@@ -52,6 +57,7 @@ export function calculateMortgage(
   return {
     tracks: results,
     totalMonthlyPayment,
+    totalInterestPaid,
     weightedAverageInterest,
   };
 }

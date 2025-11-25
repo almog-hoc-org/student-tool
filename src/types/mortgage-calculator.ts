@@ -22,5 +22,6 @@ export type MortgageTrackResult = {
 export type MortgageCalculatorOutput = {
   tracks: MortgageTrackResult[];
   totalMonthlyPayment: number;
+  totalInterestPaid: number;
   weightedAverageInterest: number;
 };
