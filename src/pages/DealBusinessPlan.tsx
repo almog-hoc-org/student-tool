@@ -5,13 +5,17 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { calculateDealBusinessPlan } from '@/lib/calculations/deal-business-plan';
 import { DealBusinessPlanInput, DealBusinessPlanOutput, DealType } from '@/types/deal-business-plan';
 import { he } from '@/lib/translations/he';
 import { formatCurrency, formatPercent } from '@/lib/validation/validators';
 import { StatsCard } from '@/components/StatsCard';
-import { Building2, Wallet, TrendingUp, Calculator } from 'lucide-react';
+import { Building2, Wallet, TrendingUp, Calculator, Loader2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { saveCalculation } from '@/lib/storage/calculator-history';
+import { toast } from '@/hooks/use-toast';
 
 const DealBusinessPlan = () => {
   const [dealType, setDealType] = useState<DealType>('rental');
@@ -44,10 +48,36 @@ const DealBusinessPlan = () => {
   });
 
   const [results, setResults] = useState<DealBusinessPlanOutput | null>(null);
+  const [isCalculating, setIsCalculating] = useState(false);
 
-  const handleCalculate = () => {
+  const handleCalculate = async () => {
+    setIsCalculating(true);
+    
+    // Simulate calculation delay for UX
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
     const output = calculateDealBusinessPlan(input);
     setResults(output);
+    
+    // Save to history
+    const title = `עסקה ${he.dealBusinessPlan.dealTypeOptions[dealType]} - ${formatCurrency(input.basic.purchasePrice)}`;
+    const result = dealType === 'rental' 
+      ? `תשואה: ${formatPercent(output.cocYield || 0)}` 
+      : `רווח: ${formatCurrency(output.grossProfit || 0)}`;
+    
+    saveCalculation({
+      type: 'deal',
+      title,
+      result,
+      input,
+    });
+    
+    toast({
+      title: "החישוב הושלם בהצלחה",
+      description: "התוצאות נשמרו בהיסטוריה",
+    });
+    
+    setIsCalculating(false);
   };
 
   const classificationVariant = (classification: string) => {
@@ -369,9 +399,18 @@ const DealBusinessPlan = () => {
       )}
 
       <div className="flex justify-center sticky bottom-8 z-10">
-        <Button onClick={handleCalculate} size="lg" className="px-12 py-6 text-lg shadow-2xl rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
-          <Calculator className="ml-2 h-5 w-5" />
-          {he.common.calculate}
+        <Button onClick={handleCalculate} size="lg" disabled={isCalculating} className="px-12 py-6 text-lg shadow-2xl rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
+          {isCalculating ? (
+            <>
+              <Loader2 className="ml-2 h-5 w-5 animate-spin" />
+              מחשב...
+            </>
+          ) : (
+            <>
+              <Calculator className="ml-2 h-5 w-5" />
+              {he.common.calculate}
+            </>
+          )}
         </Button>
       </div>
 
@@ -385,30 +424,85 @@ const DealBusinessPlan = () => {
                 <CardTitle className="text-2xl">ניתוח תזרים מזומנים</CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart
-                    data={[
-                      {
-                        name: 'הכנסה שנתית',
-                        value: (input.rental?.expectedMonthlyRent || 0) * 12 * (input.rental?.occupancyRate || 0.95),
-                      },
-                      {
-                        name: 'הוצאות + משכנתא',
-                        value: (input.rental?.expectedMonthlyRent || 0) * 12 * (input.rental?.occupancyRate || 0.95) - results.netCashflowAnnual,
-                      },
-                      {
-                        name: 'תזרים נקי',
-                        value: results.netCashflowAnnual,
-                      },
-                    ]}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                    <Bar dataKey="value" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+                <Tabs defaultValue="chart" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 mb-6">
+                    <TabsTrigger value="chart">גרף</TabsTrigger>
+                    <TabsTrigger value="table">טבלה</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="chart">
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart
+                        data={[
+                          {
+                            name: 'הכנסה שנתית',
+                            value: (input.rental?.expectedMonthlyRent || 0) * 12 * (input.rental?.occupancyRate || 0.95),
+                          },
+                          {
+                            name: 'הוצאות + משכנתא',
+                            value: (input.rental?.expectedMonthlyRent || 0) * 12 * (input.rental?.occupancyRate || 0.95) - results.netCashflowAnnual,
+                          },
+                          {
+                            name: 'תזרים נקי',
+                            value: results.netCashflowAnnual,
+                          },
+                        ]}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                        <Bar dataKey="value" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </TabsContent>
+                  
+                  <TabsContent value="table">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>פריט</TableHead>
+                          <TableHead className="text-left">סכום שנתי</TableHead>
+                          <TableHead className="text-left">סכום חודשי</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <TableRow>
+                          <TableCell className="font-medium">הכנסה משכירות</TableCell>
+                          <TableCell>{formatCurrency((input.rental?.expectedMonthlyRent || 0) * 12 * (input.rental?.occupancyRate || 0.95))}</TableCell>
+                          <TableCell>{formatCurrency((input.rental?.expectedMonthlyRent || 0) * (input.rental?.occupancyRate || 0.95))}</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-medium">הוצאות תפעוליות</TableCell>
+                          <TableCell>{formatCurrency(
+                            (input.rental?.annualPropertyTax || 0) +
+                            (input.rental?.annualInsurance || 0) +
+                            (input.rental?.annualMaintenance || 0) +
+                            (input.rental?.annualManagementFees || 0) +
+                            (input.rental?.otherAnnualCosts || 0)
+                          )}</TableCell>
+                          <TableCell>{formatCurrency(
+                            ((input.rental?.annualPropertyTax || 0) +
+                            (input.rental?.annualInsurance || 0) +
+                            (input.rental?.annualMaintenance || 0) +
+                            (input.rental?.annualManagementFees || 0) +
+                            (input.rental?.otherAnnualCosts || 0)) / 12
+                          )}</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-medium">תשלום משכנתא</TableCell>
+                          <TableCell>{formatCurrency(input.financing.mortgageMonthlyPayment * 12)}</TableCell>
+                          <TableCell>{formatCurrency(input.financing.mortgageMonthlyPayment)}</TableCell>
+                        </TableRow>
+                        <TableRow className="font-bold bg-primary/5">
+                          <TableCell>תזרים מזומנים נקי</TableCell>
+                          <TableCell>{formatCurrency(results.netCashflowAnnual)}</TableCell>
+                          <TableCell>{formatCurrency(results.netCashflowAnnual / 12)}</TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
           )}

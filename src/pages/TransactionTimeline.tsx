@@ -7,22 +7,44 @@ import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { calculateTransactionCosts } from '@/lib/calculations/transaction-timeline';
 import { TransactionCostCalculatorOutput } from '@/types/timelines';
-import { Clock, DollarSign, Calculator, Wallet } from 'lucide-react';
+import { Clock, DollarSign, Calculator, Wallet, Loader2 } from 'lucide-react';
 import { he } from '@/lib/translations/he';
 import { formatCurrency } from '@/lib/validation/validators';
 import { StatsCard } from '@/components/StatsCard';
+import { saveCalculation } from '@/lib/storage/calculator-history';
+import { toast } from '@/hooks/use-toast';
 
 const TransactionTimeline = () => {
   const [purchasePrice, setPurchasePrice] = useState<number>(0);
   const [sideCostsPercent, setSideCostsPercent] = useState<number>(7);
   const [results, setResults] = useState<TransactionCostCalculatorOutput | null>(null);
+  const [isCalculating, setIsCalculating] = useState(false);
 
-  const handleCalculate = () => {
+  const handleCalculate = async () => {
+    setIsCalculating(true);
+    
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
     const output = calculateTransactionCosts({
       purchasePrice,
       sideCostsPercent,
     });
     setResults(output);
+    
+    // Save to history
+    saveCalculation({
+      type: 'transaction-timeline',
+      title: `ציר זמן לעסקה - ${formatCurrency(purchasePrice)}`,
+      result: `עלות כוללת: ${formatCurrency(output.totalCost)}`,
+      input: { purchasePrice, sideCostsPercent },
+    });
+    
+    toast({
+      title: "החישוב הושלם בהצלחה",
+      description: "התוצאות נשמרו בהיסטוריה",
+    });
+    
+    setIsCalculating(false);
   };
 
   return (
@@ -157,9 +179,18 @@ const TransactionTimeline = () => {
           </div>
 
           <div className="flex justify-center">
-            <Button onClick={handleCalculate} size="lg" className="px-12 py-6 text-lg shadow-xl rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
-              <Calculator className="ml-2 h-5 w-5" />
-              {he.common.calculate}
+            <Button onClick={handleCalculate} size="lg" disabled={isCalculating} className="px-12 py-6 text-lg shadow-xl rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
+              {isCalculating ? (
+                <>
+                  <Loader2 className="ml-2 h-5 w-5 animate-spin" />
+                  מחשב...
+                </>
+              ) : (
+                <>
+                  <Calculator className="ml-2 h-5 w-5" />
+                  {he.common.calculate}
+                </>
+              )}
             </Button>
           </div>
         </CardContent>

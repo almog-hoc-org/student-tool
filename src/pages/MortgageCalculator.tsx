@@ -4,13 +4,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { calculateMortgage } from '@/lib/calculations/mortgage-calculator';
 import { MortgageTrack, MortgageCalculatorOutput, MortgageTrackType } from '@/types/mortgage-calculator';
-import { Plus, Trash2, Calculator, Wallet, Percent, TrendingUp } from 'lucide-react';
+import { Plus, Trash2, Calculator, Wallet, Percent, TrendingUp, Loader2 } from 'lucide-react';
 import { he } from '@/lib/translations/he';
 import { formatCurrency, formatPercent } from '@/lib/validation/validators';
 import { StatsCard } from '@/components/StatsCard';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { saveCalculation } from '@/lib/storage/calculator-history';
+import { toast } from '@/hooks/use-toast';
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted))'];
 
@@ -27,6 +31,7 @@ const MortgageCalculator = () => {
   ]);
 
   const [results, setResults] = useState<MortgageCalculatorOutput | null>(null);
+  const [isCalculating, setIsCalculating] = useState(false);
 
   const addTrack = () => {
     const newTrack: MortgageTrack = {
@@ -48,9 +53,29 @@ const MortgageCalculator = () => {
     setTracks(tracks.map((t) => (t.id === id ? { ...t, ...updates } : t)));
   };
 
-  const handleCalculate = () => {
+  const handleCalculate = async () => {
+    setIsCalculating(true);
+    
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
     const output = calculateMortgage({ tracks });
     setResults(output);
+    
+    // Save to history
+    const totalPrincipal = tracks.reduce((sum, t) => sum + t.principal, 0);
+    saveCalculation({
+      type: 'mortgage',
+      title: `משכנתא ${formatCurrency(totalPrincipal)}`,
+      result: `תשלום חודשי: ${formatCurrency(output.totalMonthlyPayment)}`,
+      input: { tracks },
+    });
+    
+    toast({
+      title: "החישוב הושלם בהצלחה",
+      description: "התוצאות נשמרו בהיסטוריה",
+    });
+    
+    setIsCalculating(false);
   };
 
   const trackTypeLabels: Record<MortgageTrackType, string> = {
@@ -196,15 +221,109 @@ const MortgageCalculator = () => {
           <Plus className="h-5 w-5 ml-2" />
           {he.common.addTrack}
         </Button>
-        <Button onClick={handleCalculate} size="lg" className="px-12 py-6 text-lg shadow-2xl rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
-          <Calculator className="ml-2 h-5 w-5" />
-          {he.common.calculate}
+        <Button onClick={handleCalculate} size="lg" disabled={isCalculating} className="px-12 py-6 text-lg shadow-2xl rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
+          {isCalculating ? (
+            <>
+              <Loader2 className="ml-2 h-5 w-5 animate-spin" />
+              מחשב...
+            </>
+          ) : (
+            <>
+              <Calculator className="ml-2 h-5 w-5" />
+              {he.common.calculate}
+            </>
+          )}
         </Button>
       </div>
 
       {results && (
         <div className="space-y-6 animate-in slide-in-from-bottom duration-500">
-          {/* Pie Chart for Track Distribution */}
+          {/* Monthly Payment Distribution */}
+          <Card className="border-0 shadow-xl">
+            <CardHeader>
+              <CardTitle className="text-2xl">התפלגות תשלום חודשי</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue="chart" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-6">
+                  <TabsTrigger value="chart">גרף</TabsTrigger>
+                  <TabsTrigger value="table">טבלה</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="chart">
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={tracks.map((track) => ({
+                          name: track.name,
+                          value: results.tracks.find(t => t.trackId === track.id)?.monthlyPayment || 0,
+                        }))}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={80}
+                        outerRadius={120}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {tracks.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </TabsContent>
+                
+                <TabsContent value="table">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>מסלול</TableHead>
+                        <TableHead className="text-left">תשלום חודשי</TableHead>
+                        <TableHead className="text-left">% מסך התשלום</TableHead>
+                        <TableHead className="text-left">סה"כ ריבית</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {results.tracks.map((track, index) => {
+                        const trackInfo = tracks.find(t => t.id === track.trackId)!;
+                        return (
+                          <TableRow key={track.trackId}>
+                            <TableCell className="font-medium">{trackInfo.name}</TableCell>
+                            <TableCell>{formatCurrency(track.monthlyPayment)}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <div className="flex-1 bg-muted rounded-full h-2 max-w-[100px]">
+                                  <div 
+                                    className="h-2 rounded-full"
+                                    style={{ 
+                                      width: `${(track.monthlyPayment / results.totalMonthlyPayment) * 100}%`,
+                                      backgroundColor: COLORS[index % COLORS.length]
+                                    }}
+                                  />
+                                </div>
+                                <span className="text-sm">{((track.monthlyPayment / results.totalMonthlyPayment) * 100).toFixed(1)}%</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>{formatCurrency(track.totalInterestPaid)}</TableCell>
+                          </TableRow>
+                        );
+                      })}
+                      <TableRow className="font-bold bg-primary/5">
+                        <TableCell>סה"כ</TableCell>
+                        <TableCell>{formatCurrency(results.totalMonthlyPayment)}</TableCell>
+                        <TableCell>100%</TableCell>
+                        <TableCell>{formatCurrency(results.totalInterestPaid)}</TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+
+          {/* Principal Distribution */}
           <Card className="border-0 shadow-xl">
             <CardHeader>
               <CardTitle className="text-2xl">פילוח קרן לפי מסלולים</CardTitle>
