@@ -11,7 +11,8 @@ import {
   Building2,
   ChevronLeft,
   BookOpen,
-  ArrowLeft
+  ArrowLeft,
+  BarChart3
 } from 'lucide-react';
 
 interface CalculatorCardProps {
@@ -134,6 +135,10 @@ export default function Index() {
                   <li><strong>מחשבון משכנתא</strong> - חשב כמה תשלם כל חודש</li>
                   <li><strong>תוכנית עסקית</strong> - בדוק אם העסקה כדאית</li>
                 </ol>
+                <Link to="/glossary" className="inline-flex items-center gap-1 text-sm text-primary hover:underline mt-2">
+                  <BookOpen className="w-4 h-4" />
+                  לא מכיר מונחים? לחץ כאן למילון
+                </Link>
               </div>
             </div>
           </CardContent>
@@ -155,23 +160,44 @@ export default function Index() {
           </div>
         </div>
 
-        {/* Dashboard Link */}
-        <Card className="border-0 bg-muted/50">
-          <CardContent className="p-4 sm:p-6">
-            <Link to="/dashboard" className="flex items-center justify-between group">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
-                  <TrendingUp className="w-5 h-5 text-primary" />
+        {/* Bottom Links */}
+        <div className="grid sm:grid-cols-2 gap-4">
+          {/* Dashboard Link */}
+          <Card className="border-0 bg-muted/50">
+            <CardContent className="p-4 sm:p-6">
+              <Link to="/dashboard" className="flex items-center justify-between group">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                    <BarChart3 className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">הסטטיסטיקות שלי</h3>
+                    <p className="text-sm text-muted-foreground">היסטוריית חישובים והמלצות</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-semibold">הסטטיסטיקות שלי</h3>
-                  <p className="text-sm text-muted-foreground">צפה בהיסטוריית החישובים והמלצות אישיות</p>
+                <ArrowLeft className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:-translate-x-1 transition-all" />
+              </Link>
+            </CardContent>
+          </Card>
+
+          {/* Glossary Link */}
+          <Card className="border-0 bg-muted/50">
+            <CardContent className="p-4 sm:p-6">
+              <Link to="/glossary" className="flex items-center justify-between group">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center">
+                    <BookOpen className="w-5 h-5 text-orange-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">מילון מונחים</h3>
+                    <p className="text-sm text-muted-foreground">הסברים פשוטים למונחי נדל"ן</p>
+                  </div>
                 </div>
-              </div>
-              <ArrowLeft className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:-translate-x-1 transition-all" />
-            </Link>
-          </CardContent>
-        </Card>
+                <ArrowLeft className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:-translate-x-1 transition-all" />
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

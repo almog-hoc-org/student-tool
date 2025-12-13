@@ -15,6 +15,7 @@ import UrbanRenewal from "./pages/UrbanRenewal";
 import TransactionTimeline from "./pages/TransactionTimeline";
 import History from "./pages/History";
 import Dashboard from "./pages/Dashboard";
+import Glossary from "./pages/Glossary";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,9 +29,9 @@ const App = () => (
         <ScrollToTop />
         <Layout>
           <div className="animate-fade-in">
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/calculators" element={<Index />} />
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/financial-checkup" element={<FinancialCheckup />} />
               <Route path="/deal-business-plan" element={<DealBusinessPlan />} />
               <Route path="/mortgage-calculator" element={<MortgageCalculator />} />
@@ -39,7 +40,7 @@ const App = () => (
               <Route path="/urban-renewal" element={<UrbanRenewal />} />
               <Route path="/transaction-timeline" element={<TransactionTimeline />} />
               <Route path="/history" element={<History />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="/glossary" element={<Glossary />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </div>

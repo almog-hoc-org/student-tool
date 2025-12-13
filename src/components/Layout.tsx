@@ -10,7 +10,8 @@ import {
   TrendingUp,
   Menu,
   ChevronRight,
-  LayoutDashboard
+  LayoutDashboard,
+  BookOpen
 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { Button } from '@/components/ui/button';
@@ -38,6 +39,7 @@ const navigation = [
   { name: 'ציר זמן', href: '/transaction-timeline', icon: Calendar, group: 'תהליכים' },
   { name: 'התחדשות עירונית', href: '/urban-renewal', icon: Building2, group: 'תהליכים' },
   { name: 'סטטיסטיקות', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'מילון מונחים', href: '/glossary', icon: BookOpen },
 ];
 
 function NavItem({ item, isActive, onClick }: { item: typeof navigation[0]; isActive: boolean; onClick?: () => void }) {
