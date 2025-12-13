@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { HistoryCard } from '@/components/HistoryCard';
 import { 
   Calculator, 
   Home, 
@@ -11,34 +10,35 @@ import {
   Calendar,
   Building2,
   ChevronLeft,
-  Sparkles
+  BookOpen,
+  ArrowLeft
 } from 'lucide-react';
-import { getCalculationHistory } from '@/lib/storage/calculator-history';
-import { useState, useEffect } from 'react';
 
 interface CalculatorCardProps {
   title: string;
   description: string;
   icon: React.ReactNode;
   link: string;
-  gradient: string;
+  color: string;
+  bgColor: string;
 }
 
-function CalculatorCard({ title, description, icon, link, gradient }: CalculatorCardProps) {
+function CalculatorCard({ title, description, icon, link, color, bgColor }: CalculatorCardProps) {
   return (
-    <Link to={link}>
-      <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 group overflow-hidden h-full">
-        <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity ${gradient}`} />
-        <CardHeader className="relative z-10">
-          <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+    <Link to={link} className="block group">
+      <Card className={`border-2 border-transparent hover:border-primary/30 shadow-md hover:shadow-xl transition-all duration-300 h-full ${bgColor}`}>
+        <CardHeader className="pb-3">
+          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 ${color} group-hover:scale-110 transition-transform`}>
             {icon}
           </div>
-          <CardTitle className="text-xl group-hover:text-primary transition-colors">{title}</CardTitle>
-          <CardDescription className="text-sm">{description}</CardDescription>
+          <CardTitle className="text-xl">{title}</CardTitle>
+          <CardDescription className="text-base leading-relaxed">
+            {description}
+          </CardDescription>
         </CardHeader>
-        <CardContent className="relative z-10">
-          <Button variant="ghost" size="sm" className="w-full justify-between group-hover:bg-primary/10">
-            התחל חישוב
+        <CardContent>
+          <Button variant="ghost" size="sm" className="w-full justify-between text-primary hover:bg-primary/10">
+            <span>התחל עכשיו</span>
             <ChevronLeft className="w-4 h-4" />
           </Button>
         </CardContent>
@@ -48,123 +48,130 @@ function CalculatorCard({ title, description, icon, link, gradient }: Calculator
 }
 
 export default function Index() {
-  const [history, setHistory] = useState(getCalculationHistory());
-
-  useEffect(() => {
-    setHistory(getCalculationHistory());
-  }, []);
-
   const calculators = [
     {
-      title: 'בדיקת כדאיות פיננסית',
-      description: 'נתח את המצב הפיננסי שלך וקבל המלצות מותאמות אישית',
-      icon: <Calculator className="w-6 h-6 text-primary" />,
-      link: '/',
-      gradient: 'bg-gradient-to-br from-blue-50/50 to-transparent'
+      title: 'בדיקה פיננסית',
+      description: 'בדוק כמה אתה יכול לקחת משכנתא ומה התקציב שלך לדירה',
+      icon: <Calculator className="w-7 h-7 text-blue-600" />,
+      link: '/financial-checkup',
+      color: 'bg-blue-100',
+      bgColor: 'bg-gradient-to-br from-blue-50/80 to-background'
     },
     {
       title: 'מחשבון משכנתא',
-      description: 'חשב תשלומים חודשיים והשווה בין מסלולי משכנתא',
-      icon: <Home className="w-6 h-6 text-primary" />,
+      description: 'חשב את ההחזר החודשי והעלות הכוללת של המשכנתא',
+      icon: <Home className="w-7 h-7 text-emerald-600" />,
       link: '/mortgage-calculator',
-      gradient: 'bg-gradient-to-br from-emerald-50/50 to-transparent'
+      color: 'bg-emerald-100',
+      bgColor: 'bg-gradient-to-br from-emerald-50/80 to-background'
     },
     {
-      title: 'תוכנית עסקית לעסקה',
-      description: 'בנה תוכנית עסקית מקצועית לעסקת נדל"ן',
-      icon: <TrendingUp className="w-6 h-6 text-primary" />,
+      title: 'תוכנית עסקית',
+      description: 'בנה תוכנית עסקית מלאה לעסקת נדל"ן ובדוק כדאיות',
+      icon: <TrendingUp className="w-7 h-7 text-orange-600" />,
       link: '/deal-business-plan',
-      gradient: 'bg-gradient-to-br from-orange-50/50 to-transparent'
+      color: 'bg-orange-100',
+      bgColor: 'bg-gradient-to-br from-orange-50/80 to-background'
     },
     {
       title: 'כדאיות שיפוץ',
-      description: 'העריך את הרווחיות של פרויקט שיפוץ',
-      icon: <Hammer className="w-6 h-6 text-primary" />,
+      description: 'העריך עלויות שיפוץ ובדוק אם השיפוץ משתלם',
+      icon: <Hammer className="w-7 h-7 text-purple-600" />,
       link: '/renovation-feasibility',
-      gradient: 'bg-gradient-to-br from-purple-50/50 to-transparent'
+      color: 'bg-purple-100',
+      bgColor: 'bg-gradient-to-br from-purple-50/80 to-background'
     },
     {
       title: 'ביקור בנכס',
-      description: 'בצע הערכה מקצועית של נכס במהלך ביקור',
-      icon: <ClipboardCheck className="w-6 h-6 text-primary" />,
+      description: 'רשימת בדיקות מקיפה לביקור בנכס לפני קנייה',
+      icon: <ClipboardCheck className="w-7 h-7 text-pink-600" />,
       link: '/property-visit',
-      gradient: 'bg-gradient-to-br from-pink-50/50 to-transparent'
+      color: 'bg-pink-100',
+      bgColor: 'bg-gradient-to-br from-pink-50/80 to-background'
     },
     {
       title: 'ציר זמן לעסקה',
-      description: 'תכנן ועקוב אחר שלבי העסקה',
-      icon: <Calendar className="w-6 h-6 text-primary" />,
+      description: 'הבן את השלבים והזמנים בתהליך רכישת דירה',
+      icon: <Calendar className="w-7 h-7 text-indigo-600" />,
       link: '/transaction-timeline',
-      gradient: 'bg-gradient-to-br from-indigo-50/50 to-transparent'
+      color: 'bg-indigo-100',
+      bgColor: 'bg-gradient-to-br from-indigo-50/80 to-background'
     },
     {
       title: 'התחדשות עירונית',
-      description: 'הבן את תהליך ההתחדשות העירונית',
-      icon: <Building2 className="w-6 h-6 text-primary" />,
+      description: 'למד על תמ"א 38 ופינוי-בינוי - מה זה ואיך זה עובד',
+      icon: <Building2 className="w-7 h-7 text-cyan-600" />,
       link: '/urban-renewal',
-      gradient: 'bg-gradient-to-br from-cyan-50/50 to-transparent'
+      color: 'bg-cyan-100',
+      bgColor: 'bg-gradient-to-br from-cyan-50/80 to-background'
     },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background">
-      <div className="max-w-7xl mx-auto p-6 space-y-12">
-        {/* Hero Section */}
-        <div className="text-center space-y-6 py-12">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full text-primary text-sm font-medium mb-4">
-            <Sparkles className="w-4 h-4" />
-            <span>מערכת מחשבונים פיננסיים מתקדמת</span>
-          </div>
-          
-          <h1 className="text-5xl md:text-6xl font-bold tracking-tight bg-gradient-to-l from-primary via-primary/80 to-primary bg-clip-text text-transparent">
-            כלים חכמים להחלטות פיננסיות
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
+      <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-8">
+        {/* Simple Hero Section */}
+        <div className="text-center space-y-4 py-8">
+          <h1 className="text-3xl sm:text-4xl font-bold text-foreground">
+            כלי עזר לעסקאות נדל"ן
           </h1>
-          
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            מערכת מקצועית לניתוח עסקאות נדל"ן, חישוב משכנתאות, והערכת כדאיות השקעות
+          <p className="text-lg text-muted-foreground max-w-xl mx-auto">
+            בחר את הכלי המתאים וקבל תוצאות מיידיות. פשוט, מהיר ומדויק.
           </p>
-
-          <div className="flex items-center justify-center gap-4 pt-4">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-              <span>חישוב מיידי</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-              <span>ויזואליזציות מתקדמות</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" />
-              <span>שמירה אוטומטית</span>
-            </div>
-          </div>
         </div>
 
-        {/* History Section */}
-        {history.length > 0 && (
-          <div className="animate-fade-in">
-            <HistoryCard 
-              items={history} 
-              onRefresh={() => setHistory(getCalculationHistory())}
-            />
-          </div>
-        )}
+        {/* Quick Start Guide */}
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
+                <BookOpen className="w-5 h-5 text-primary" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="font-semibold text-lg">מתחילים? הנה 3 צעדים פשוטים:</h3>
+                <ol className="text-muted-foreground space-y-1 list-decimal list-inside text-sm sm:text-base">
+                  <li><strong>בדיקה פיננסית</strong> - גלה מה התקציב שלך</li>
+                  <li><strong>מחשבון משכנתא</strong> - חשב כמה תשלם כל חודש</li>
+                  <li><strong>תוכנית עסקית</strong> - בדוק אם העסקה כדאית</li>
+                </ol>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Calculator Cards Grid */}
         <div className="space-y-4">
-          <h2 className="text-3xl font-bold">המחשבונים שלנו</h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <h2 className="text-2xl font-bold">בחר כלי</h2>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {calculators.map((calc, index) => (
               <div 
                 key={calc.link} 
                 className="animate-fade-in"
-                style={{ animationDelay: `${index * 100}ms` }}
+                style={{ animationDelay: `${index * 50}ms` }}
               >
                 <CalculatorCard {...calc} />
               </div>
             ))}
           </div>
         </div>
+
+        {/* Dashboard Link */}
+        <Card className="border-0 bg-muted/50">
+          <CardContent className="p-4 sm:p-6">
+            <Link to="/dashboard" className="flex items-center justify-between group">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">הסטטיסטיקות שלי</h3>
+                  <p className="text-sm text-muted-foreground">צפה בהיסטוריית החישובים והמלצות אישיות</p>
+                </div>
+              </div>
+              <ArrowLeft className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:-translate-x-1 transition-all" />
+            </Link>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

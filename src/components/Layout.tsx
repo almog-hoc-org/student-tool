@@ -1,121 +1,172 @@
-import { NavLink } from '@/components/NavLink';
-import {
-  Calculator,
+import { ReactNode } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { 
+  Home, 
+  Calculator, 
+  Hammer, 
+  ClipboardCheck, 
+  Calendar, 
   Building2,
-  CreditCard,
-  ClipboardCheck,
-  Wrench,
-  Clock,
-  FileText,
-  Home,
-  History as HistoryIcon,
+  TrendingUp,
+  Menu,
+  ChevronRight,
+  LayoutDashboard
 } from 'lucide-react';
-import { he } from '@/lib/translations/he';
-import { ThemeToggle } from '@/components/ThemeToggle';
-import { NotificationCenter } from '@/components/NotificationCenter';
+import { ThemeToggle } from './ThemeToggle';
+import { Button } from '@/components/ui/button';
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
 const navigation = [
   { name: 'דף הבית', href: '/', icon: Home },
-  { name: he.nav.financialCheckup, href: '/financial-checkup', icon: Calculator },
-  { name: he.nav.dealBusinessPlan, href: '/deal-business-plan', icon: Building2 },
-  { name: he.nav.mortgageCalculator, href: '/mortgage-calculator', icon: CreditCard },
-  { name: he.nav.propertyVisit, href: '/property-visit', icon: ClipboardCheck },
-  { name: he.nav.renovationFeasibility, href: '/renovation-feasibility', icon: Wrench },
-  { name: he.nav.urbanRenewal, href: '/urban-renewal', icon: Clock },
-  { name: he.nav.transactionTimeline, href: '/transaction-timeline', icon: FileText },
-  { name: 'היסטוריה', href: '/history', icon: HistoryIcon },
+  { name: 'בדיקה פיננסית', href: '/financial-checkup', icon: Calculator, group: 'הערכת כדאיות' },
+  { name: 'תוכנית עסקית', href: '/deal-business-plan', icon: TrendingUp, group: 'הערכת כדאיות' },
+  { name: 'מחשבון משכנתא', href: '/mortgage-calculator', icon: Home, group: 'מימון' },
+  { name: 'כדאיות שיפוץ', href: '/renovation-feasibility', icon: Hammer, group: 'בדיקת נכס' },
+  { name: 'ביקור בנכס', href: '/property-visit', icon: ClipboardCheck, group: 'בדיקת נכס' },
+  { name: 'ציר זמן', href: '/transaction-timeline', icon: Calendar, group: 'תהליכים' },
+  { name: 'התחדשות עירונית', href: '/urban-renewal', icon: Building2, group: 'תהליכים' },
+  { name: 'סטטיסטיקות', href: '/dashboard', icon: LayoutDashboard },
 ];
 
-export function Layout({ children }: { children: React.ReactNode }) {
+function NavItem({ item, isActive, onClick }: { item: typeof navigation[0]; isActive: boolean; onClick?: () => void }) {
   return (
-    <div className="min-h-screen flex bg-background">
-      {/* Modern Sidebar */}
-      <aside className="hidden lg:flex w-20 bg-gradient-to-b from-secondary to-secondary/90 flex-col items-center py-6 border-l border-border/50">
-        {/* Logo */}
-        <div className="mb-8">
-          <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110">
-            <Home className="w-6 h-6 text-primary-foreground" />
+    <Link
+      to={item.href}
+      onClick={onClick}
+      className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+        isActive 
+          ? 'bg-primary text-primary-foreground font-medium' 
+          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+      }`}
+    >
+      <item.icon className="w-5 h-5" />
+      <span>{item.name}</span>
+    </Link>
+  );
+}
+
+function getPageTitle(pathname: string): string {
+  const page = navigation.find(n => n.href === pathname);
+  return page?.name || '';
+}
+
+export function Layout({ children }: { children: ReactNode }) {
+  const location = useLocation();
+  const currentPath = location.pathname;
+  const pageTitle = getPageTitle(currentPath);
+  const isHomePage = currentPath === '/';
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {/* Mobile Menu */}
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="lg:hidden">
+                  <Menu className="w-5 h-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-72 p-0">
+                <div className="p-6 border-b">
+                  <Link to="/" className="flex items-center gap-2">
+                    <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
+                      <Calculator className="w-5 h-5 text-primary-foreground" />
+                    </div>
+                    <div>
+                      <h2 className="font-bold">כלי נדל"ן</h2>
+                      <p className="text-xs text-muted-foreground">עזרה לעסקאות</p>
+                    </div>
+                  </Link>
+                </div>
+                <nav className="p-4 space-y-1">
+                  {navigation.map((item) => (
+                    <NavItem 
+                      key={item.href} 
+                      item={item} 
+                      isActive={currentPath === item.href}
+                    />
+                  ))}
+                </nav>
+              </SheetContent>
+            </Sheet>
+
+            {/* Logo */}
+            <Link to="/" className="flex items-center gap-2">
+              <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center">
+                <Calculator className="w-5 h-5 text-primary-foreground" />
+              </div>
+              <span className="font-bold hidden sm:inline">כלי נדל"ן</span>
+            </Link>
+          </div>
+
+          {/* Breadcrumbs - Desktop */}
+          {!isHomePage && pageTitle && (
+            <Breadcrumb className="hidden md:flex">
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link to="/" className="text-muted-foreground hover:text-foreground">
+                      דף הבית
+                    </Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator>
+                  <ChevronRight className="w-4 h-4" />
+                </BreadcrumbSeparator>
+                <BreadcrumbItem>
+                  <BreadcrumbPage>{pageTitle}</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          )}
+
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
           </div>
         </div>
-        
-        {/* Navigation Icons */}
-        <nav className="flex-1 flex flex-col gap-3">
-          {navigation.map((item) => {
-            const Icon = item.icon;
-            return (
-              <NavLink 
-                key={item.href} 
-                to={item.href}
-                className="group relative"
-              >
-                <div className="w-12 h-12 rounded-xl bg-secondary-foreground/10 hover:bg-primary transition-all duration-300 flex items-center justify-center relative overflow-hidden">
-                  <Icon className="w-5 h-5 text-secondary-foreground group-hover:text-primary-foreground transition-colors relative z-10" />
-                </div>
-                {/* Tooltip */}
-                <div className="absolute left-full mr-3 top-1/2 -translate-y-1/2 bg-card text-card-foreground px-3 py-2 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap text-sm font-medium">
-                  {item.name}
-                </div>
-              </NavLink>
-            );
-          })}
-        </nav>
-      </aside>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-h-screen">
-        {/* Header */}
-        <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-          <div className="container mx-auto px-4 lg:px-8 py-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl lg:text-3xl font-bold text-foreground">הדרך לדירה</h1>
-                <p className="text-muted-foreground text-sm mt-0.5">פורטל כלים למשקיעי נדל״ן</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <NotificationCenter />
-                <ThemeToggle />
-              </div>
-            </div>
+        {/* Back Button - Mobile */}
+        {!isHomePage && (
+          <div className="md:hidden px-4 pb-3">
+            <Link to="/">
+              <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground">
+                <ChevronRight className="w-4 h-4" />
+                חזרה לדף הבית
+              </Button>
+            </Link>
           </div>
-        </header>
+        )}
+      </header>
 
-        {/* Mobile Navigation */}
-        <nav className="lg:hidden border-b border-border bg-card/50 sticky top-[73px] z-10">
-          <div className="container mx-auto px-4">
-            <div className="flex gap-1 overflow-x-auto py-2 scrollbar-hide">
-              {navigation.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <NavLink
-                    key={item.name}
-                    to={item.href}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors whitespace-nowrap"
-                    activeClassName="bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground"
-                  >
-                    <Icon className="h-4 w-4" />
-                    <span>{item.name}</span>
-                  </NavLink>
-                );
-              })}
-            </div>
-          </div>
-        </nav>
+      {/* Main Content */}
+      <main className="pb-8">
+        {children}
+      </main>
 
-        {/* Main Content */}
-        <main className="flex-1 bg-gradient-to-br from-background to-accent/20">
-          <div className="container mx-auto px-4 lg:px-8 py-6 lg:py-8">
-            {children}
-          </div>
-        </main>
-
-        {/* Footer */}
-        <footer className="border-t border-border bg-card/50 backdrop-blur-sm mt-auto">
-          <div className="container mx-auto px-4 lg:px-8 py-6 text-center text-sm text-muted-foreground">
-            <p className="font-medium">פורטל כלים – הדרך לדירה</p>
-            <p className="mt-1 text-xs">© 2025 · למטרות חינוכיות בלבד · אינו מהווה ייעוץ פיננסי או משפטי</p>
-          </div>
-        </footer>
-      </div>
+      {/* Footer */}
+      <footer className="border-t py-6 mt-auto">
+        <div className="max-w-6xl mx-auto px-4 text-center text-sm text-muted-foreground">
+          <p>© 2024 כלי נדל"ן - כל הזכויות שמורות</p>
+          <p className="mt-1 text-xs">
+            המידע המוצג הינו להמחשה בלבד ואינו מהווה ייעוץ פיננסי או משפטי
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }
