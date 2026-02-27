@@ -34,26 +34,24 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="*" element={
-              <ProtectedRoute>
-                <Layout>
-                  <div className="animate-fade-in">
-                    <Routes>
-                      <Route path="/" element={<Index />} />
-                      <Route path="/dashboard" element={<Dashboard />} />
-                      <Route path="/financial-checkup" element={<FinancialCheckup />} />
-                      <Route path="/deal-business-plan" element={<DealBusinessPlan />} />
-                      <Route path="/mortgage-calculator" element={<MortgageCalculator />} />
-                      <Route path="/property-visit" element={<PropertyVisit />} />
-                      <Route path="/renovation-feasibility" element={<RenovationFeasibility />} />
-                      <Route path="/urban-renewal" element={<UrbanRenewal />} />
-                      <Route path="/transaction-timeline" element={<TransactionTimeline />} />
-                      <Route path="/history" element={<History />} />
-                      <Route path="/glossary" element={<Glossary />} />
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </div>
-                </Layout>
-              </ProtectedRoute>
+              <Layout>
+                <div className="animate-fade-in">
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/financial-checkup" element={<FinancialCheckup />} />
+                    <Route path="/deal-business-plan" element={<DealBusinessPlan />} />
+                    <Route path="/mortgage-calculator" element={<MortgageCalculator />} />
+                    <Route path="/property-visit" element={<PropertyVisit />} />
+                    <Route path="/renovation-feasibility" element={<RenovationFeasibility />} />
+                    <Route path="/urban-renewal" element={<UrbanRenewal />} />
+                    <Route path="/transaction-timeline" element={<TransactionTimeline />} />
+                    <Route path="/history" element={<History />} />
+                    <Route path="/glossary" element={<Glossary />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </div>
+              </Layout>
             } />
           </Routes>
         </BrowserRouter>
