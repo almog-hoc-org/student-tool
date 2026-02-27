@@ -12,6 +12,8 @@ import { DealBusinessPlanInput, DealBusinessPlanOutput, DealType } from '@/types
 import { he } from '@/lib/translations/he';
 import { formatCurrency, formatPercent } from '@/lib/validation/validators';
 import { StatsCard } from '@/components/StatsCard';
+import { SmartInsight, generateDealInsights } from '@/components/SmartInsight';
+import { ConfidenceGauge } from '@/components/ConfidenceGauge';
 import { Building2, Wallet, TrendingUp, Calculator, Loader2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { saveCalculation } from '@/lib/storage/calculator-history';
@@ -417,6 +419,25 @@ const DealBusinessPlan = () => {
       {/* Results */}
       {results && (
         <div className="space-y-6 animate-in slide-in-from-bottom duration-500">
+          {/* Smart Insights */}
+          <SmartInsight
+            insights={generateDealInsights({
+              cocYield: results.cocYield,
+              roi: results.roi,
+              netCashflow: results.netCashflowAnnual,
+              equityPercent: results.totalDealCost > 0 ? (input.financing.equityInvested / results.totalDealCost) * 100 : 0,
+            })}
+          />
+
+          {/* Confidence Gauge */}
+          {(() => {
+            const equityPct = results.totalDealCost > 0 ? (input.financing.equityInvested / results.totalDealCost) * 100 : 0;
+            const yieldScore = dealType === 'rental' ? Math.min(100, (results.cocYield || 0) * 100 * 10) : Math.min(100, ((results.annualizedRoi || 0) * 100) * 5);
+            const cashflowScore = results.netCashflowAnnual !== undefined ? (results.netCashflowAnnual >= 0 ? 30 : 0) : 15;
+            const score = Math.min(100, equityPct * 0.4 + yieldScore * 0.4 + cashflowScore);
+            return <ConfidenceGauge score={score} />;
+          })()}
+
           {/* Visual Chart for Rental */}
           {dealType === 'rental' && results.netCashflowAnnual !== undefined && (
             <Card className="border-0 shadow-xl">

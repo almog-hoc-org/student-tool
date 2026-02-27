@@ -6,13 +6,15 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { calculateMortgage } from '@/lib/calculations/mortgage-calculator';
-import { MortgageTrack, MortgageCalculatorOutput, MortgageTrackType } from '@/types/mortgage-calculator';
+import { calculateMortgage, generateAmortizationSchedule, sensitivityAnalysis } from '@/lib/calculations/mortgage-calculator';
+import { MortgageTrack, MortgageCalculatorOutput, MortgageTrackType, AmortizationRow, SensitivityResult } from '@/types/mortgage-calculator';
 import { Plus, Trash2, Calculator, Wallet, Percent, TrendingUp, Loader2 } from 'lucide-react';
 import { he } from '@/lib/translations/he';
-import { formatCurrency, formatPercent } from '@/lib/validation/validators';
+import { formatCurrency } from '@/lib/validation/validators';
 import { StatsCard } from '@/components/StatsCard';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { SmartInsight, generateMortgageInsights } from '@/components/SmartInsight';
+import { ConfidenceGauge } from '@/components/ConfidenceGauge';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid, BarChart, Bar } from 'recharts';
 import { saveCalculation } from '@/lib/storage/calculator-history';
 import { toast } from '@/hooks/use-toast';
 
@@ -30,7 +32,10 @@ const MortgageCalculator = () => {
     },
   ]);
 
+  const [monthlyIncome, setMonthlyIncome] = useState<number>(0);
   const [results, setResults] = useState<MortgageCalculatorOutput | null>(null);
+  const [amortization, setAmortization] = useState<AmortizationRow[]>([]);
+  const [sensitivity, setSensitivity] = useState<SensitivityResult[]>([]);
   const [isCalculating, setIsCalculating] = useState(false);
 
   const addTrack = () => {
@@ -55,13 +60,13 @@ const MortgageCalculator = () => {
 
   const handleCalculate = async () => {
     setIsCalculating(true);
-    
     await new Promise(resolve => setTimeout(resolve, 500));
-    
+
     const output = calculateMortgage({ tracks });
     setResults(output);
-    
-    // Save to history
+    setAmortization(generateAmortizationSchedule(tracks));
+    setSensitivity(sensitivityAnalysis(tracks));
+
     const totalPrincipal = tracks.reduce((sum, t) => sum + t.principal, 0);
     saveCalculation({
       type: 'mortgage',
@@ -69,12 +74,8 @@ const MortgageCalculator = () => {
       result: `תשלום חודשי: ${formatCurrency(output.totalMonthlyPayment)}`,
       input: { tracks },
     });
-    
-    toast({
-      title: "החישוב הושלם בהצלחה",
-      description: "התוצאות נשמרו בהיסטוריה",
-    });
-    
+
+    toast({ title: "החישוב הושלם בהצלחה", description: "התוצאות נשמרו בהיסטוריה" });
     setIsCalculating(false);
   };
 
@@ -87,6 +88,11 @@ const MortgageCalculator = () => {
 
   const totalPrincipal = tracks.reduce((sum, t) => sum + t.principal, 0);
 
+  // Calculate confidence score
+  const confidenceScore = results && monthlyIncome > 0
+    ? Math.max(0, Math.min(100, 100 - (results.totalMonthlyPayment / monthlyIncome) * 200))
+    : null;
+
   return (
     <div className="space-y-6 pb-8">
       <Card className="border-0 shadow-lg">
@@ -98,36 +104,39 @@ const MortgageCalculator = () => {
         </CardHeader>
       </Card>
 
-      {/* KPI Cards - Show after calculation */}
+      {/* KPI Cards */}
       {results && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 animate-in slide-in-from-bottom duration-500">
-          <StatsCard
-            title={he.mortgageCalculator.totalMonthlyPayment}
-            value={formatCurrency(results.totalMonthlyPayment)}
-            icon={Wallet}
-            iconColor="blue"
-          />
-          <StatsCard
-            title={he.mortgageCalculator.weightedAverageInterest}
-            value={`${results.weightedAverageInterest.toFixed(2)}%`}
-            icon={Percent}
-            iconColor="orange"
-          />
-          <StatsCard
-            title="סך קרן"
-            value={formatCurrency(totalPrincipal)}
-            icon={TrendingUp}
-            iconColor="green"
-          />
-          <StatsCard
-            title="מספר מסלולים"
-            value={tracks.length.toString()}
-            icon={Calculator}
-            iconColor="purple"
-          />
+          <StatsCard title={he.mortgageCalculator.totalMonthlyPayment} value={formatCurrency(results.totalMonthlyPayment)} icon={Wallet} iconColor="blue" />
+          <StatsCard title={he.mortgageCalculator.weightedAverageInterest} value={`${results.weightedAverageInterest.toFixed(2)}%`} icon={Percent} iconColor="orange" />
+          <StatsCard title="סך קרן" value={formatCurrency(totalPrincipal)} icon={TrendingUp} iconColor="green" />
+          <StatsCard title="סך ריבית" value={formatCurrency(results.totalInterestPaid)} icon={Calculator} iconColor="purple" />
         </div>
       )}
 
+      {/* Monthly Income for Smart Advisor */}
+      <Card className="border-0 shadow-lg">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+              <Wallet className="w-5 h-5 text-primary" />
+            </div>
+            כמה אתה מרוויח בחודש? (לבדיקת יחס החזר/הכנסה)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Label>הכנסה חודשית נטו ({he.common.currency})</Label>
+          <Input
+            type="number"
+            value={monthlyIncome || ''}
+            onChange={(e) => setMonthlyIncome(Number(e.target.value))}
+            placeholder="למשל 20000"
+            className="max-w-xs"
+          />
+        </CardContent>
+      </Card>
+
+      {/* Track Cards */}
       {tracks.map((track, index) => {
         const trackColors = ['from-blue-50', 'from-emerald-50', 'from-orange-50', 'from-purple-50'];
         const iconColors = ['bg-blue-500', 'bg-emerald-500', 'bg-orange-500', 'bg-purple-500'];
@@ -142,75 +151,41 @@ const MortgageCalculator = () => {
                   <CardTitle>מסלול {index + 1}</CardTitle>
                 </div>
                 {tracks.length > 1 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeTrack(track.id)}
-                    className="text-destructive hover:bg-destructive/10"
-                  >
+                  <Button variant="ghost" size="sm" onClick={() => removeTrack(track.id)} className="text-destructive hover:bg-destructive/10">
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 )}
               </div>
             </CardHeader>
             <CardContent className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 pt-6">
-            <div>
-              <Label>{he.mortgageCalculator.trackName}</Label>
-              <Input
-                value={track.name}
-                onChange={(e) => updateTrack(track.id, { name: e.target.value })}
-                placeholder={he.mortgageCalculator.trackTypeOptions.fixedUnlinked}
-              />
-            </div>
-
-            <div>
-              <Label>{he.mortgageCalculator.trackType}</Label>
-              <Select
-                value={track.type}
-                onValueChange={(value: MortgageTrackType) => updateTrack(track.id, { type: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="fixedUnlinked">{he.mortgageCalculator.trackTypeOptions.fixedUnlinked}</SelectItem>
-                  <SelectItem value="fixedLinked">{he.mortgageCalculator.trackTypeOptions.fixedLinked}</SelectItem>
-                  <SelectItem value="prime">{he.mortgageCalculator.trackTypeOptions.prime}</SelectItem>
-                  <SelectItem value="variableLinked">{he.mortgageCalculator.trackTypeOptions.variableLinked}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label>{he.mortgageCalculator.principal} ({he.common.currency})</Label>
-              <Input
-                type="number"
-                value={track.principal || ''}
-                onChange={(e) => updateTrack(track.id, { principal: Number(e.target.value) })}
-                placeholder="למשל 500000"
-              />
-            </div>
-
-            <div>
-              <Label>{he.mortgageCalculator.annualInterestRate}</Label>
-              <Input
-                type="number"
-                step="0.1"
-                value={track.annualInterestRate || ''}
-                onChange={(e) => updateTrack(track.id, { annualInterestRate: Number(e.target.value) })}
-                placeholder="למשל 3.5"
-              />
-            </div>
-
-            <div>
-              <Label>{he.mortgageCalculator.years}</Label>
-              <Input
-                type="number"
-                value={track.years}
-                onChange={(e) => updateTrack(track.id, { years: Number(e.target.value) })}
-                placeholder="למשל 20"
-              />
-            </div>
+              <div>
+                <Label>{he.mortgageCalculator.trackName}</Label>
+                <Input value={track.name} onChange={(e) => updateTrack(track.id, { name: e.target.value })} />
+              </div>
+              <div>
+                <Label>{he.mortgageCalculator.trackType}</Label>
+                <Select value={track.type} onValueChange={(value: MortgageTrackType) => updateTrack(track.id, { type: value })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="fixedUnlinked">{he.mortgageCalculator.trackTypeOptions.fixedUnlinked}</SelectItem>
+                    <SelectItem value="fixedLinked">{he.mortgageCalculator.trackTypeOptions.fixedLinked}</SelectItem>
+                    <SelectItem value="prime">{he.mortgageCalculator.trackTypeOptions.prime}</SelectItem>
+                    <SelectItem value="variableLinked">{he.mortgageCalculator.trackTypeOptions.variableLinked}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>כמה כסף תרצה ללוות במסלול הזה? ({he.common.currency})</Label>
+                <Input type="number" value={track.principal || ''} onChange={(e) => updateTrack(track.id, { principal: Number(e.target.value) })} placeholder="למשל 500000" />
+              </div>
+              <div>
+                <Label>{he.mortgageCalculator.annualInterestRate}</Label>
+                <Input type="number" step="0.1" value={track.annualInterestRate || ''} onChange={(e) => updateTrack(track.id, { annualInterestRate: Number(e.target.value) })} placeholder="למשל 3.5" />
+              </div>
+              <div>
+                <Label>לכמה שנים? (תקופת ההלוואה)</Label>
+                <Input type="number" value={track.years} onChange={(e) => updateTrack(track.id, { years: Number(e.target.value) })} placeholder="למשל 20" />
+              </div>
             </CardContent>
           </Card>
         );
@@ -222,22 +197,27 @@ const MortgageCalculator = () => {
           {he.common.addTrack}
         </Button>
         <Button onClick={handleCalculate} size="lg" disabled={isCalculating} className="px-12 py-6 text-lg shadow-2xl rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
-          {isCalculating ? (
-            <>
-              <Loader2 className="ml-2 h-5 w-5 animate-spin" />
-              מחשב...
-            </>
-          ) : (
-            <>
-              <Calculator className="ml-2 h-5 w-5" />
-              {he.common.calculate}
-            </>
-          )}
+          {isCalculating ? (<><Loader2 className="ml-2 h-5 w-5 animate-spin" />מחשב...</>) : (<><Calculator className="ml-2 h-5 w-5" />{he.common.calculate}</>)}
         </Button>
       </div>
 
       {results && (
         <div className="space-y-6 animate-in slide-in-from-bottom duration-500">
+          {/* Smart Insights */}
+          <SmartInsight
+            insights={generateMortgageInsights({
+              monthlyPayment: results.totalMonthlyPayment,
+              monthlyIncome: monthlyIncome > 0 ? monthlyIncome : undefined,
+              totalInterest: results.totalInterestPaid,
+              totalPrincipal,
+            })}
+          />
+
+          {/* Confidence Gauge */}
+          {confidenceScore !== null && (
+            <ConfidenceGauge score={confidenceScore} />
+          )}
+
           {/* Monthly Payment Distribution */}
           <Card className="border-0 shadow-xl">
             <CardHeader>
@@ -249,32 +229,17 @@ const MortgageCalculator = () => {
                   <TabsTrigger value="chart">גרף</TabsTrigger>
                   <TabsTrigger value="table">טבלה</TabsTrigger>
                 </TabsList>
-                
                 <TabsContent value="chart">
                   <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
-                      <Pie
-                        data={tracks.map((track) => ({
-                          name: track.name,
-                          value: results.tracks.find(t => t.trackId === track.id)?.monthlyPayment || 0,
-                        }))}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={80}
-                        outerRadius={120}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        {tracks.map((_, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
+                      <Pie data={tracks.map((track) => ({ name: track.name, value: results.tracks.find(t => t.trackId === track.id)?.monthlyPayment || 0 }))} cx="50%" cy="50%" innerRadius={80} outerRadius={120} paddingAngle={5} dataKey="value">
+                        {tracks.map((_, index) => (<Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />))}
                       </Pie>
                       <Tooltip formatter={(value) => formatCurrency(Number(value))} />
                       <Legend />
                     </PieChart>
                   </ResponsiveContainer>
                 </TabsContent>
-                
                 <TabsContent value="table">
                   <Table>
                     <TableHeader>
@@ -295,13 +260,7 @@ const MortgageCalculator = () => {
                             <TableCell>
                               <div className="flex items-center gap-2">
                                 <div className="flex-1 bg-muted rounded-full h-2 max-w-[100px]">
-                                  <div 
-                                    className="h-2 rounded-full"
-                                    style={{ 
-                                      width: `${(track.monthlyPayment / results.totalMonthlyPayment) * 100}%`,
-                                      backgroundColor: COLORS[index % COLORS.length]
-                                    }}
-                                  />
+                                  <div className="h-2 rounded-full" style={{ width: `${(track.monthlyPayment / results.totalMonthlyPayment) * 100}%`, backgroundColor: COLORS[index % COLORS.length] }} />
                                 </div>
                                 <span className="text-sm">{((track.monthlyPayment / results.totalMonthlyPayment) * 100).toFixed(1)}%</span>
                               </div>
@@ -323,37 +282,91 @@ const MortgageCalculator = () => {
             </CardContent>
           </Card>
 
-          {/* Principal Distribution */}
-          <Card className="border-0 shadow-xl">
-            <CardHeader>
-              <CardTitle className="text-2xl">פילוח קרן לפי מסלולים</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={350}>
-                <PieChart>
-                  <Pie
-                    data={tracks.map((track) => ({
-                      name: track.name,
-                      value: track.principal,
-                    }))}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={80}
-                    outerRadius={120}
-                    paddingAngle={3}
-                    dataKey="value"
-                  >
-                    {tracks.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+          {/* Amortization Chart */}
+          {amortization.length > 0 && (
+            <Card className="border-0 shadow-xl">
+              <CardHeader>
+                <CardTitle className="text-2xl">גרף אמורטיזציה – קרן מול ריבית לאורך השנים</CardTitle>
+                <CardDescription>כמה מהתשלום השנתי שלך הולך לקרן וכמה לריבית</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={350}>
+                  <AreaChart data={amortization}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="year" label={{ value: 'שנה', position: 'insideBottom', offset: -5 }} />
+                    <YAxis tickFormatter={(v) => `₪${(v / 1000).toFixed(0)}k`} />
+                    <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                    <Legend />
+                    <Area type="monotone" dataKey="principalPayment" name="תשלום קרן" stackId="1" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.6} />
+                    <Area type="monotone" dataKey="interestPayment" name="תשלום ריבית" stackId="1" stroke="hsl(var(--destructive))" fill="hsl(var(--destructive))" fillOpacity={0.4} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          )}
 
+          {/* Sensitivity Analysis */}
+          {sensitivity.length > 0 && (
+            <Card className="border-0 shadow-xl">
+              <CardHeader>
+                <CardTitle className="text-2xl">ניתוח רגישות – מה קורה אם הריבית משתנה?</CardTitle>
+                <CardDescription>השפעת שינויי ריבית על ההחזר החודשי שלך</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="chart" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 mb-6">
+                    <TabsTrigger value="chart">גרף</TabsTrigger>
+                    <TabsTrigger value="table">טבלה</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="chart">
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={sensitivity.map(s => ({
+                        name: s.deltaPercent === 0 ? 'נוכחי' : `${s.deltaPercent > 0 ? '+' : ''}${s.deltaPercent}%`,
+                        payment: Math.round(s.totalMonthlyPayment),
+                        isCurrent: s.deltaPercent === 0,
+                      }))}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis tickFormatter={(v) => `₪${(v / 1000).toFixed(1)}k`} />
+                        <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                        <Bar dataKey="payment" name="החזר חודשי" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </TabsContent>
+                  <TabsContent value="table">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>שינוי ריבית</TableHead>
+                          <TableHead className="text-left">החזר חודשי</TableHead>
+                          <TableHead className="text-left">הפרש מהנוכחי</TableHead>
+                          <TableHead className="text-left">סך ריבית</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {sensitivity.map((s) => {
+                          const currentPayment = sensitivity.find(x => x.deltaPercent === 0)?.totalMonthlyPayment || 0;
+                          const diff = s.totalMonthlyPayment - currentPayment;
+                          return (
+                            <TableRow key={s.deltaPercent} className={s.deltaPercent === 0 ? 'bg-primary/5 font-bold' : ''}>
+                              <TableCell>{s.deltaPercent === 0 ? 'נוכחי' : `${s.deltaPercent > 0 ? '+' : ''}${s.deltaPercent}%`}</TableCell>
+                              <TableCell>{formatCurrency(s.totalMonthlyPayment)}</TableCell>
+                              <TableCell className={diff > 0 ? 'text-destructive' : diff < 0 ? 'text-emerald-600' : ''}>
+                                {diff === 0 ? '—' : `${diff > 0 ? '+' : ''}${formatCurrency(diff)}`}
+                              </TableCell>
+                              <TableCell>{formatCurrency(s.totalInterestPaid)}</TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Track Details */}
           <Card className="border-0 shadow-xl bg-gradient-to-br from-primary/5 to-secondary/5">
             <CardHeader>
               <CardTitle className="text-3xl">{he.mortgageCalculator.resultsTitle}</CardTitle>
@@ -364,12 +377,12 @@ const MortgageCalculator = () => {
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {results.tracks.map((trackResult, index) => {
                     const track = tracks.find((t) => t.id === trackResult.trackId)!;
-                    const iconColors = ['bg-blue-500', 'bg-emerald-500', 'bg-orange-500', 'bg-purple-500'];
+                    const iconColorsArr = ['bg-blue-500', 'bg-emerald-500', 'bg-orange-500', 'bg-purple-500'];
                     return (
                       <Card key={trackResult.trackId} className="border-0 shadow-md hover:shadow-lg transition-shadow">
                         <CardHeader className="pb-3">
                           <div className="flex items-center gap-2 mb-2">
-                            <div className={`w-8 h-8 ${iconColors[index % 4]} rounded-lg flex items-center justify-center`}>
+                            <div className={`w-8 h-8 ${iconColorsArr[index % 4]} rounded-lg flex items-center justify-center`}>
                               <Calculator className="w-4 h-4 text-white" />
                             </div>
                             <CardTitle className="text-base">{track.name}</CardTitle>
