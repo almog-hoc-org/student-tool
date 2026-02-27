@@ -14,7 +14,8 @@ import {
   ArrowLeft,
   BarChart3,
   Sparkles,
-  Shield
+  Shield,
+  Receipt
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -99,6 +100,12 @@ export default function Index() {
       description: 'למד על תמ"א 38 ופינוי-בינוי - מה זה ואיך זה עובד',
       icon: <Building2 className="w-6 h-6 text-primary" />,
       link: '/urban-renewal',
+    },
+    {
+      title: 'מס רכישה',
+      description: 'חשב מס רכישה לפי מדרגות 2024 עם פירוט עלויות נלוות',
+      icon: <Receipt className="w-6 h-6 text-primary" />,
+      link: '/purchase-tax',
     },
   ];
 

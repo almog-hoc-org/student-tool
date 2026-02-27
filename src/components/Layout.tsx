@@ -11,7 +11,8 @@ import {
   Menu,
   ChevronRight,
   LayoutDashboard,
-  BookOpen
+  BookOpen,
+  Receipt
 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { UserMenu } from './UserMenu';
@@ -39,6 +40,7 @@ const navigation = [
   { name: 'ביקור בנכס', href: '/property-visit', icon: ClipboardCheck, group: 'בדיקת נכס' },
   { name: 'ציר זמן', href: '/transaction-timeline', icon: Calendar, group: 'תהליכים' },
   { name: 'התחדשות עירונית', href: '/urban-renewal', icon: Building2, group: 'תהליכים' },
+  { name: 'מס רכישה', href: '/purchase-tax', icon: Receipt, group: 'מימון' },
   { name: 'סטטיסטיקות', href: '/dashboard', icon: LayoutDashboard },
   { name: 'מילון מונחים', href: '/glossary', icon: BookOpen },
 ];
