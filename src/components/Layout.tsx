@@ -14,6 +14,7 @@ import {
   BookOpen
 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
+import { UserMenu } from './UserMenu';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -139,6 +140,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
           <div className="flex items-center gap-2">
             <ThemeToggle />
+            <UserMenu />
           </div>
         </div>
 
