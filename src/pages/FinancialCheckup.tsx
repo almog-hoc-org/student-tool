@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { calculateFinancialCheckup } from '@/lib/calculations/financial-checkup';
 import { FinancialCheckupInput, FinancialCheckupOutput } from '@/types/financial-checkup';
 import { StatsCard } from '@/components/StatsCard';
+import { SmartInsight, generateFinancialInsights } from '@/components/SmartInsight';
+import { ConfidenceGauge } from '@/components/ConfidenceGauge';
 import { saveCalculation } from '@/lib/storage/calculator-history';
 import { 
   AlertCircle, 
@@ -507,6 +509,20 @@ const FinancialCheckup = () => {
       {/* Results Section */}
       {results && (
         <div id="results" className="space-y-8 animate-slide-up">
+          {/* Smart Insights */}
+          <SmartInsight
+            insights={generateFinancialInsights({
+              freeCashFlow: results.freeCashFlow,
+              totalIncome: results.totalIncome,
+              availableEquity: results.availableEquity,
+              readinessScore: results.readinessScore,
+              maxSafeMortgagePayment: results.maxSafeMortgagePayment,
+            })}
+          />
+
+          {/* Confidence Gauge */}
+          <ConfidenceGauge score={results.readinessScore} />
+
           {/* Results Header */}
           <div className="text-center">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">

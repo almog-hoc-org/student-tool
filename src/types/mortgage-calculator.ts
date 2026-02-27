@@ -25,3 +25,16 @@ export type MortgageCalculatorOutput = {
   totalInterestPaid: number;
   weightedAverageInterest: number;
 };
+
+export type AmortizationRow = {
+  year: number;
+  principalPayment: number;
+  interestPayment: number;
+  remainingBalance: number;
+};
+
+export type SensitivityResult = {
+  deltaPercent: number;
+  totalMonthlyPayment: number;
+  totalInterestPaid: number;
+};
