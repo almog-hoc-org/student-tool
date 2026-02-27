@@ -50,8 +50,8 @@ function NavItem({ item, isActive, onClick }: { item: typeof navigation[0]; isAc
       onClick={onClick}
       className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
         isActive 
-          ? 'bg-primary text-primary-foreground font-medium' 
-          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+          ? 'bg-accent text-accent-foreground font-medium' 
+          : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
       }`}
     >
       <item.icon className="w-5 h-5" />
@@ -74,7 +74,7 @@ export function Layout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="sticky top-0 z-50 border-b border-border/50 bg-card/80 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {/* Mobile Menu */}
@@ -85,14 +85,14 @@ export function Layout({ children }: { children: ReactNode }) {
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="w-72 p-0">
-                <div className="p-6 border-b">
+                <div className="p-6 border-b gradient-navy">
                   <Link to="/" className="flex items-center gap-2">
-                    <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
-                      <Calculator className="w-5 h-5 text-primary-foreground" />
+                    <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center">
+                      <Calculator className="w-5 h-5 text-accent-foreground" />
                     </div>
                     <div>
-                      <h2 className="font-bold">כלי נדל"ן</h2>
-                      <p className="text-xs text-muted-foreground">עזרה לעסקאות</p>
+                      <h2 className="font-bold text-primary-foreground">הדרך לדירה</h2>
+                      <p className="text-xs text-primary-foreground/70">מערכת תומכת החלטה</p>
                     </div>
                   </Link>
                 </div>
@@ -113,7 +113,9 @@ export function Layout({ children }: { children: ReactNode }) {
               <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center">
                 <Calculator className="w-5 h-5 text-primary-foreground" />
               </div>
-              <span className="font-bold hidden sm:inline">כלי נדל"ן</span>
+              <div className="hidden sm:block">
+                <span className="font-bold text-foreground">הדרך לדירה</span>
+              </div>
             </Link>
           </div>
 
@@ -163,10 +165,10 @@ export function Layout({ children }: { children: ReactNode }) {
       </main>
 
       {/* Footer */}
-      <footer className="border-t py-6 mt-auto">
-        <div className="max-w-6xl mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>© 2024 כלי נדל"ן - כל הזכויות שמורות</p>
-          <p className="mt-1 text-xs">
+      <footer className="border-t border-border/50 py-8 mt-auto bg-card/50">
+        <div className="max-w-6xl mx-auto px-4 text-center space-y-2">
+          <p className="text-sm font-medium text-foreground">© 2024 הדרך לדירה – מערכת תומכת החלטה</p>
+          <p className="text-xs text-muted-foreground">
             המידע המוצג הינו להמחשה בלבד ואינו מהווה ייעוץ פיננסי או משפטי
           </p>
         </div>
