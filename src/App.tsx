@@ -5,7 +5,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Layout } from "@/components/Layout";
 import { ScrollToTop } from "@/components/ScrollToTop";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
+import Auth from "./pages/Auth";
 import FinancialCheckup from "./pages/FinancialCheckup";
 import DealBusinessPlan from "./pages/DealBusinessPlan";
 import MortgageCalculator from "./pages/MortgageCalculator";
@@ -22,31 +25,40 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <ScrollToTop />
-        <Layout>
-          <div className="animate-fade-in">
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/financial-checkup" element={<FinancialCheckup />} />
-              <Route path="/deal-business-plan" element={<DealBusinessPlan />} />
-              <Route path="/mortgage-calculator" element={<MortgageCalculator />} />
-              <Route path="/property-visit" element={<PropertyVisit />} />
-              <Route path="/renovation-feasibility" element={<RenovationFeasibility />} />
-              <Route path="/urban-renewal" element={<UrbanRenewal />} />
-              <Route path="/transaction-timeline" element={<TransactionTimeline />} />
-              <Route path="/history" element={<History />} />
-              <Route path="/glossary" element={<Glossary />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </div>
-        </Layout>
-      </BrowserRouter>
-    </TooltipProvider>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <ScrollToTop />
+          <Routes>
+            <Route path="/auth" element={<Auth />} />
+            <Route path="*" element={
+              <ProtectedRoute>
+                <Layout>
+                  <div className="animate-fade-in">
+                    <Routes>
+                      <Route path="/" element={<Index />} />
+                      <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="/financial-checkup" element={<FinancialCheckup />} />
+                      <Route path="/deal-business-plan" element={<DealBusinessPlan />} />
+                      <Route path="/mortgage-calculator" element={<MortgageCalculator />} />
+                      <Route path="/property-visit" element={<PropertyVisit />} />
+                      <Route path="/renovation-feasibility" element={<RenovationFeasibility />} />
+                      <Route path="/urban-renewal" element={<UrbanRenewal />} />
+                      <Route path="/transaction-timeline" element={<TransactionTimeline />} />
+                      <Route path="/history" element={<History />} />
+                      <Route path="/glossary" element={<Glossary />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </div>
+                </Layout>
+              </ProtectedRoute>
+            } />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 
