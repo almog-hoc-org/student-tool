@@ -48,13 +48,13 @@ function NavItem({ item, isActive, onClick }: { item: typeof navigation[0]; isAc
     <Link
       to={item.href}
       onClick={onClick}
-      className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
         isActive 
-          ? 'bg-accent text-accent-foreground font-medium' 
-          : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+          ? 'bg-primary text-primary-foreground font-medium' 
+          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
       }`}
     >
-      <item.icon className="w-5 h-5" />
+      <item.icon className="w-4 h-4" />
       <span>{item.name}</span>
     </Link>
   );
@@ -74,29 +74,26 @@ export function Layout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border/50 bg-card/80 backdrop-blur-xl">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/90 backdrop-blur-md">
+        <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {/* Mobile Menu */}
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="lg:hidden">
-                  <Menu className="w-5 h-5" />
+                <Button variant="ghost" size="icon" className="lg:hidden h-8 w-8">
+                  <Menu className="w-4 h-4" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-72 p-0">
-                <div className="p-6 border-b gradient-navy">
+              <SheetContent side="right" className="w-64 p-0">
+                <div className="p-5 border-b">
                   <Link to="/" className="flex items-center gap-2">
-                    <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center">
-                      <Calculator className="w-5 h-5 text-accent-foreground" />
+                    <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                      <Calculator className="w-4 h-4 text-primary-foreground" />
                     </div>
-                    <div>
-                      <h2 className="font-bold text-primary-foreground">הדרך לדירה</h2>
-                      <p className="text-xs text-primary-foreground/70">מערכת תומכת החלטה</p>
-                    </div>
+                    <span className="font-semibold text-sm">הדרך לדירה</span>
                   </Link>
                 </div>
-                <nav className="p-4 space-y-1">
+                <nav className="p-3 space-y-0.5">
                   {navigation.map((item) => (
                     <NavItem 
                       key={item.href} 
@@ -110,19 +107,17 @@ export function Layout({ children }: { children: ReactNode }) {
 
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2">
-              <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center">
-                <Calculator className="w-5 h-5 text-primary-foreground" />
+              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                <Calculator className="w-4 h-4 text-primary-foreground" />
               </div>
-              <div className="hidden sm:block">
-                <span className="font-bold text-foreground">הדרך לדירה</span>
-              </div>
+              <span className="font-semibold text-sm hidden sm:inline">הדרך לדירה</span>
             </Link>
           </div>
 
           {/* Breadcrumbs - Desktop */}
           {!isHomePage && pageTitle && (
             <Breadcrumb className="hidden md:flex">
-              <BreadcrumbList>
+              <BreadcrumbList className="text-xs">
                 <BreadcrumbItem>
                   <BreadcrumbLink asChild>
                     <Link to="/" className="text-muted-foreground hover:text-foreground">
@@ -131,16 +126,16 @@ export function Layout({ children }: { children: ReactNode }) {
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator>
-                  <ChevronRight className="w-4 h-4" />
+                  <ChevronRight className="w-3 h-3" />
                 </BreadcrumbSeparator>
                 <BreadcrumbItem>
-                  <BreadcrumbPage>{pageTitle}</BreadcrumbPage>
+                  <BreadcrumbPage className="font-medium">{pageTitle}</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
           )}
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <ThemeToggle />
             <UserMenu />
           </div>
@@ -148,10 +143,10 @@ export function Layout({ children }: { children: ReactNode }) {
 
         {/* Back Button - Mobile */}
         {!isHomePage && (
-          <div className="md:hidden px-4 pb-3">
+          <div className="md:hidden px-4 pb-2">
             <Link to="/">
-              <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground">
-                <ChevronRight className="w-4 h-4" />
+              <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground text-xs h-7">
+                <ChevronRight className="w-3 h-3" />
                 חזרה לדף הבית
               </Button>
             </Link>
@@ -165,10 +160,10 @@ export function Layout({ children }: { children: ReactNode }) {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border/50 py-8 mt-auto bg-card/50">
-        <div className="max-w-6xl mx-auto px-4 text-center space-y-2">
-          <p className="text-sm font-medium text-foreground">© 2024 הדרך לדירה – מערכת תומכת החלטה</p>
-          <p className="text-xs text-muted-foreground">
+      <footer className="border-t border-border/50 py-6 mt-auto">
+        <div className="max-w-5xl mx-auto px-4 text-center space-y-1">
+          <p className="text-xs font-medium text-muted-foreground">© 2024 הדרך לדירה – מערכת תומכת החלטה</p>
+          <p className="text-[11px] text-muted-foreground/70">
             המידע המוצג הינו להמחשה בלבד ואינו מהווה ייעוץ פיננסי או משפטי
           </p>
         </div>

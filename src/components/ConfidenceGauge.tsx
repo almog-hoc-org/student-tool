@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
 import { Shield } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Card } from '@/components/ui/card';
 
 interface ConfidenceGaugeProps {
   score: number; // 0-100
@@ -10,13 +10,13 @@ interface ConfidenceGaugeProps {
 
 function getColor(score: number): string {
   if (score >= 70) return 'bg-emerald-500';
-  if (score >= 40) return 'bg-accent';
+  if (score >= 40) return 'bg-amber-500';
   return 'bg-destructive';
 }
 
 function getTextColor(score: number): string {
   if (score >= 70) return 'text-emerald-600 dark:text-emerald-400';
-  if (score >= 40) return 'text-accent dark:text-accent';
+  if (score >= 40) return 'text-amber-600 dark:text-amber-400';
   return 'text-destructive';
 }
 
@@ -33,36 +33,29 @@ export function ConfidenceGauge({ score, label, className }: ConfidenceGaugeProp
   const displayLabel = label || getLabel(clampedScore);
 
   return (
-    <div className={cn('p-6 rounded-2xl glass-card', className)}>
-      <div className="flex items-center gap-3 mb-4">
-        <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center', 
-          clampedScore >= 70 ? 'bg-emerald-500/10' : clampedScore >= 40 ? 'bg-accent/15' : 'bg-destructive/10'
+    <Card className={cn('p-5 border border-border/60 shadow-sm', className)}>
+      <div className="flex items-center gap-2.5 mb-4">
+        <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center', 
+          clampedScore >= 70 ? 'bg-emerald-500/8' : clampedScore >= 40 ? 'bg-amber-500/8' : 'bg-destructive/8'
         )}>
-          <Shield className={cn('w-5 h-5', getTextColor(clampedScore))} />
+          <Shield className={cn('w-4 h-4', getTextColor(clampedScore))} />
         </div>
         <div>
-          <h3 className="font-bold text-lg">מד הביטחון שלך</h3>
-          <p className="text-sm text-muted-foreground">השקט הנפשי הפיננסי</p>
+          <h3 className="font-semibold text-sm">מד הביטחון שלך</h3>
+          <p className="text-xs text-muted-foreground">השקט הנפשי הפיננסי</p>
         </div>
       </div>
 
       {/* Gauge bar */}
-      <div className="relative w-full h-4 bg-muted/50 rounded-full overflow-hidden mb-3">
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: `${clampedScore}%` }}
-          transition={{ duration: 1.2, ease: [0.4, 0, 0.2, 1] }}
-          className={cn('h-full rounded-full', getColor(clampedScore))}
+      <div className="relative w-full h-2.5 bg-muted rounded-full overflow-hidden mb-2">
+        <div
+          className={cn('h-full rounded-full transition-all duration-700 ease-out', getColor(clampedScore))}
+          style={{ width: `${clampedScore}%` }}
         />
-        {/* Markers */}
-        <div className="absolute inset-0 flex items-center">
-          <div className="absolute left-[30%] w-px h-3 bg-border/50" />
-          <div className="absolute left-[70%] w-px h-3 bg-border/50" />
-        </div>
       </div>
 
       {/* Labels */}
-      <div className="flex justify-between text-xs text-muted-foreground mb-3">
+      <div className="flex justify-between text-[10px] text-muted-foreground mb-3">
         <span>סיכון</span>
         <span>בינוני</span>
         <span>בטוח</span>
@@ -70,19 +63,13 @@ export function ConfidenceGauge({ score, label, className }: ConfidenceGaugeProp
 
       {/* Score display */}
       <div className="flex items-center justify-between">
-        <motion.p
-          key={clampedScore}
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.4 }}
-          className={cn('font-bold text-lg', getTextColor(clampedScore))}
-        >
+        <p className={cn('font-bold text-sm', getTextColor(clampedScore))}>
           {clampedScore.toFixed(0)} / 100
-        </motion.p>
-        <p className={cn('text-sm font-medium', getTextColor(clampedScore))}>
+        </p>
+        <p className={cn('text-xs font-medium', getTextColor(clampedScore))}>
           {displayLabel}
         </p>
       </div>
-    </div>
+    </Card>
   );
 }
