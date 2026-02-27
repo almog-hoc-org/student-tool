@@ -95,10 +95,10 @@ const MortgageCalculator = () => {
 
   return (
     <div className="space-y-6 pb-8">
-      <Card className="border-0 shadow-lg">
-        <CardHeader className="bg-gradient-to-r from-primary/5 via-background to-secondary/5">
-          <CardTitle className="text-3xl font-bold">{he.mortgageCalculator.title}</CardTitle>
-          <CardDescription className="text-base">
+      <Card className="border border-border/60 shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold">{he.mortgageCalculator.title}</CardTitle>
+          <CardDescription className="text-sm">
             {he.mortgageCalculator.description}
           </CardDescription>
         </CardHeader>
@@ -115,7 +115,7 @@ const MortgageCalculator = () => {
       )}
 
       {/* Monthly Income for Smart Advisor */}
-      <Card className="border-0 shadow-lg">
+      <Card className="border border-border/60 shadow-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-3">
             <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
@@ -141,8 +141,8 @@ const MortgageCalculator = () => {
         const trackColors = ['from-blue-50', 'from-emerald-50', 'from-orange-50', 'from-purple-50'];
         const iconColors = ['bg-blue-500', 'bg-emerald-500', 'bg-orange-500', 'bg-purple-500'];
         return (
-          <Card key={track.id} className="border-0 shadow-lg">
-            <CardHeader className={`bg-gradient-to-r ${trackColors[index % 4]} to-background dark:${trackColors[index % 4].replace('50', '950')} dark:to-background`}>
+          <Card key={track.id} className="border border-border/60 shadow-sm">
+            <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className={`w-10 h-10 ${iconColors[index % 4]} rounded-xl flex items-center justify-center`}>
@@ -196,7 +196,7 @@ const MortgageCalculator = () => {
           <Plus className="h-5 w-5 ml-2" />
           {he.common.addTrack}
         </Button>
-        <Button onClick={handleCalculate} size="lg" disabled={isCalculating} className="px-12 py-6 text-lg shadow-2xl rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
+        <Button onClick={handleCalculate} size="lg" disabled={isCalculating} className="px-10 py-5 text-base shadow-lg rounded-full">
           {isCalculating ? (<><Loader2 className="ml-2 h-5 w-5 animate-spin" />מחשב...</>) : (<><Calculator className="ml-2 h-5 w-5" />{he.common.calculate}</>)}
         </Button>
       </div>
@@ -219,7 +219,7 @@ const MortgageCalculator = () => {
           )}
 
           {/* Monthly Payment Distribution */}
-          <Card className="border-0 shadow-xl">
+          <Card className="border border-border/60 shadow-sm">
             <CardHeader>
               <CardTitle className="text-2xl">התפלגות תשלום חודשי</CardTitle>
             </CardHeader>
@@ -284,7 +284,7 @@ const MortgageCalculator = () => {
 
           {/* Amortization Chart */}
           {amortization.length > 0 && (
-            <Card className="border-0 shadow-xl">
+             <Card className="border border-border/60 shadow-sm">
               <CardHeader>
                 <CardTitle className="text-2xl">גרף אמורטיזציה – קרן מול ריבית לאורך השנים</CardTitle>
                 <CardDescription>כמה מהתשלום השנתי שלך הולך לקרן וכמה לריבית</CardDescription>
@@ -307,7 +307,7 @@ const MortgageCalculator = () => {
 
           {/* Sensitivity Analysis */}
           {sensitivity.length > 0 && (
-            <Card className="border-0 shadow-xl">
+            <Card className="border border-border/60 shadow-sm">
               <CardHeader>
                 <CardTitle className="text-2xl">ניתוח רגישות – מה קורה אם הריבית משתנה?</CardTitle>
                 <CardDescription>השפעת שינויי ריבית על ההחזר החודשי שלך</CardDescription>
