@@ -1,5 +1,6 @@
-// מדרגות מס רכישה 2024 - ישראל
-// מעודכן לפי רשות המסים
+// מדרגות מס רכישה - ישראל
+// מעודכן: מדרגות מוקפאות מ-16.1.2025 עד 15.1.2028 (הוראת שעה, חוק ההתייעלות)
+// מע"מ: 18% מ-1.1.2025
 
 export type BuyerType = 'singleApartment' | 'additionalApartment' | 'foreignResident';
 
@@ -8,22 +9,22 @@ interface TaxBracket {
   rate: number; // שיעור המס
 }
 
-// דירה יחידה - מדרגות 2024
+// דירה יחידה - מדרגות מוקפאות 2025-2027
 const SINGLE_APARTMENT_BRACKETS: TaxBracket[] = [
   { upTo: 1978745, rate: 0 },
   { upTo: 2347040, rate: 0.035 },
-  { upTo: 3062435, rate: 0.05 },
-  { upTo: 5195070, rate: 0.08 },
+  { upTo: 6055070, rate: 0.05 },
+  { upTo: 20183565, rate: 0.08 },
   { upTo: Infinity, rate: 0.10 },
 ];
 
-// דירה נוספת / משקיע - מדרגות 2024
+// דירה נוספת / משקיע - מדרגות מוקפאות 2025-2027
 const ADDITIONAL_APARTMENT_BRACKETS: TaxBracket[] = [
   { upTo: 6055070, rate: 0.08 },
   { upTo: Infinity, rate: 0.10 },
 ];
 
-// תושב חוץ - תוספת 2% על מדרגות דירה נוספת
+// תושב חוץ - אינו זכאי להקלת דירה יחידה, משלם כמו משקיע
 const FOREIGN_RESIDENT_EXTRA_RATE = 0.02;
 
 export interface PurchaseTaxInput {

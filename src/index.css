@@ -1,151 +1,173 @@
-@import url("https://fonts.googleapis.com/css2?family=Poppins&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Lora&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Cascadia+Code&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* Design System — "Boutique Fintech"
+   Palette: Warm Cream (#FFFDF5) / Deep Navy (#1A2238) / Burnt Orange (#E67E22)
+   Traffic Light: Green / Yellow / Red
+   All colors MUST be HSL.
 */
 
 @layer base {
   :root {
-    --background: 209 40% 96%;
-    --foreground: 222 47% 11%;
+    --background: 42 100% 98%;
+    --foreground: 220 40% 13%;
 
-    --card: 210 40% 98%;
-    --card-foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 40% 13%;
 
-    --popover: 214 31% 91%;
-    --popover-foreground: 222 47% 11%;
+    --popover: 42 40% 96%;
+    --popover-foreground: 220 40% 13%;
 
-    --primary: 200 98% 39%;
-    --primary-foreground: 204 100% 97%;
+    --primary: 24 80% 52%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 215 24% 26%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 220 40% 13%;
+    --secondary-foreground: 42 30% 95%;
 
-    --muted: 215 20% 65%;
-    --muted-foreground: 222 47% 11%;
+    --muted: 220 15% 85%;
+    --muted-foreground: 220 20% 40%;
 
-    --accent: 210 40% 98%;
-    --accent-foreground: 215 19% 34%;
+    --accent: 42 30% 95%;
+    --accent-foreground: 220 40% 13%;
 
     --destructive: 0 72% 50%;
     --destructive-foreground: 0 85% 97%;
 
-    --border: 212 26% 83%;
-    --input: 212 26% 83%;
-    --ring: 200 98% 39%;
+    --border: 220 15% 85%;
+    --input: 220 15% 85%;
+    --ring: 24 80% 52%;
 
-    --radius: 1.75rem;
+    --radius: 1rem;
 
-    --sidebar-background: 0 0% 98%;
+    --sidebar-background: 220 40% 13%;
+    --sidebar-foreground: 42 30% 92%;
+    --sidebar-primary: 24 80% 52%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 35% 20%;
+    --sidebar-accent-foreground: 42 30% 92%;
+    --sidebar-border: 220 30% 22%;
+    --sidebar-ring: 24 80% 52%;
 
-    --sidebar-foreground: 222 47% 11%;
+    /* Traffic Light + Brand Chart Colors */
+    --chart-1: 142 71% 45%;
+    --chart-2: 45 93% 47%;
+    --chart-3: 0 72% 50%;
+    --chart-4: 24 80% 52%;
+    --chart-5: 220 40% 13%;
 
-    --sidebar-primary: 200 98% 39%;
-
-    --sidebar-primary-foreground: 204 100% 97%;
-
-    --sidebar-accent: 215 24% 26%;
-
-    --sidebar-accent-foreground: 210 40% 98%;
-
-    --sidebar-border: 212 26% 83%;
-
-    --sidebar-ring: 200 98% 39%;
-
-    --chart-1: 198 93% 59%;
-
-    --chart-2: 213 93% 67%;
-
-    --chart-3: 215 20% 65%;
-
-    --chart-4: 215 16% 46%;
-
-    --chart-5: 215 19% 34%;
-
-    --sidebar: 210 40% 98%;
+    --sidebar: 220 40% 13%;
 
     --font-sans: Poppins, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji;
-
     --font-serif: Lora, ui-serif, Georgia, Cambria, Times New Roman, Times, serif;
-
     --font-mono: "Cascadia Code", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
 
-    --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-
+    --shadow-2xs: 0 1px 2px 0px hsl(0 0% 0% / 0.04);
     --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-
-    --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
-
-    --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
-
-    --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
-
-    --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
-
-    --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
-
-    --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
+    --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.08), 0 1px 2px -1px hsl(0 0% 0% / 0.08);
+    --shadow: 0 2px 4px 0px hsl(0 0% 0% / 0.06), 0 1px 2px -1px hsl(0 0% 0% / 0.06);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.07), 0 2px 4px -2px hsl(0 0% 0% / 0.07);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.07), 0 4px 6px -4px hsl(0 0% 0% / 0.07);
+    --shadow-xl: 0 20px 25px -5px hsl(0 0% 0% / 0.07), 0 8px 10px -6px hsl(0 0% 0% / 0.07);
+    --shadow-2xl: 0 25px 50px -12px hsl(0 0% 0% / 0.2);
 
     --tracking-normal: 0em;
-
     --spacing: 0.25rem;
   }
 
   .dark {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
+    --background: 220 40% 8%;
+    --foreground: 42 30% 92%;
 
-    --card: 217 32% 17%;
-    --card-foreground: 210 40% 98%;
+    --card: 220 35% 14%;
+    --card-foreground: 42 30% 92%;
 
-    --popover: 215 24% 26%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 220 35% 16%;
+    --popover-foreground: 42 30% 92%;
 
-    --primary: 198 93% 59%;
-    --primary-foreground: 204 80% 15%;
+    --primary: 24 85% 55%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 212 26% 83%;
-    --secondary-foreground: 228 84% 4%;
+    --secondary: 220 30% 75%;
+    --secondary-foreground: 220 40% 8%;
 
-    --muted: 215 16% 46%;
-    --muted-foreground: 210 40% 98%;
+    --muted: 220 15% 30%;
+    --muted-foreground: 220 15% 65%;
 
-    --accent: 228 84% 4%;
-    --accent-foreground: 215 20% 65%;
+    --accent: 220 30% 18%;
+    --accent-foreground: 42 30% 85%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 72% 60%;
     --destructive-foreground: 0 85% 97%;
 
-    --border: 215 19% 34%;
-    --input: 215 19% 34%;
-    --ring: 198 93% 59%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 198 93% 59%;
-    --sidebar-primary-foreground: 204 80% 15%;
-    --sidebar-accent: 215 20% 65%;
-    --sidebar-accent-foreground: 228 84% 4%;
-    --sidebar-border: 215 19% 34%;
-    --sidebar-ring: 198 93% 59%;
-    --chart-1: 199 95% 73%;
-    --chart-2: 211 96% 78%;
-    --chart-3: 215 20% 65%;
-    --chart-4: 215 16% 46%;
-    --chart-5: 215 19% 34%;
-    --sidebar: 217 32% 17%;
-    --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-    --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-    --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
-    --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
-    --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
-    --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
-    --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
-    --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
+    --border: 220 20% 22%;
+    --input: 220 20% 22%;
+    --ring: 24 85% 55%;
+
+    --sidebar-background: 220 42% 6%;
+    --sidebar-foreground: 42 30% 92%;
+    --sidebar-primary: 24 85% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 30% 14%;
+    --sidebar-accent-foreground: 42 30% 85%;
+    --sidebar-border: 220 25% 18%;
+    --sidebar-ring: 24 85% 55%;
+
+    --chart-1: 142 71% 55%;
+    --chart-2: 45 93% 55%;
+    --chart-3: 0 72% 60%;
+    --chart-4: 24 85% 55%;
+    --chart-5: 220 30% 60%;
+
+    --sidebar: 220 42% 6%;
+
+    --shadow-2xs: 0 1px 2px 0px hsl(0 0% 0% / 0.12);
+    --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.15);
+    --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.2), 0 1px 2px -1px hsl(0 0% 0% / 0.2);
+    --shadow: 0 2px 4px 0px hsl(0 0% 0% / 0.15), 0 1px 2px -1px hsl(0 0% 0% / 0.15);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.2), 0 2px 4px -2px hsl(0 0% 0% / 0.2);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.2), 0 4px 6px -4px hsl(0 0% 0% / 0.2);
+    --shadow-xl: 0 20px 25px -5px hsl(0 0% 0% / 0.2), 0 8px 10px -6px hsl(0 0% 0% / 0.2);
+    --shadow-2xl: 0 25px 50px -12px hsl(0 0% 0% / 0.4);
+  }
+}
+
+@layer components {
+  /* Glassmorphism cards */
+  .glass-card {
+    @apply backdrop-blur-xl shadow-xl rounded-xl;
+    background: hsl(0 0% 100% / 0.85);
+    border: 1px solid hsl(0 0% 100% / 0.3);
+  }
+  .dark .glass-card {
+    background: hsl(220 35% 14% / 0.80);
+    border-color: hsl(220 30% 30% / 0.3);
+  }
+
+  /* Traffic Light utilities */
+  .traffic-green {
+    color: hsl(var(--chart-1));
+  }
+  .traffic-yellow {
+    color: hsl(var(--chart-2));
+  }
+  .traffic-red {
+    color: hsl(var(--chart-3));
+  }
+  .traffic-green-bg {
+    background-color: hsl(var(--chart-1) / 0.1);
+    border-color: hsl(var(--chart-1) / 0.3);
+  }
+  .traffic-yellow-bg {
+    background-color: hsl(var(--chart-2) / 0.1);
+    border-color: hsl(var(--chart-2) / 0.3);
+  }
+  .traffic-red-bg {
+    background-color: hsl(var(--chart-3) / 0.1);
+    border-color: hsl(var(--chart-3) / 0.3);
   }
 }
 
@@ -158,5 +180,13 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
     direction: rtl;
     text-align: right;
+  }
+
+  /* Thumb-friendly mobile inputs */
+  @media (max-width: 768px) {
+    input, select, textarea, [role="combobox"] {
+      min-height: 48px;
+      font-size: 16px;
+    }
   }
 }

@@ -10,13 +10,17 @@ import { FinancialCheckupInput, FinancialCheckupOutput } from '@/types/financial
 import { StatsCard } from '@/components/StatsCard';
 import { SmartInsight, generateFinancialInsights } from '@/components/SmartInsight';
 import { ConfidenceGauge } from '@/components/ConfidenceGauge';
+import { FuelGauge } from '@/components/FuelGauge';
+import { ExecutiveSummary } from '@/components/ExecutiveSummary';
 import { saveCalculation } from '@/lib/storage/calculator-history';
-import { 
-  AlertCircle, 
-  CheckCircle, 
-  TrendingUp, 
-  Wallet, 
-  PiggyBank, 
+import { useAutoPersist } from '@/hooks/useAutoPersist';
+import { formatCurrency as sharedFormatCurrency } from '@/lib/validation/validators';
+import {
+  AlertCircle,
+  CheckCircle,
+  TrendingUp,
+  Wallet,
+  PiggyBank,
   Home,
   Calculator,
   Sparkles,
@@ -28,7 +32,7 @@ import { he } from '@/lib/translations/he';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 
 const FinancialCheckup = () => {
-  const [input, setInput] = useState<FinancialCheckupInput>({
+  const [input, setInput] = useAutoPersist<FinancialCheckupInput>('financial-checkup', {
     income: {
       salary1Net: 0,
       salary2Net: 0,
@@ -90,13 +94,7 @@ const FinancialCheckup = () => {
     }, 100);
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('he-IL', {
-      style: 'currency',
-      currency: 'ILS',
-      minimumFractionDigits: 0,
-    }).format(value);
-  };
+  const formatCurrency = sharedFormatCurrency;
 
   // Calculate totals for visualization
   const totalIncome = Object.values(input.income).reduce((sum, val) => sum + val, 0);
@@ -522,6 +520,28 @@ const FinancialCheckup = () => {
 
           {/* Confidence Gauge */}
           <ConfidenceGauge score={results.readinessScore} />
+
+          {/* Executive Summary */}
+          <ExecutiveSummary
+            type="financial-checkup"
+            data={{
+              readinessScore: results.readinessScore,
+              freeCashFlow: results.freeCashFlow,
+              availableEquity: results.availableEquity,
+              maxMortgage: results.maxSafeMortgagePayment * 240,
+            }}
+          />
+
+          {/* DTI Fuel Gauge */}
+          {totalIncome > 0 && (
+            <FuelGauge
+              value={((totalExpenses / totalIncome) * 100)}
+              maxValue={100}
+              label="יחס הוצאות/הכנסות"
+              sublabel={`${((totalExpenses / totalIncome) * 100).toFixed(0)}% מההכנסה מוצא על הוצאות`}
+              thresholds={{ green: 60, yellow: 80 }}
+            />
+          )}
 
           {/* Results Header */}
           <div className="text-center">
