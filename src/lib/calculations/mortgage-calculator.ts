@@ -7,6 +7,51 @@ import {
   SensitivityResult,
 } from '@/types/mortgage-calculator';
 
+// קבועי שוק - בנק ישראל פברואר 2026
+export const MARKET_CONSTANTS = {
+  BOI_RATE: 4.0,             // ריבית בנק ישראל
+  PRIME_RATE: 5.5,           // פריים = BOI + 1.5%
+  MAX_PRIME_SHARE: 0.66,     // מקסימום 66% מהמשכנתא בפריים
+  MAX_DTI: 0.40,             // יחס החזר/הכנסה מקסימלי
+  LTV_FIRST_HOME: 0.75,     // מינוף מקסימלי - דירה ראשונה
+  LTV_UPGRADE: 0.70,        // מינוף מקסימלי - משפרי דיור
+  LTV_INVESTOR: 0.50,       // מינוף מקסימלי - משקיעים
+  DEFAULT_MADAD_RATE: 2.5,   // מדד תשומות הבנייה - שנתי
+  MADAD_EXPOSURE: 0.40,     // חשיפה אפקטיבית למדד (אחרי חוק יוני 2025)
+};
+
+export interface MadadSimulationResult {
+  originalTotal: number;
+  adjustedTotal: number;
+  additionalCost: number;
+  effectiveAnnualRate: number;
+}
+
+/**
+ * סימולטור מדד תשומות הבנייה - לרכישה מקבלן (off-plan)
+ * לפי חוק יוני 2025: 20% הראשון פטור ממדד, השאר צמוד ב-50%
+ * חשיפה אפקטיבית: ~40% מסכום ההלוואה
+ */
+export function simulateMadadImpact(params: {
+  linkedAmount: number;
+  annualMadadRate: number;
+  years: number;
+  exposurePercent?: number;
+}): MadadSimulationResult {
+  const { linkedAmount, annualMadadRate, years, exposurePercent = MARKET_CONSTANTS.MADAD_EXPOSURE } = params;
+  const exposedAmount = linkedAmount * exposurePercent;
+  const rate = annualMadadRate / 100;
+  const cumulativeFactor = Math.pow(1 + rate, years) - 1;
+  const additionalCost = Math.round(exposedAmount * cumulativeFactor);
+
+  return {
+    originalTotal: linkedAmount,
+    adjustedTotal: linkedAmount + additionalCost,
+    additionalCost,
+    effectiveAnnualRate: exposurePercent * annualMadadRate,
+  };
+}
+
 export function calculateMortgageTrack(
   track: MortgageTrack
 ): MortgageTrackResult {

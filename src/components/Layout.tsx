@@ -1,18 +1,21 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  Home, 
-  Calculator, 
-  Hammer, 
-  ClipboardCheck, 
-  Calendar, 
+import {
+  Home,
+  Calculator,
+  Hammer,
+  ClipboardCheck,
+  Calendar,
   Building2,
   TrendingUp,
   Menu,
   ChevronRight,
   LayoutDashboard,
   BookOpen,
-  Receipt
+  MoreHorizontal,
+  Bookmark,
+  Receipt,
+  X
 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { UserMenu } from './UserMenu';
@@ -30,41 +33,87 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
 
-const navigation = [
-  { name: 'דף הבית', href: '/', icon: Home },
-  { name: 'בדיקה פיננסית', href: '/financial-checkup', icon: Calculator, group: 'הערכת כדאיות' },
-  { name: 'תוכנית עסקית', href: '/deal-business-plan', icon: TrendingUp, group: 'הערכת כדאיות' },
-  { name: 'מחשבון משכנתא', href: '/mortgage-calculator', icon: Home, group: 'מימון' },
-  { name: 'כדאיות שיפוץ', href: '/renovation-feasibility', icon: Hammer, group: 'בדיקת נכס' },
-  { name: 'ביקור בנכס', href: '/property-visit', icon: ClipboardCheck, group: 'בדיקת נכס' },
-  { name: 'ציר זמן', href: '/transaction-timeline', icon: Calendar, group: 'תהליכים' },
-  { name: 'התחדשות עירונית', href: '/urban-renewal', icon: Building2, group: 'תהליכים' },
-  { name: 'מס רכישה', href: '/purchase-tax', icon: Receipt, group: 'מימון' },
+interface NavGroup {
+  label: string;
+  items: NavItem[];
+}
+
+interface NavItem {
+  name: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+}
+
+const navGroups: NavGroup[] = [
+  {
+    label: 'הערכת כדאיות',
+    items: [
+      { name: 'בדיקה פיננסית', href: '/financial-checkup', icon: Calculator },
+      { name: 'תוכנית עסקית', href: '/deal-business-plan', icon: TrendingUp },
+    ]
+  },
+  {
+    label: 'מימון',
+    items: [
+      { name: 'מחשבון משכנתא', href: '/mortgage-calculator', icon: Home },
+      { name: 'מס רכישה', href: '/purchase-tax', icon: Receipt },
+    ]
+  },
+  {
+    label: 'בדיקת נכס',
+    items: [
+      { name: 'כדאיות שיפוץ', href: '/renovation-feasibility', icon: Hammer },
+      { name: 'ביקור בנכס', href: '/property-visit', icon: ClipboardCheck },
+    ]
+  },
+  {
+    label: 'תהליכים',
+    items: [
+      { name: 'ציר זמן', href: '/transaction-timeline', icon: Calendar },
+      { name: 'התחדשות עירונית', href: '/urban-renewal', icon: Building2 },
+    ]
+  },
+];
+
+const flatNavItems = navGroups.flatMap(g => g.items);
+const bottomTabItems = [
+  flatNavItems[0], // בדיקה פיננסית
+  flatNavItems[2], // מחשבון משכנתא
+  flatNavItems[1], // תוכנית עסקית
+  flatNavItems[4], // ביקור בנכס
+];
+
+const utilityNav = [
   { name: 'סטטיסטיקות', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'תרחישים שמורים', href: '/history', icon: Bookmark },
   { name: 'מילון מונחים', href: '/glossary', icon: BookOpen },
 ];
 
-function NavItem({ item, isActive, onClick }: { item: typeof navigation[0]; isActive: boolean; onClick?: () => void }) {
+function getPageTitle(pathname: string): string {
+  const all = [...flatNavItems, ...utilityNav, { name: 'דף הבית', href: '/' }];
+  return all.find(n => n.href === pathname)?.name || '';
+}
+
+function SidebarNavItem({ item, isActive, onClick }: { item: NavItem; isActive: boolean; onClick?: () => void }) {
   return (
     <Link
       to={item.href}
       onClick={onClick}
-      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
-        isActive 
-          ? 'bg-primary text-primary-foreground font-medium' 
-          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-      }`}
+      className={cn(
+        'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-sm',
+        isActive
+          ? 'bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] font-medium shadow-md'
+          : 'text-[hsl(var(--sidebar-foreground)/0.7)] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-foreground))]'
+      )}
     >
-      <item.icon className="w-4 h-4" />
+      <item.icon className="w-4.5 h-4.5 flex-shrink-0" />
       <span>{item.name}</span>
     </Link>
   );
-}
-
-function getPageTitle(pathname: string): string {
-  const page = navigation.find(n => n.href === pathname);
-  return page?.name || '';
 }
 
 export function Layout({ children }: { children: ReactNode }) {
@@ -72,104 +121,224 @@ export function Layout({ children }: { children: ReactNode }) {
   const currentPath = location.pathname;
   const pageTitle = getPageTitle(currentPath);
   const isHomePage = currentPath === '/';
+  const isMobile = useIsMobile();
+  const [moreOpen, setMoreOpen] = useState(false);
+
+  const isCalculatorPage = flatNavItems.some(item => item.href === currentPath);
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/90 backdrop-blur-md">
-        <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
+      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
+        <div className="max-w-[1400px] mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {/* Mobile Menu */}
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="lg:hidden h-8 w-8">
-                  <Menu className="w-4 h-4" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-64 p-0">
-                <div className="p-5 border-b">
-                  <Link to="/" className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                      <Calculator className="w-4 h-4 text-primary-foreground" />
+            {/* Mobile Menu (only on non-calculator pages) */}
+            {!isCalculatorPage && (
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" className="lg:hidden">
+                    <Menu className="w-5 h-5" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-72 p-0 bg-[hsl(var(--sidebar-background))]">
+                  <div className="p-5 border-b border-[hsl(var(--sidebar-border))]">
+                    <Link to="/" className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 bg-[hsl(var(--sidebar-primary))] rounded-lg flex items-center justify-center">
+                        <Home className="w-4.5 h-4.5 text-white" />
+                      </div>
+                      <div>
+                        <h2 className="font-bold text-[hsl(var(--sidebar-foreground))]">נווט הבית</h2>
+                        <p className="text-xs text-[hsl(var(--sidebar-foreground)/0.5)]">כלים חכמים לנדל"ן</p>
+                      </div>
+                    </Link>
+                  </div>
+                  <nav className="p-3 space-y-4">
+                    {navGroups.map((group) => (
+                      <div key={group.label}>
+                        <p className="text-xs font-medium text-[hsl(var(--sidebar-foreground)/0.4)] px-3 mb-1.5 uppercase tracking-wider">{group.label}</p>
+                        <div className="space-y-0.5">
+                          {group.items.map((item) => (
+                            <SidebarNavItem
+                              key={item.href}
+                              item={item}
+                              isActive={currentPath === item.href}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                    <div className="border-t border-[hsl(var(--sidebar-border))] pt-3">
+                      {utilityNav.map((item) => (
+                        <SidebarNavItem
+                          key={item.href}
+                          item={item}
+                          isActive={currentPath === item.href}
+                        />
+                      ))}
                     </div>
-                    <span className="font-semibold text-sm">הדרך לדירה</span>
-                  </Link>
-                </div>
-                <nav className="p-3 space-y-0.5">
-                  {navigation.map((item) => (
-                    <NavItem 
-                      key={item.href} 
-                      item={item} 
-                      isActive={currentPath === item.href}
-                    />
-                  ))}
-                </nav>
-              </SheetContent>
-            </Sheet>
+                  </nav>
+                </SheetContent>
+              </Sheet>
+            )}
 
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <Calculator className="w-4 h-4 text-primary-foreground" />
+              <div className="w-8 h-8 bg-secondary rounded-lg flex items-center justify-center">
+                <Home className="w-4 h-4 text-secondary-foreground" />
               </div>
-              <span className="font-semibold text-sm hidden sm:inline">הדרך לדירה</span>
+              <div className="hidden sm:block">
+                <span className="font-bold text-sm text-foreground">נווט הבית</span>
+              </div>
             </Link>
           </div>
 
           {/* Breadcrumbs - Desktop */}
           {!isHomePage && pageTitle && (
             <Breadcrumb className="hidden md:flex">
-              <BreadcrumbList className="text-xs">
+              <BreadcrumbList>
                 <BreadcrumbItem>
                   <BreadcrumbLink asChild>
-                    <Link to="/" className="text-muted-foreground hover:text-foreground">
+                    <Link to="/" className="text-muted-foreground hover:text-foreground text-sm">
                       דף הבית
                     </Link>
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator>
-                  <ChevronRight className="w-3 h-3" />
+                  <ChevronRight className="w-3.5 h-3.5" />
                 </BreadcrumbSeparator>
                 <BreadcrumbItem>
-                  <BreadcrumbPage className="font-medium">{pageTitle}</BreadcrumbPage>
+                  <BreadcrumbPage className="text-sm">{pageTitle}</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
           )}
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             <ThemeToggle />
             <UserMenu />
           </div>
         </div>
-
-        {/* Back Button - Mobile */}
-        {!isHomePage && (
-          <div className="md:hidden px-4 pb-2">
-            <Link to="/">
-              <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground text-xs h-7">
-                <ChevronRight className="w-3 h-3" />
-                חזרה לדף הבית
-              </Button>
-            </Link>
-          </div>
-        )}
       </header>
 
-      {/* Main Content */}
-      <main className="pb-8">
-        {children}
-      </main>
+      <div className="flex min-h-[calc(100vh-3.5rem)]">
+        {/* Desktop Sidebar - only on calculator pages */}
+        {isCalculatorPage && !isMobile && (
+          <aside className="w-[240px] flex-shrink-0 bg-[hsl(var(--sidebar-background))] border-l border-[hsl(var(--sidebar-border))] sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto">
+            <nav className="p-3 space-y-4">
+              {navGroups.map((group) => (
+                <div key={group.label}>
+                  <p className="text-[10px] font-semibold text-[hsl(var(--sidebar-foreground)/0.35)] px-3 mb-1.5 uppercase tracking-widest">{group.label}</p>
+                  <div className="space-y-0.5">
+                    {group.items.map((item) => (
+                      <SidebarNavItem
+                        key={item.href}
+                        item={item}
+                        isActive={currentPath === item.href}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+              <div className="border-t border-[hsl(var(--sidebar-border))] pt-3 space-y-0.5">
+                {utilityNav.map((item) => (
+                  <SidebarNavItem
+                    key={item.href}
+                    item={item}
+                    isActive={currentPath === item.href}
+                  />
+                ))}
+              </div>
+            </nav>
+          </aside>
+        )}
 
-      {/* Footer */}
-      <footer className="border-t border-border/50 py-6 mt-auto">
-        <div className="max-w-5xl mx-auto px-4 text-center space-y-1">
-          <p className="text-xs font-medium text-muted-foreground">© 2024 הדרך לדירה – מערכת תומכת החלטה</p>
-          <p className="text-[11px] text-muted-foreground/70">
-            המידע המוצג הינו להמחשה בלבד ואינו מהווה ייעוץ פיננסי או משפטי
-          </p>
+        {/* Main Content */}
+        <main className={cn(
+          'flex-1 pb-8',
+          isCalculatorPage && !isMobile && 'max-w-[1100px]',
+          isMobile && isCalculatorPage && 'pb-24'
+        )}>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentPath}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className="p-4 sm:p-6"
+            >
+              {children}
+            </motion.div>
+          </AnimatePresence>
+        </main>
+      </div>
+
+      {/* Mobile Bottom Tab Bar - only on calculator pages */}
+      {isCalculatorPage && isMobile && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border/50 safe-area-bottom">
+          <div className="flex items-center justify-around h-16 px-1">
+            {bottomTabItems.map((item) => {
+              const isActive = currentPath === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  to={item.href}
+                  className={cn(
+                    'flex flex-col items-center justify-center gap-0.5 flex-1 py-1.5 rounded-lg transition-all',
+                    isActive
+                      ? 'text-primary'
+                      : 'text-muted-foreground'
+                  )}
+                >
+                  <item.icon className={cn('w-5 h-5', isActive && 'scale-110')} />
+                  <span className="text-[10px] font-medium">{item.name.split(' ')[0]}</span>
+                </Link>
+              );
+            })}
+            {/* More button */}
+            <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
+              <SheetTrigger asChild>
+                <button className="flex flex-col items-center justify-center gap-0.5 flex-1 py-1.5 text-muted-foreground">
+                  <MoreHorizontal className="w-5 h-5" />
+                  <span className="text-[10px] font-medium">עוד</span>
+                </button>
+              </SheetTrigger>
+              <SheetContent side="bottom" className="rounded-t-2xl pb-safe">
+                <div className="grid grid-cols-3 gap-3 p-4">
+                  {[...flatNavItems.filter(item => !bottomTabItems.includes(item)), ...utilityNav].map((item) => (
+                    <Link
+                      key={item.href}
+                      to={item.href}
+                      onClick={() => setMoreOpen(false)}
+                      className={cn(
+                        'flex flex-col items-center gap-2 p-3 rounded-xl transition-all',
+                        currentPath === item.href
+                          ? 'bg-primary/10 text-primary'
+                          : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                      )}
+                    >
+                      <item.icon className="w-6 h-6" />
+                      <span className="text-xs font-medium text-center">{item.name}</span>
+                    </Link>
+                  ))}
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
-      </footer>
+      )}
+
+      {/* Footer - only on non-calculator pages */}
+      {!isCalculatorPage && (
+        <footer className="border-t border-border/50 py-6 mt-auto">
+          <div className="max-w-6xl mx-auto px-4 text-center text-sm text-muted-foreground">
+            <p>© 2026 נווט הבית - כלים חכמים לנדל"ן ישראלי</p>
+            <p className="mt-1 text-xs opacity-60">
+              המידע המוצג הינו להמחשה בלבד ואינו מהווה ייעוץ פיננסי או משפטי
+            </p>
+          </div>
+        </footer>
+      )}
     </div>
   );
 }

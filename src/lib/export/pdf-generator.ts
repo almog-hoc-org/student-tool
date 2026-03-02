@@ -9,44 +9,26 @@ interface PDFSection {
 interface PDFExportOptions {
   title: string;
   subtitle?: string;
+  executiveSummary?: string[];
   sections: PDFSection[];
-  riskScore?: number; // 0-100
   chartElementId?: string;
-  summaryNote?: string;
+  disclaimer?: string;
 }
 
-function drawRiskGauge(doc: jsPDF, score: number, x: number, y: number) {
-  const color = score >= 70 ? [34, 197, 94] : score >= 40 ? [245, 158, 11] : [239, 68, 68];
-  doc.setFillColor(color[0], color[1], color[2]);
-  const width = (score / 100) * 60;
-  doc.roundedRect(x, y, 60, 6, 3, 3, 'S');
-  doc.roundedRect(x, y, width, 6, 3, 3, 'F');
-  doc.setFontSize(9);
-  doc.setTextColor(100, 100, 100);
-  doc.text(`${score}/100`, x + 65, y + 5);
-}
+const BRAND_ORANGE_R = 230;
+const BRAND_ORANGE_G = 126;
+const BRAND_ORANGE_B = 34;
+const NAVY_R = 26;
+const NAVY_G = 34;
+const NAVY_B = 56;
 
+export async function exportToPDF(options: PDFExportOptions): Promise<void>;
+export async function exportToPDF(title: string, data: Record<string, any>, chartElementId?: string): Promise<void>;
 export async function exportToPDF(
-  title: string,
-  data: Record<string, any>,
+  titleOrOptions: string | PDFExportOptions,
+  data?: Record<string, any>,
   chartElementId?: string
 ) {
-  // Legacy support - convert old format to new
-  const sections: PDFSection[] = [{
-    title: 'תוצאות',
-    items: Object.entries(data).map(([label, value]) => ({ label, value: String(value) })),
-  }];
-
-  return exportAdvancedPDF({
-    title,
-    sections,
-    chartElementId,
-  });
-}
-
-export async function exportAdvancedPDF(options: PDFExportOptions) {
-  const { title, subtitle, sections, riskScore, chartElementId, summaryNote } = options;
-
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -54,136 +36,230 @@ export async function exportAdvancedPDF(options: PDFExportOptions) {
   });
 
   doc.setLanguage('he');
+  const pageWidth = 210;
+  const margin = 20;
+  const contentWidth = pageWidth - margin * 2;
 
-  // === Header band ===
-  doc.setFillColor(30, 58, 95); // Navy
-  doc.rect(0, 0, 210, 36, 'F');
+  // If called with the legacy signature (string, data, chartId)
+  if (typeof titleOrOptions === 'string') {
+    return legacyExport(doc, titleOrOptions, data || {}, chartElementId, pageWidth, margin, contentWidth);
+  }
 
-  // Gold accent line
-  doc.setFillColor(201, 162, 39);
-  doc.rect(0, 36, 210, 1.5, 'F');
+  const opts = titleOrOptions;
+  let y = 15;
+
+  // --- Branded Header ---
+  // Orange accent line
+  doc.setFillColor(BRAND_ORANGE_R, BRAND_ORANGE_G, BRAND_ORANGE_B);
+  doc.rect(0, 0, pageWidth, 4, 'F');
+
+  // Brand name
+  y = 18;
+  doc.setFontSize(10);
+  doc.setTextColor(BRAND_ORANGE_R, BRAND_ORANGE_G, BRAND_ORANGE_B);
+  doc.text('נווט הבית', pageWidth - margin, y, { align: 'right' });
+
+  // Date
+  const date = new Date().toLocaleDateString('he-IL', { year: 'numeric', month: 'long', day: 'numeric' });
+  doc.setTextColor(120, 120, 120);
+  doc.text(date, margin, y);
 
   // Title
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(20);
-  doc.text(title, 105, 16, { align: 'center' });
+  y = 30;
+  doc.setFontSize(22);
+  doc.setTextColor(NAVY_R, NAVY_G, NAVY_B);
+  doc.setFont('helvetica', 'bold');
+  doc.text(opts.title, pageWidth - margin, y, { align: 'right' });
 
-  // Subtitle / date
-  doc.setFontSize(10);
-  const date = new Date().toLocaleDateString('he-IL', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-  doc.text(subtitle || date, 105, 26, { align: 'center' });
-
-  // Brand tag
-  doc.setFontSize(7);
-  doc.setTextColor(200, 200, 200);
-  doc.text('הדרך לדירה – מערכת תומכת החלטה', 105, 33, { align: 'center' });
-
-  let yPosition = 45;
-
-  // === Risk Score ===
-  if (riskScore !== undefined) {
-    doc.setTextColor(60, 60, 60);
-    doc.setFontSize(11);
-    doc.text('מד ביטחון:', 180, yPosition, { align: 'right' });
-    drawRiskGauge(doc, riskScore, 20, yPosition - 4);
-    yPosition += 14;
+  if (opts.subtitle) {
+    y += 8;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 100, 100);
+    doc.text(opts.subtitle, pageWidth - margin, y, { align: 'right' });
   }
 
-  // === Sections ===
-  for (const section of sections) {
-    if (yPosition > 250) {
+  // Orange separator
+  y += 6;
+  doc.setDrawColor(BRAND_ORANGE_R, BRAND_ORANGE_G, BRAND_ORANGE_B);
+  doc.setLineWidth(0.8);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 8;
+
+  // --- Executive Summary ---
+  if (opts.executiveSummary && opts.executiveSummary.length > 0) {
+    doc.setFillColor(255, 253, 245); // Warm cream background
+    doc.roundedRect(margin, y - 2, contentWidth, opts.executiveSummary.length * 7 + 12, 3, 3, 'F');
+
+    doc.setFontSize(13);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(NAVY_R, NAVY_G, NAVY_B);
+    doc.text('סיכום מנהלים', pageWidth - margin - 4, y + 4, { align: 'right' });
+    y += 12;
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(50, 50, 50);
+    for (const line of opts.executiveSummary) {
+      doc.text(`• ${line}`, pageWidth - margin - 4, y, { align: 'right' });
+      y += 7;
+    }
+    y += 6;
+  }
+
+  // --- Sections ---
+  for (const section of opts.sections) {
+    if (y + 20 > 270) {
       doc.addPage();
-      yPosition = 20;
+      y = 20;
     }
 
-    // Section header
-    doc.setFillColor(240, 243, 248);
-    doc.roundedRect(15, yPosition - 4, 180, 9, 2, 2, 'F');
-    doc.setTextColor(30, 58, 95);
-    doc.setFontSize(12);
-    doc.text(section.title, 190, yPosition + 2, { align: 'right' });
-    yPosition += 12;
+    // Section title
+    doc.setFontSize(13);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(NAVY_R, NAVY_G, NAVY_B);
+    doc.text(section.title, pageWidth - margin, y, { align: 'right' });
+    y += 2;
 
-    // Section items
+    // Orange underline for section
+    doc.setDrawColor(BRAND_ORANGE_R, BRAND_ORANGE_G, BRAND_ORANGE_B);
+    doc.setLineWidth(0.4);
+    doc.line(pageWidth - margin - 60, y, pageWidth - margin, y);
+    y += 6;
+
+    // Items
     doc.setFontSize(10);
     for (const item of section.items) {
-      if (yPosition > 270) {
+      if (y > 270) {
         doc.addPage();
-        yPosition = 20;
+        y = 20;
       }
 
-      doc.setTextColor(100, 100, 100);
-      doc.text(item.label, 190, yPosition, { align: 'right' });
-      doc.setTextColor(30, 30, 30);
-      doc.text(item.value, 20, yPosition, { align: 'left' });
+      // Alternating row background
+      const rowIndex = section.items.indexOf(item);
+      if (rowIndex % 2 === 0) {
+        doc.setFillColor(248, 248, 248);
+        doc.rect(margin, y - 3, contentWidth, 7, 'F');
+      }
 
-      // Light divider
-      doc.setDrawColor(230, 230, 230);
-      doc.setLineWidth(0.2);
-      doc.line(20, yPosition + 2, 190, yPosition + 2);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(80, 80, 80);
+      doc.text(item.label, pageWidth - margin - 4, y, { align: 'right' });
 
-      yPosition += 8;
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(NAVY_R, NAVY_G, NAVY_B);
+      doc.text(item.value, margin + 4, y);
+
+      y += 7;
     }
-
-    yPosition += 5;
+    y += 6;
   }
 
-  // === Chart ===
-  if (chartElementId) {
-    const chartElement = document.getElementById(chartElementId);
-    if (chartElement) {
+  // --- Chart ---
+  if (opts.chartElementId) {
+    const chartEl = document.getElementById(opts.chartElementId);
+    if (chartEl) {
       try {
-        const canvas = await html2canvas(chartElement, {
-          backgroundColor: '#ffffff',
-          scale: 2,
-        });
+        const canvas = await html2canvas(chartEl, { backgroundColor: '#ffffff', scale: 2 });
         const imgData = canvas.toDataURL('image/png');
-
-        if (yPosition + 90 > 270) {
+        if (y + 100 > 270) {
           doc.addPage();
-          yPosition = 20;
+          y = 20;
         }
-
-        doc.addImage(imgData, 'PNG', 20, yPosition, 170, 85);
-        yPosition += 90;
-      } catch (error) {
-        console.error('Error generating chart image:', error);
+        doc.addImage(imgData, 'PNG', margin, y, contentWidth, 90);
+        y += 96;
+      } catch (err) {
+        console.error('Chart capture error:', err);
       }
     }
   }
 
-  // === Summary Note ===
-  if (summaryNote) {
-    if (yPosition + 20 > 270) {
-      doc.addPage();
-      yPosition = 20;
-    }
-
-    doc.setFillColor(255, 251, 235); // Light gold bg
-    doc.roundedRect(15, yPosition, 180, 14, 3, 3, 'F');
-    doc.setFontSize(9);
-    doc.setTextColor(120, 100, 30);
-    doc.text(summaryNote, 105, yPosition + 8, { align: 'center', maxWidth: 170 });
-    yPosition += 20;
+  // --- Disclaimer ---
+  const disclaimer = opts.disclaimer || 'המידע המוצג הינו להמחשה בלבד ואינו מהווה ייעוץ פיננסי או משפטי. נווט הבית © 2026';
+  if (y + 20 > 270) {
+    doc.addPage();
+    y = 20;
   }
+  y = Math.max(y, 270);
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(150, 150, 150);
+  doc.text(disclaimer, pageWidth / 2, y, { align: 'center' });
 
-  // === Footer ===
+  // --- Footer page numbers ---
   const pageCount = doc.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
-    doc.setFontSize(7);
-    doc.setTextColor(160, 160, 160);
-    doc.text('המידע להמחשה בלבד ואינו מהווה ייעוץ פיננסי או משפטי', 105, 288, { align: 'center' });
-    doc.text(`עמוד ${i} מתוך ${pageCount}`, 20, 288);
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.text(`${i} / ${pageCount}`, pageWidth / 2, 290, { align: 'center' });
   }
 
   // Save
+  const filename = `${opts.title.replace(/\s+/g, '-')}-${Date.now()}.pdf`;
+  doc.save(filename);
+}
+
+// Legacy function for backwards compatibility
+function legacyExport(
+  doc: jsPDF,
+  title: string,
+  data: Record<string, any>,
+  chartElementId: string | undefined,
+  pageWidth: number,
+  margin: number,
+  contentWidth: number
+) {
+  // Orange accent
+  doc.setFillColor(BRAND_ORANGE_R, BRAND_ORANGE_G, BRAND_ORANGE_B);
+  doc.rect(0, 0, pageWidth, 4, 'F');
+
+  doc.setFontSize(22);
+  doc.setTextColor(NAVY_R, NAVY_G, NAVY_B);
+  doc.text(title, 105, 20, { align: 'center' });
+
+  doc.setFontSize(12);
+  doc.setTextColor(100, 100, 100);
+  const date = new Date().toLocaleDateString('he-IL', { year: 'numeric', month: 'long', day: 'numeric' });
+  doc.text(date, 105, 30, { align: 'center' });
+
+  doc.setDrawColor(BRAND_ORANGE_R, BRAND_ORANGE_G, BRAND_ORANGE_B);
+  doc.setLineWidth(0.8);
+  doc.line(margin, 35, pageWidth - margin, 35);
+
+  let y = 45;
+  doc.setFontSize(14);
+  Object.entries(data).forEach(([key, value]) => {
+    if (y > 270) {
+      doc.addPage();
+      y = 20;
+    }
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(NAVY_R, NAVY_G, NAVY_B);
+    doc.text(key, margin, y);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(50, 50, 50);
+    doc.text(String(value), 100, y);
+    y += 10;
+  });
+
+  if (chartElementId) {
+    const chartEl = document.getElementById(chartElementId);
+    if (chartEl) {
+      html2canvas(chartEl, { backgroundColor: '#ffffff', scale: 2 }).then((canvas) => {
+        const imgData = canvas.toDataURL('image/png');
+        if (y + 100 > 270) {
+          doc.addPage();
+          y = 20;
+        }
+        doc.addImage(imgData, 'PNG', margin, y, contentWidth, 100);
+        const filename = `${title.replace(/\s/g, '-')}-${Date.now()}.pdf`;
+        doc.save(filename);
+      });
+      return;
+    }
+  }
+
   const filename = `${title.replace(/\s/g, '-')}-${Date.now()}.pdf`;
   doc.save(filename);
 }

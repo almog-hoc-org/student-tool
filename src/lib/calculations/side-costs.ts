@@ -1,6 +1,7 @@
 // מודול עלויות נלוות מפורט - נדל"ן ישראלי
+// מע"מ מעודכן: 18% מ-1 בינואר 2025
 
-const VAT_RATE = 0.17;
+const VAT_RATE = 0.18;
 
 export interface SideCostsInput {
   purchasePrice: number;
@@ -11,6 +12,8 @@ export interface SideCostsInput {
   includeInitialFurnishing: boolean;
   furnishingBudget: number;
   lawyerPercent: number; // e.g. 0.5
+  includeRenovationBuffer: boolean;
+  renovationBufferPercent: number; // e.g. 5
 }
 
 export interface SideCostItem {
@@ -90,6 +93,16 @@ export function calculateSideCosts(input: SideCostsInput): SideCostsOutput {
     });
   }
 
+  // חיץ שיפוצים
+  if (input.includeRenovationBuffer) {
+    const renovationBuffer = Math.round(input.purchasePrice * (input.renovationBufferPercent / 100));
+    items.push({
+      name: 'חיץ שיפוצים',
+      amount: renovationBuffer,
+      description: `${input.renovationBufferPercent}% ממחיר הרכישה`,
+    });
+  }
+
   const totalSideCosts = items.reduce((sum, item) => sum + item.amount, 0);
 
   return { items, totalSideCosts };
@@ -105,5 +118,7 @@ export function getDefaultSideCostsInput(purchasePrice: number): SideCostsInput 
     includeInitialFurnishing: false,
     furnishingBudget: 30000,
     lawyerPercent: 0.5,
+    includeRenovationBuffer: false,
+    renovationBufferPercent: 5,
   };
 }
