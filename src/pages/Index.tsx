@@ -15,7 +15,8 @@ import {
   BarChart3,
   Bookmark,
   Sparkles,
-  Shield
+  Shield,
+  Receipt
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -108,6 +109,13 @@ export default function Index() {
       icon: <Building2 className="w-6 h-6 text-secondary" />,
       link: '/urban-renewal',
       iconBg: 'bg-[hsl(var(--chart-1)/0.12)]',
+    },
+    {
+      title: 'מחשבון מס רכישה',
+      description: 'חישוב מס רכישה לפי מדרגות מוקפאות 2025-2028',
+      icon: <Receipt className="w-6 h-6" />,
+      link: '/purchase-tax',
+      iconBg: 'bg-primary/10',
     },
   ];
 

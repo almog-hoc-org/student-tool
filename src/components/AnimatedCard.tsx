@@ -1,19 +1,22 @@
 import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import { ReactNode } from 'react';
+import { cn } from '@/lib/utils';
 
 interface AnimatedCardProps {
   children: ReactNode;
   delay?: number;
   hover?: boolean;
   className?: string;
+  glass?: boolean;
 }
 
 export function AnimatedCard({ 
   children, 
   delay = 0, 
   hover = true,
-  className
+  className,
+  glass = false
 }: AnimatedCardProps) {
   return (
     <motion.div
@@ -29,7 +32,7 @@ export function AnimatedCard({
         transition: { duration: 0.2 }
       } : undefined}
     >
-      <Card className={className}>
+      <Card className={cn(glass && 'glass-card', className)}>
         {children}
       </Card>
     </motion.div>

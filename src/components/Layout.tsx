@@ -14,6 +14,7 @@ import {
   BookOpen,
   MoreHorizontal,
   Bookmark,
+  Receipt,
   X
 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
@@ -59,6 +60,7 @@ const navGroups: NavGroup[] = [
     label: 'מימון',
     items: [
       { name: 'מחשבון משכנתא', href: '/mortgage-calculator', icon: Home },
+      { name: 'מס רכישה', href: '/purchase-tax', icon: Receipt },
     ]
   },
   {

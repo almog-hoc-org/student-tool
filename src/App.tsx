@@ -20,6 +20,7 @@ import TransactionTimeline from "./pages/TransactionTimeline";
 import History from "./pages/History";
 import Dashboard from "./pages/Dashboard";
 import Glossary from "./pages/Glossary";
+import PurchaseTaxCalculator from "./pages/PurchaseTaxCalculator";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,6 +51,7 @@ const App = () => (
                     <Route path="/transaction-timeline" element={<TransactionTimeline />} />
                     <Route path="/history" element={<History />} />
                     <Route path="/glossary" element={<Glossary />} />
+                    <Route path="/purchase-tax" element={<PurchaseTaxCalculator />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </div>
