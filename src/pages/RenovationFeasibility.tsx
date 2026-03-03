@@ -1,22 +1,25 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { calculateRenovationFeasibility } from '@/lib/calculations/renovation-feasibility';
 import { RenovationInputs, RenovationOutput } from '@/types/renovation-feasibility';
 import { he } from '@/lib/translations/he';
 import { formatCurrency, formatPercent } from '@/lib/validation/validators';
 import { StatsCard } from '@/components/StatsCard';
-import { Hammer, TrendingUp, DollarSign, Calculator, Loader2 } from 'lucide-react';
+import { FieldWithTooltip } from '@/components/FieldWithTooltip';
+import { AnimatedCard } from '@/components/AnimatedCard';
+import { Hammer, TrendingUp, DollarSign, Calculator, Loader2, FileDown } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { saveCalculation } from '@/lib/storage/calculator-history';
 import { toast } from '@/hooks/use-toast';
+import { useAutoPersist } from '@/hooks/useAutoPersist';
+import { exportToPDF } from '@/lib/export/pdf-generator';
 
 const RenovationFeasibility = () => {
-  const [input, setInput] = useState<RenovationInputs>({
+  const [input, setInput] = useAutoPersist<RenovationInputs>('renovation-inputs', {
     currentValue: 0,
     postRenovationValue: 0,
     renovationBaseCost: 0,
@@ -71,31 +74,39 @@ const RenovationFeasibility = () => {
 
       {/* KPI Cards - Show after calculation */}
       {results && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 animate-in slide-in-from-bottom duration-500">
-          <StatsCard
-            title={he.renovationFeasibility.totalRenovationCost}
-            value={formatCurrency(results.totalRenovationCost)}
-            icon={Hammer}
-            iconColor="orange"
-          />
-          <StatsCard
-            title={he.renovationFeasibility.valueUplift}
-            value={formatCurrency(results.valueUplift)}
-            icon={TrendingUp}
-            iconColor="green"
-          />
-          <StatsCard
-            title={he.renovationFeasibility.paperProfit}
-            value={formatCurrency(results.paperProfit)}
-            icon={DollarSign}
-            iconColor={results.paperProfit >= 0 ? 'green' : 'orange'}
-          />
-          <StatsCard
-            title={he.renovationFeasibility.classification}
-            value={he.renovationFeasibility.classificationLabels[results.classification as keyof typeof he.renovationFeasibility.classificationLabels]}
-            icon={Calculator}
-            iconColor="purple"
-          />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <AnimatedCard delay={0}>
+            <StatsCard
+              title={he.renovationFeasibility.totalRenovationCost}
+              value={formatCurrency(results.totalRenovationCost)}
+              icon={Hammer}
+              iconColor="orange"
+            />
+          </AnimatedCard>
+          <AnimatedCard delay={0.1}>
+            <StatsCard
+              title={he.renovationFeasibility.valueUplift}
+              value={formatCurrency(results.valueUplift)}
+              icon={TrendingUp}
+              iconColor="green"
+            />
+          </AnimatedCard>
+          <AnimatedCard delay={0.2}>
+            <StatsCard
+              title={he.renovationFeasibility.paperProfit}
+              value={formatCurrency(results.paperProfit)}
+              icon={DollarSign}
+              iconColor={results.paperProfit >= 0 ? 'green' : 'orange'}
+            />
+          </AnimatedCard>
+          <AnimatedCard delay={0.3}>
+            <StatsCard
+              title={he.renovationFeasibility.classification}
+              value={he.renovationFeasibility.classificationLabels[results.classification as keyof typeof he.renovationFeasibility.classificationLabels]}
+              icon={Calculator}
+              iconColor="purple"
+            />
+          </AnimatedCard>
         </div>
       )}
 
@@ -110,36 +121,35 @@ const RenovationFeasibility = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 pt-6">
+          <FieldWithTooltip
+            label={he.renovationFeasibility.currentValue}
+            tooltip="מחיר השוק של הנכס לפני שיפוץ, לפי שמאות או עסקאות דומות באזור"
+            value={input.currentValue || ''}
+            onChange={(v) => setInput({ ...input, currentValue: Number(v) })}
+            prefix="₪"
+            placeholder="למשל 1,200,000"
+          />
+          <FieldWithTooltip
+            label={he.renovationFeasibility.postRenovationValue}
+            tooltip="הערכת שווי הנכס לאחר השיפוץ, לפי נכסים משופצים דומים באזור"
+            value={input.postRenovationValue || ''}
+            onChange={(v) => setInput({ ...input, postRenovationValue: Number(v) })}
+            prefix="₪"
+            placeholder="למשל 1,500,000"
+          />
           <div>
-            <Label>{he.renovationFeasibility.currentValue} ({he.common.currency})</Label>
-            <Input
-              type="number"
-              placeholder="למשל 1200000"
-              value={input.currentValue || ''}
-              onChange={(e) => setInput({ ...input, currentValue: Number(e.target.value) })}
-            />
-          </div>
-          <div>
-            <Label>{he.renovationFeasibility.postRenovationValue} ({he.common.currency})</Label>
-            <Input
-              type="number"
-              placeholder="למשל 1500000"
-              value={input.postRenovationValue || ''}
-              onChange={(e) => setInput({ ...input, postRenovationValue: Number(e.target.value) })}
-            />
-          </div>
-          <div>
-            <Label>{he.renovationFeasibility.renovationBaseCost} ({he.common.currency})</Label>
-            <Input
-              type="number"
-              placeholder="למשל 200000"
+            <FieldWithTooltip
+              label={he.renovationFeasibility.renovationBaseCost}
+              tooltip="עלות השיפוץ הבסיסית לפני מרווח ביטחון. נוסיף אוטומטית 15% למקרים בלתי צפויים"
               value={input.renovationBaseCost || ''}
-              onChange={(e) => setInput({ ...input, renovationBaseCost: Number(e.target.value) })}
+              onChange={(v) => setInput({ ...input, renovationBaseCost: Number(v) })}
+              prefix="₪"
+              placeholder="למשל 200,000"
             />
-              <p className="text-xs text-muted-foreground mt-1">
-                נוסיף אוטומטית 15% מרווח ביטחון
-              </p>
-            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              נוסיף אוטומטית 15% מרווח ביטחון
+            </p>
+          </div>
           </CardContent>
         </Card>
 
@@ -163,24 +173,22 @@ const RenovationFeasibility = () => {
 
           {input.isForRental && (
             <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <Label>{he.renovationFeasibility.monthlyRentBefore} ({he.common.currency})</Label>
-                <Input
-                  type="number"
-                  placeholder="למשל 4000"
-                  value={input.monthlyRentBefore || ''}
-                  onChange={(e) => setInput({ ...input, monthlyRentBefore: Number(e.target.value) })}
-                />
-              </div>
-              <div>
-                <Label>{he.renovationFeasibility.monthlyRentAfter} ({he.common.currency})</Label>
-                <Input
-                  type="number"
-                  placeholder="למשל 6000"
-                  value={input.monthlyRentAfter || ''}
-                  onChange={(e) => setInput({ ...input, monthlyRentAfter: Number(e.target.value) })}
-                />
-              </div>
+              <FieldWithTooltip
+                label={he.renovationFeasibility.monthlyRentBefore}
+                tooltip="שכר הדירה החודשי הנוכחי שהנכס מניב לפני השיפוץ"
+                value={input.monthlyRentBefore || ''}
+                onChange={(v) => setInput({ ...input, monthlyRentBefore: Number(v) })}
+                prefix="₪"
+                placeholder="למשל 4,000"
+              />
+              <FieldWithTooltip
+                label={he.renovationFeasibility.monthlyRentAfter}
+                tooltip="שכר הדירה הצפוי לאחר השיפוץ, לפי השוואה לנכסים משופצים באזור"
+                value={input.monthlyRentAfter || ''}
+                onChange={(v) => setInput({ ...input, monthlyRentAfter: Number(v) })}
+                prefix="₪"
+                placeholder="למשל 6,000"
+              />
             </div>
             )}
           </CardContent>
@@ -208,10 +216,38 @@ const RenovationFeasibility = () => {
         <div className="space-y-6 animate-in slide-in-from-bottom duration-500">
           {/* Before/After Chart */}
           <Card className="border-0 shadow-xl">
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-2xl">השוואה: לפני ואחרי שיפוץ</CardTitle>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => exportToPDF({
+                  title: 'בדיקת כדאיות שיפוץ',
+                  subtitle: `שווי נוכחי: ${formatCurrency(input.currentValue)}`,
+                  sections: [
+                    {
+                      title: 'תוצאות',
+                      items: [
+                        { label: 'שווי נוכחי', value: formatCurrency(input.currentValue) },
+                        { label: 'שווי לאחר שיפוץ', value: formatCurrency(input.postRenovationValue) },
+                        { label: 'עלות שיפוץ כוללת', value: formatCurrency(results.totalRenovationCost) },
+                        { label: 'עליית ערך', value: formatCurrency(results.valueUplift) },
+                        { label: 'רווח על הנייר', value: formatCurrency(results.paperProfit) },
+                        { label: 'סיווג', value: he.renovationFeasibility.classificationLabels[results.classification as keyof typeof he.renovationFeasibility.classificationLabels] },
+                        ...(results.rentUpliftYear !== undefined ? [{ label: 'עליית שכירות שנתית', value: formatCurrency(results.rentUpliftYear) }] : []),
+                        ...(results.renovationYield !== undefined ? [{ label: 'תשואת שיפוץ', value: formatPercent(results.renovationYield) }] : []),
+                      ],
+                    },
+                  ],
+                  chartElementId: 'renovation-chart',
+                })}
+              >
+                <FileDown className="w-4 h-4 ml-2" />
+                ייצוא PDF
+              </Button>
             </CardHeader>
             <CardContent>
+              <div id="renovation-chart">
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart
                   data={[
@@ -228,6 +264,7 @@ const RenovationFeasibility = () => {
                   <Bar dataKey="value" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
 

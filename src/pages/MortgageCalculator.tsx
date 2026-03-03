@@ -20,6 +20,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, AreaChart, A
 import { saveCalculation } from '@/lib/storage/calculator-history';
 import { useAutoPersist } from '@/hooks/useAutoPersist';
 import { toast } from '@/hooks/use-toast';
+import { exportToPDF } from '@/lib/export/pdf-generator';
 
 const TRACK_COLORS = ['hsl(var(--secondary))', 'hsl(var(--primary))', 'hsl(var(--chart-1))', 'hsl(var(--chart-2))'];
 const PI_COLORS = ['hsl(var(--secondary))', 'hsl(var(--primary))']; // Navy for principal, Orange for interest
@@ -322,6 +323,45 @@ const MortgageCalculator = () => {
 
       {results && (
         <div className="space-y-6">
+          <div className="flex justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => exportToPDF({
+                title: 'חישוב משכנתא',
+                subtitle: `סכום: ${formatCurrency(totalPrincipal)} | החזר חודשי: ${formatCurrency(results.totalMonthlyPayment)}`,
+                executiveSummary: [
+                  `החזר חודשי: ${formatCurrency(results.totalMonthlyPayment)}`,
+                  `סה״כ ריבית: ${formatCurrency(results.totalInterestPaid)}`,
+                  `ריבית ממוצעת משוקללת: ${results.weightedAverageInterest.toFixed(2)}%`,
+                  ...(dtiRatio !== null ? [`יחס החזר/הכנסה: ${dtiPercent.toFixed(1)}%`] : []),
+                ],
+                sections: [
+                  {
+                    title: 'פרטי המסלולים',
+                    items: tracks.map((t, i) => ({
+                      label: `מסלול ${i + 1}: ${he.mortgageCalculator.trackTypes[t.type]}`,
+                      value: `${formatCurrency(t.principal)} | ${t.annualInterestRate}% | ${t.years} שנים`,
+                    })),
+                  },
+                  {
+                    title: 'תוצאות',
+                    items: [
+                      { label: 'החזר חודשי', value: formatCurrency(results.totalMonthlyPayment) },
+                      { label: 'סה״כ ריבית', value: formatCurrency(results.totalInterestPaid) },
+                      { label: 'סה״כ תשלום', value: formatCurrency(totalPrincipal + results.totalInterestPaid) },
+                      { label: 'ריבית ממוצעת', value: `${results.weightedAverageInterest.toFixed(2)}%` },
+                    ],
+                  },
+                ],
+                chartElementId: 'mortgage-chart',
+              })}
+            >
+              <FileDown className="w-4 h-4 ml-2" />
+              ייצוא PDF
+            </Button>
+          </div>
+
           {/* Executive Summary */}
           <ExecutiveSummary
             type="mortgage"
@@ -362,6 +402,7 @@ const MortgageCalculator = () => {
               <CardDescription>כמה מסך התשלום הולך לקרן וכמה לריבית</CardDescription>
             </CardHeader>
             <CardContent>
+              <div id="mortgage-chart">
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
@@ -383,6 +424,7 @@ const MortgageCalculator = () => {
                   <Legend />
                 </PieChart>
               </ResponsiveContainer>
+              </div>
               <div className="text-center mt-2">
                 <p className="text-sm text-muted-foreground">
                   סך תשלום: <span className="font-bold text-foreground">{formatCurrency(totalPrincipal + results.totalInterestPaid)}</span>

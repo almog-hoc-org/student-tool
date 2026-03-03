@@ -26,10 +26,12 @@ import {
   Sparkles,
   TrendingDown,
   DollarSign,
-  Shield
+  Shield,
+  FileDown
 } from 'lucide-react';
 import { he } from '@/lib/translations/he';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { exportToPDF } from '@/lib/export/pdf-generator';
 
 const FinancialCheckup = () => {
   const [input, setInput] = useAutoPersist<FinancialCheckupInput>('financial-checkup', {
@@ -507,6 +509,41 @@ const FinancialCheckup = () => {
       {/* Results Section */}
       {results && (
         <div id="results" className="space-y-8 animate-slide-up">
+          <div className="flex justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => exportToPDF({
+                title: 'בדיקת מוכנות פיננסית',
+                subtitle: `ציון מוכנות: ${results.readinessScore}/100`,
+                executiveSummary: [
+                  `הכנסה חודשית כוללת: ${sharedFormatCurrency(results.totalIncome)}`,
+                  `הוצאות חודשיות: ${sharedFormatCurrency(results.totalExpenses)}`,
+                  `תזרים חופשי: ${sharedFormatCurrency(results.freeCashFlow)}`,
+                  `הון עצמי זמין: ${sharedFormatCurrency(results.availableEquity)}`,
+                  `החזר משכנתא מקסימלי בטוח: ${sharedFormatCurrency(results.maxSafeMortgagePayment)}/חודש`,
+                ],
+                sections: [
+                  {
+                    title: 'סיכום פיננסי',
+                    items: [
+                      { label: 'ציון מוכנות', value: `${results.readinessScore}/100` },
+                      { label: 'הכנסה כוללת', value: sharedFormatCurrency(results.totalIncome) },
+                      { label: 'הוצאות כוללות', value: sharedFormatCurrency(results.totalExpenses) },
+                      { label: 'תזרים חופשי', value: sharedFormatCurrency(results.freeCashFlow) },
+                      { label: 'הון עצמי', value: sharedFormatCurrency(results.availableEquity) },
+                      { label: 'החזר משכנתא מקסימלי', value: sharedFormatCurrency(results.maxSafeMortgagePayment) },
+                    ],
+                  },
+                ],
+                chartElementId: 'financial-chart',
+              })}
+            >
+              <FileDown className="w-4 h-4 ml-2" />
+              ייצוא PDF
+            </Button>
+          </div>
+
           {/* Smart Insights */}
           <SmartInsight
             insights={generateFinancialInsights({
@@ -636,6 +673,7 @@ const FinancialCheckup = () => {
                 <CardDescription>התפלגות הכנסות והוצאות</CardDescription>
               </CardHeader>
               <CardContent>
+                <div id="financial-chart">
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
@@ -655,6 +693,7 @@ const FinancialCheckup = () => {
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>
+                </div>
               </CardContent>
             </Card>
 

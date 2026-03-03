@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -16,13 +15,17 @@ import {
 } from '@/types/property-visit';
 import { he } from '@/lib/translations/he';
 import { StatsCard } from '@/components/StatsCard';
-import { Building2, Home, MapPin, Award, Calculator, Loader2 } from 'lucide-react';
+import { FieldWithTooltip } from '@/components/FieldWithTooltip';
+import { AnimatedCard } from '@/components/AnimatedCard';
+import { Building2, Home, MapPin, Award, Calculator, Loader2, FileDown } from 'lucide-react';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, Tooltip } from 'recharts';
 import { saveCalculation } from '@/lib/storage/calculator-history';
 import { toast } from '@/hooks/use-toast';
+import { useAutoPersist } from '@/hooks/useAutoPersist';
+import { exportToPDF } from '@/lib/export/pdf-generator';
 
 const PropertyVisit = () => {
-  const [basicInfo, setBasicInfo] = useState<PropertyBasicInfo>({
+  const [basicInfo, setBasicInfo] = useAutoPersist<PropertyBasicInfo>('property-basic', {
     address: '',
     city: '',
     floor: 0,
@@ -34,7 +37,7 @@ const PropertyVisit = () => {
     registeredAreaSqm: 0,
   });
 
-  const [condition, setCondition] = useState<PropertyCondition>({
+  const [condition, setCondition] = useAutoPersist<PropertyCondition>('property-condition', {
     wallsConditionScore: 5,
     dampnessOrMoldScore: 5,
     electricityPanelScore: 5,
@@ -44,7 +47,7 @@ const PropertyVisit = () => {
     bathroomConditionScore: 5,
   });
 
-  const [environment, setEnvironment] = useState<PropertyEnvironment>({
+  const [environment, setEnvironment] = useAutoPersist<PropertyEnvironment>('property-environment', {
     noiseLevelScore: 5,
     parkingAvailabilityScore: 5,
     publicTransportScore: 5,
@@ -52,7 +55,7 @@ const PropertyVisit = () => {
     neighborhoodFeelScore: 5,
   });
 
-  const [legal, setLegal] = useState<PropertyLegalPlanning>({
+  const [legal, setLegal] = useAutoPersist<PropertyLegalPlanning>('property-legal', {
     hasOfficialDocuments: false,
     knownBuildingIrregularities: false,
     urbanRenewalPotential: 'none',
@@ -122,31 +125,39 @@ const PropertyVisit = () => {
 
       {/* KPI Cards - Show after calculation */}
       {results && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 animate-in slide-in-from-bottom duration-500">
-          <StatsCard
-            title={he.propertyVisit.resultsTitle}
-            value={`${Math.round(results.overallPropertyScore)}/100`}
-            icon={Award}
-            iconColor="blue"
-          />
-          <StatsCard
-            title={he.propertyVisit.conditionScore}
-            value={`${Math.round(results.conditionScoreWeighted)}/40`}
-            icon={Home}
-            iconColor="green"
-          />
-          <StatsCard
-            title={he.propertyVisit.environmentScore}
-            value={`${Math.round(results.environmentScoreWeighted)}/30`}
-            icon={MapPin}
-            iconColor="orange"
-          />
-          <StatsCard
-            title={he.propertyVisit.basicFeaturesScore}
-            value={`${Math.round(results.basicFeaturesScoreWeighted)}/30`}
-            icon={Building2}
-            iconColor="purple"
-          />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <AnimatedCard delay={0}>
+            <StatsCard
+              title={he.propertyVisit.resultsTitle}
+              value={`${Math.round(results.overallPropertyScore)}/100`}
+              icon={Award}
+              iconColor="blue"
+            />
+          </AnimatedCard>
+          <AnimatedCard delay={0.1}>
+            <StatsCard
+              title={he.propertyVisit.conditionScore}
+              value={`${Math.round(results.conditionScoreWeighted)}/40`}
+              icon={Home}
+              iconColor="green"
+            />
+          </AnimatedCard>
+          <AnimatedCard delay={0.2}>
+            <StatsCard
+              title={he.propertyVisit.environmentScore}
+              value={`${Math.round(results.environmentScoreWeighted)}/30`}
+              icon={MapPin}
+              iconColor="orange"
+            />
+          </AnimatedCard>
+          <AnimatedCard delay={0.3}>
+            <StatsCard
+              title={he.propertyVisit.basicFeaturesScore}
+              value={`${Math.round(results.basicFeaturesScoreWeighted)}/30`}
+              icon={Building2}
+              iconColor="purple"
+            />
+          </AnimatedCard>
         </div>
       )}
 
@@ -161,54 +172,49 @@ const PropertyVisit = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="grid md:grid-cols-2 gap-4 pt-6">
-          <div>
-            <Label>{he.propertyVisit.address}</Label>
-            <Input
-              value={basicInfo.address}
-              onChange={(e) => setBasicInfo({ ...basicInfo, address: e.target.value })}
-              placeholder="למשל רחוב הרצל 123"
-            />
-          </div>
-          <div>
-            <Label>{he.propertyVisit.city}</Label>
-            <Input
-              value={basicInfo.city}
-              onChange={(e) => setBasicInfo({ ...basicInfo, city: e.target.value })}
-              placeholder="למשל תל אביב"
-            />
-          </div>
-          <div>
-            <Label>{he.propertyVisit.floor}</Label>
-            <Input
-              type="number"
-              value={basicInfo.floor || ''}
-              onChange={(e) => setBasicInfo({ ...basicInfo, floor: Number(e.target.value) })}
-            />
-          </div>
-          <div>
-            <Label>{he.propertyVisit.totalFloors}</Label>
-            <Input
-              type="number"
-              value={basicInfo.totalFloors || ''}
-              onChange={(e) => setBasicInfo({ ...basicInfo, totalFloors: Number(e.target.value) })}
-            />
-          </div>
-          <div>
-            <Label>{he.propertyVisit.registeredAreaSqm}</Label>
-            <Input
-              type="number"
-              value={basicInfo.registeredAreaSqm || ''}
-              onChange={(e) => setBasicInfo({ ...basicInfo, registeredAreaSqm: Number(e.target.value) })}
-            />
-          </div>
-          <div>
-            <Label>{he.propertyVisit.directions}</Label>
-            <Input
-              value={basicInfo.directions}
-              onChange={(e) => setBasicInfo({ ...basicInfo, directions: e.target.value })}
-              placeholder="למשל דרום-מערב"
-            />
-          </div>
+          <FieldWithTooltip
+            label={he.propertyVisit.address}
+            tooltip="הכתובת המלאה של הנכס כפי שמופיעה בטאבו"
+            type="text"
+            value={basicInfo.address}
+            onChange={(v) => setBasicInfo({ ...basicInfo, address: v })}
+            placeholder="למשל רחוב הרצל 123"
+          />
+          <FieldWithTooltip
+            label={he.propertyVisit.city}
+            tooltip="העיר בה נמצא הנכס"
+            type="text"
+            value={basicInfo.city}
+            onChange={(v) => setBasicInfo({ ...basicInfo, city: v })}
+            placeholder="למשל תל אביב"
+          />
+          <FieldWithTooltip
+            label={he.propertyVisit.floor}
+            tooltip="מספר הקומה של הדירה (0 = קרקע)"
+            value={basicInfo.floor || ''}
+            onChange={(v) => setBasicInfo({ ...basicInfo, floor: Number(v) })}
+          />
+          <FieldWithTooltip
+            label={he.propertyVisit.totalFloors}
+            tooltip="מספר הקומות הכולל בבניין"
+            value={basicInfo.totalFloors || ''}
+            onChange={(v) => setBasicInfo({ ...basicInfo, totalFloors: Number(v) })}
+          />
+          <FieldWithTooltip
+            label={he.propertyVisit.registeredAreaSqm}
+            tooltip="שטח הדירה במ״ר לפי נסח הטאבו. בדוק שהשטח תואם את המציאות"
+            value={basicInfo.registeredAreaSqm || ''}
+            onChange={(v) => setBasicInfo({ ...basicInfo, registeredAreaSqm: Number(v) })}
+            suffix="מ״ר"
+          />
+          <FieldWithTooltip
+            label={he.propertyVisit.directions}
+            tooltip="כיוון החזית הראשית (דרום = שמש, צפון = צל)"
+            type="text"
+            value={basicInfo.directions}
+            onChange={(v) => setBasicInfo({ ...basicInfo, directions: v })}
+            placeholder="למשל דרום-מערב"
+          />
           <div className="flex items-center gap-2">
             <Switch
               checked={basicInfo.hasElevator}
@@ -314,10 +320,46 @@ const PropertyVisit = () => {
         <div className="space-y-6 animate-in slide-in-from-bottom duration-500">
           {/* Radar Chart */}
           <Card className="border-0 shadow-xl">
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-2xl">ניתוח ויזואלי של הנכס</CardTitle>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => exportToPDF({
+                  title: 'דוח ביקור נכס',
+                  subtitle: `${basicInfo.address}, ${basicInfo.city}`,
+                  sections: [
+                    {
+                      title: 'פרטי הנכס',
+                      items: [
+                        { label: 'כתובת', value: `${basicInfo.address}, ${basicInfo.city}` },
+                        { label: 'קומה', value: `${basicInfo.floor} מתוך ${basicInfo.totalFloors}` },
+                        { label: 'שטח רשום', value: `${basicInfo.registeredAreaSqm} מ״ר` },
+                        { label: 'כיוון', value: basicInfo.directions || 'לא צוין' },
+                        { label: 'מעלית', value: basicInfo.hasElevator ? 'כן' : 'לא' },
+                        { label: 'חניה', value: basicInfo.hasParking ? 'כן' : 'לא' },
+                        { label: 'מחסן', value: basicInfo.hasStorage ? 'כן' : 'לא' },
+                      ],
+                    },
+                    {
+                      title: 'ציונים',
+                      items: [
+                        { label: 'ציון כולל', value: `${Math.round(results.overallPropertyScore)}/100` },
+                        { label: 'מצב פיזי', value: `${Math.round(results.conditionScoreWeighted)}/40` },
+                        { label: 'סביבה', value: `${Math.round(results.environmentScoreWeighted)}/30` },
+                        { label: 'תכונות בסיסיות', value: `${Math.round(results.basicFeaturesScoreWeighted)}/30` },
+                      ],
+                    },
+                  ],
+                  chartElementId: 'property-radar-chart',
+                })}
+              >
+                <FileDown className="w-4 h-4 ml-2" />
+                ייצוא PDF
+              </Button>
             </CardHeader>
             <CardContent>
+              <div id="property-radar-chart">
               <ResponsiveContainer width="100%" height={400}>
                 <RadarChart
                   data={[
@@ -338,6 +380,7 @@ const PropertyVisit = () => {
                   <Tooltip />
                 </RadarChart>
               </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
 

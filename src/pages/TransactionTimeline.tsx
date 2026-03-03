@@ -1,7 +1,5 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -11,12 +9,14 @@ import { Clock, DollarSign, Calculator, Wallet, Loader2 } from 'lucide-react';
 import { he } from '@/lib/translations/he';
 import { formatCurrency } from '@/lib/validation/validators';
 import { StatsCard } from '@/components/StatsCard';
+import { FieldWithTooltip } from '@/components/FieldWithTooltip';
 import { saveCalculation } from '@/lib/storage/calculator-history';
 import { toast } from '@/hooks/use-toast';
+import { useAutoPersist } from '@/hooks/useAutoPersist';
 
 const TransactionTimeline = () => {
-  const [purchasePrice, setPurchasePrice] = useState<number>(0);
-  const [sideCostsPercent, setSideCostsPercent] = useState<number>(7);
+  const [purchasePrice, setPurchasePrice] = useAutoPersist<number>('timeline-price', 0);
+  const [sideCostsPercent, setSideCostsPercent] = useAutoPersist<number>('timeline-side-pct', 7);
   const [results, setResults] = useState<TransactionCostCalculatorOutput | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
 
@@ -154,23 +154,22 @@ const TransactionTimeline = () => {
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid md:grid-cols-2 gap-4">
+            <FieldWithTooltip
+              label={he.transactionTimeline.purchasePrice}
+              tooltip="מחיר הנכס כפי שנקבע בהסכם הרכישה. על סכום זה יחושבו העלויות הנלוות"
+              value={purchasePrice || ''}
+              onChange={(v) => setPurchasePrice(Number(v))}
+              prefix="₪"
+              placeholder="למשל 1,500,000"
+            />
             <div>
-              <Label>{he.transactionTimeline.purchasePrice} ({he.common.currency})</Label>
-              <Input
-                type="number"
-                placeholder="למשל 1500000"
-                value={purchasePrice || ''}
-                onChange={(e) => setPurchasePrice(Number(e.target.value))}
-              />
-            </div>
-            <div>
-              <Label>{he.transactionTimeline.sideCostsPercent}</Label>
-              <Input
-                type="number"
-                step="0.5"
-                placeholder="למשל 7"
+              <FieldWithTooltip
+                label={he.transactionTimeline.sideCostsPercent}
+                tooltip="אחוז העלויות הנלוות מסך מחיר הרכישה. כולל מיסים, עו״ד, מתווך, שמאי ועוד"
                 value={sideCostsPercent}
-                onChange={(e) => setSideCostsPercent(Number(e.target.value))}
+                onChange={(v) => setSideCostsPercent(Number(v))}
+                suffix="%"
+                placeholder="למשל 7"
               />
               <p className="text-xs text-muted-foreground mt-1">
                 טווח טיפוסי: 6-10% (כולל מיסים, משפטי, מתווך, שמאי וכו')

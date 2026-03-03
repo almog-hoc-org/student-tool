@@ -18,11 +18,12 @@ import { SmartInsight, generateDealInsights } from '@/components/SmartInsight';
 import { HiddenCostsChecklist } from '@/components/HiddenCostsChecklist';
 import { ExecutiveSummary } from '@/components/ExecutiveSummary';
 import { FuelGauge } from '@/components/FuelGauge';
-import { Building2, Wallet, TrendingUp, Calculator, Loader2, Users } from 'lucide-react';
+import { Building2, Wallet, TrendingUp, Calculator, Loader2, Users, FileDown } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line } from 'recharts';
 import { saveCalculation } from '@/lib/storage/calculator-history';
 import { useAutoPersist } from '@/hooks/useAutoPersist';
 import { toast } from '@/hooks/use-toast';
+import { exportToPDF } from '@/lib/export/pdf-generator';
 
 const DealBusinessPlan = () => {
   const [dealType, setDealType] = useAutoPersist<DealType>('deal-type', 'rental');
@@ -424,6 +425,43 @@ const DealBusinessPlan = () => {
       {/* Results */}
       {results && (
         <div className="space-y-6">
+          <div className="flex justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => exportToPDF({
+                title: dealType === 'rental' ? 'תוכנית עסקית – השכרה' : 'תוכנית עסקית – פליפ',
+                subtitle: `מחיר: ${formatCurrency(input.basic.purchasePrice)}`,
+                sections: [
+                  {
+                    title: 'פרטי העסקה',
+                    items: [
+                      { label: 'מחיר רכישה', value: formatCurrency(input.basic.purchasePrice) },
+                      { label: 'הון עצמי', value: formatCurrency(input.basic.equity) },
+                      { label: 'עלויות נלוות', value: formatCurrency(input.basic.sideCosts) },
+                      ...(taxResult ? [{ label: 'מס רכישה', value: formatCurrency(taxResult.totalTax) }] : []),
+                    ],
+                  },
+                  {
+                    title: 'תוצאות',
+                    items: [
+                      { label: 'תשואה על ההון (CoC)', value: formatPercent(results.cocYield) },
+                      { label: 'ROI', value: formatPercent(results.roi) },
+                      ...(irrResult !== null ? [{ label: 'IRR', value: formatPercent(irrResult) }] : []),
+                      ...(results.netCashflowAnnual !== undefined ? [{ label: 'תזרים שנתי נטו', value: formatCurrency(results.netCashflowAnnual) }] : []),
+                      ...(results.grossProfit !== undefined ? [{ label: 'רווח גולמי', value: formatCurrency(results.grossProfit) }] : []),
+                      { label: 'סיווג', value: he.dealBusinessPlan.classificationLabels[results.classification as keyof typeof he.dealBusinessPlan.classificationLabels] },
+                    ],
+                  },
+                ],
+                chartElementId: 'deal-chart',
+              })}
+            >
+              <FileDown className="w-4 h-4 ml-2" />
+              ייצוא PDF
+            </Button>
+          </div>
+
           {/* Executive Summary */}
           <ExecutiveSummary
             type={dealType === 'rental' ? 'deal-rental' : 'deal-flip'}
@@ -506,6 +544,7 @@ const DealBusinessPlan = () => {
                     <TabsTrigger value="table">טבלה</TabsTrigger>
                   </TabsList>
                   <TabsContent value="chart">
+                    <div id="deal-chart">
                     <ResponsiveContainer width="100%" height={300}>
                       <BarChart data={[
                         { name: 'הכנסה שנתית', value: (input.rental?.expectedMonthlyRent || 0) * 12 * (input.rental?.occupancyRate || 0.95) },
@@ -519,6 +558,7 @@ const DealBusinessPlan = () => {
                         <Bar dataKey="value" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
+                    </div>
                   </TabsContent>
                   <TabsContent value="table">
                     <Table>

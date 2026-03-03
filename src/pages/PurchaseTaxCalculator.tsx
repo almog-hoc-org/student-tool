@@ -11,11 +11,14 @@ import { calculateSideCosts, getDefaultSideCostsInput, SideCostsInput, SideCosts
 import { formatCurrency } from '@/lib/validation/validators';
 import { StatsCard } from '@/components/StatsCard';
 import { SmartInsight, type Insight } from '@/components/SmartInsight';
-import { Calculator, Receipt, Percent, DollarSign, Home, Building2, Globe, Loader2, Check } from 'lucide-react';
+import { FieldWithTooltip } from '@/components/FieldWithTooltip';
+import { Calculator, Receipt, Percent, DollarSign, Home, Building2, Globe, Loader2, Check, FileDown } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { saveCalculation } from '@/lib/storage/calculator-history';
 import { toast } from '@/hooks/use-toast';
+import { useAutoPersist } from '@/hooks/useAutoPersist';
+import { exportToPDF } from '@/lib/export/pdf-generator';
 
 const CHART_COLORS = ['hsl(220 65% 48%)', 'hsl(38 80% 55%)', 'hsl(160 50% 45%)', 'hsl(280 45% 55%)', 'hsl(0 72% 50%)', 'hsl(200 60% 50%)'];
 
@@ -52,8 +55,8 @@ function generateTaxInsights(result: PurchaseTaxOutput, price: number, buyerType
 }
 
 export default function PurchaseTaxCalculator() {
-  const [purchasePrice, setPurchasePrice] = useState<number>(2000000);
-  const [buyerType, setBuyerType] = useState<BuyerType>('singleApartment');
+  const [purchasePrice, setPurchasePrice] = useAutoPersist<number>('ptax-price', 2000000);
+  const [buyerType, setBuyerType] = useAutoPersist<BuyerType>('ptax-buyer-type', 'singleApartment');
   const [taxResult, setTaxResult] = useState<PurchaseTaxOutput | null>(null);
   const [sideCostsResult, setSideCostsResult] = useState<SideCostsOutput | null>(null);
   const [sideCostsInput, setSideCostsInput] = useState<SideCostsInput>(getDefaultSideCostsInput(2000000));
@@ -147,14 +150,14 @@ export default function PurchaseTaxCalculator() {
           <CardTitle className="text-lg">מחיר הנכס</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
-            <Label>מחיר רכישה (₪)</Label>
-            <Input
-              type="number"
+          <div className="max-w-sm">
+            <FieldWithTooltip
+              label="מחיר רכישה"
+              tooltip="מחיר הנכס כפי שנקבע בהסכם הרכישה. מדרגות המס מחושבות לפי סכום זה"
               value={purchasePrice || ''}
-              onChange={(e) => setPurchasePrice(Number(e.target.value))}
+              onChange={(v) => setPurchasePrice(Number(v))}
+              prefix="₪"
               placeholder="למשל 2,000,000"
-              className="max-w-sm"
             />
           </div>
         </CardContent>
@@ -217,6 +220,40 @@ export default function PurchaseTaxCalculator() {
           {/* Smart Insights */}
           <SmartInsight insights={generateTaxInsights(taxResult, purchasePrice, buyerType)} />
 
+          <div className="flex justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => exportToPDF({
+                title: 'חישוב מס רכישה ועלויות נלוות',
+                subtitle: `מחיר: ${formatCurrency(purchasePrice)} | סוג רוכש: ${buyerTypeOptions.find(o => o.value === buyerType)?.label ?? buyerType}`,
+                sections: [
+                  {
+                    title: 'מס רכישה',
+                    items: [
+                      { label: 'מחיר רכישה', value: formatCurrency(purchasePrice) },
+                      { label: 'סוג רוכש', value: buyerTypeOptions.find(o => o.value === buyerType)?.label ?? buyerType },
+                      { label: 'מס רכישה', value: formatCurrency(taxResult.totalTax) },
+                      { label: 'שיעור אפקטיבי', value: `${(taxResult.effectiveRate * 100).toFixed(2)}%` },
+                    ],
+                  },
+                  ...(sideCostsResult ? [{
+                    title: 'עלויות נלוות',
+                    items: [
+                      ...sideCostsResult.items.map(item => ({ label: item.name, value: formatCurrency(item.amount) })),
+                      { label: 'סה״כ עלויות נלוות', value: formatCurrency(sideCostsResult.totalSideCosts) },
+                      { label: 'סה״כ כולל מס', value: formatCurrency(totalCosts) },
+                    ],
+                  }] : []),
+                ],
+                chartElementId: 'ptax-chart',
+              })}
+            >
+              <FileDown className="w-4 h-4 ml-2" />
+              ייצוא PDF
+            </Button>
+          </div>
+
           {/* Tax Brackets Table */}
           <Card className="border border-border/60 shadow-sm">
             <CardHeader>
@@ -265,6 +302,7 @@ export default function PurchaseTaxCalculator() {
                     <TabsTrigger value="table">טבלה</TabsTrigger>
                   </TabsList>
                   <TabsContent value="chart">
+                    <div id="ptax-chart">
                     <ResponsiveContainer width="100%" height={300}>
                       <PieChart>
                         <Pie data={pieData} cx="50%" cy="50%" innerRadius={70} outerRadius={110} paddingAngle={3} dataKey="value">
@@ -274,6 +312,7 @@ export default function PurchaseTaxCalculator() {
                         <Legend />
                       </PieChart>
                     </ResponsiveContainer>
+                    </div>
                   </TabsContent>
                   <TabsContent value="table">
                     <Table>
