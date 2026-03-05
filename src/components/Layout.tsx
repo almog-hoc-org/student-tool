@@ -182,12 +182,12 @@ export function Layout({ children }: { children: ReactNode }) {
             )}
 
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-secondary rounded-lg flex items-center justify-center">
-                <Home className="w-4 h-4 text-secondary-foreground" />
+            <Link to="/" className="flex items-center gap-2 group">
+              <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary/70 rounded-lg flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow duration-200">
+                <Home className="w-4 h-4 text-primary-foreground" />
               </div>
               <div className="hidden sm:block">
-                <span className="font-bold text-sm text-foreground">נווט הבית</span>
+                <span className="font-bold text-sm text-gradient-primary">נווט הבית</span>
               </div>
             </Link>
           </div>
@@ -224,6 +224,18 @@ export function Layout({ children }: { children: ReactNode }) {
         {/* Desktop Sidebar - only on calculator pages */}
         {isCalculatorPage && !isMobile && (
           <aside className="w-[240px] flex-shrink-0 bg-[hsl(var(--sidebar-background))] border-l border-[hsl(var(--sidebar-border))] sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto">
+            {/* Sidebar brand */}
+            <div className="px-4 py-4 border-b border-[hsl(var(--sidebar-border))]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 bg-gradient-to-br from-[hsl(var(--sidebar-primary))] to-[hsl(var(--sidebar-primary)/0.7)] rounded-lg flex items-center justify-center shadow-sm">
+                  <Home className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <p className="font-bold text-sm text-[hsl(var(--sidebar-foreground))]">נווט הבית</p>
+                  <p className="text-[10px] text-[hsl(var(--sidebar-foreground)/0.45)]">כלים חכמים לנדל"ן</p>
+                </div>
+              </div>
+            </div>
             <nav className="p-3 space-y-4">
               {navGroups.map((group) => (
                 <div key={group.label}>

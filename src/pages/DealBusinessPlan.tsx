@@ -19,7 +19,9 @@ import { HiddenCostsChecklist } from '@/components/HiddenCostsChecklist';
 import { ExecutiveSummary } from '@/components/ExecutiveSummary';
 import { FuelGauge } from '@/components/FuelGauge';
 import { Building2, Wallet, TrendingUp, Calculator, Loader2, Users } from 'lucide-react';
+import { PageHero } from '@/components/PageHero';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line } from 'recharts';
+import { motion } from 'framer-motion';
 import { saveCalculation } from '@/lib/storage/calculator-history';
 import { useAutoPersist } from '@/hooks/useAutoPersist';
 import { toast } from '@/hooks/use-toast';
@@ -111,6 +113,10 @@ const DealBusinessPlan = () => {
     saveCalculation({ type: 'deal', title, result, input });
     toast({ title: "החישוב הושלם בהצלחה", description: "התוצאות נשמרו בהיסטוריה" });
     setIsCalculating(false);
+
+    setTimeout(() => {
+      document.getElementById('deal-results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   };
 
   // Equity growth projection for rental
@@ -137,14 +143,11 @@ const DealBusinessPlan = () => {
 
   return (
     <div className="space-y-6 pb-8">
-      <Card className="border-0 shadow-lg glass-card">
-        <CardHeader>
-          <CardTitle className="text-3xl font-bold">{he.dealBusinessPlan.title}</CardTitle>
-          <CardDescription className="text-base">
-            {he.dealBusinessPlan.description}
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <PageHero
+        icon={<TrendingUp className="w-6 h-6 text-primary" />}
+        title={he.dealBusinessPlan.title}
+        description={he.dealBusinessPlan.description}
+      />
 
       {/* KPI Cards */}
       {results && (
@@ -423,7 +426,13 @@ const DealBusinessPlan = () => {
 
       {/* Results */}
       {results && (
-        <div className="space-y-6">
+        <motion.div
+          id="deal-results"
+          className="space-y-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+        >
           {/* Executive Summary */}
           <ExecutiveSummary
             type={dealType === 'rental' ? 'deal-rental' : 'deal-flip'}
@@ -677,7 +686,7 @@ const DealBusinessPlan = () => {
               </div>
             </CardContent>
           </Card>
-        </div>
+        </motion.div>
       )}
     </div>
   );

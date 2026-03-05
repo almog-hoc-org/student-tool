@@ -11,7 +11,9 @@ import { he } from '@/lib/translations/he';
 import { formatCurrency, formatPercent } from '@/lib/validation/validators';
 import { StatsCard } from '@/components/StatsCard';
 import { Hammer, TrendingUp, DollarSign, Calculator, Loader2 } from 'lucide-react';
+import { PageHero } from '@/components/PageHero';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { motion } from 'framer-motion';
 import { saveCalculation } from '@/lib/storage/calculator-history';
 import { toast } from '@/hooks/use-toast';
 
@@ -48,8 +50,12 @@ const RenovationFeasibility = () => {
       title: "החישוב הושלם בהצלחה",
       description: "התוצאות נשמרו בהיסטוריה",
     });
-    
+
     setIsCalculating(false);
+
+    setTimeout(() => {
+      document.getElementById('renovation-results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   };
 
   const classificationVariant = (classification: string) => {
@@ -60,14 +66,11 @@ const RenovationFeasibility = () => {
 
   return (
     <div className="space-y-6 pb-8">
-      <Card className="border-0 shadow-lg">
-        <CardHeader className="bg-gradient-to-r from-primary/5 via-background to-secondary/5">
-          <CardTitle className="text-3xl font-bold">{he.renovationFeasibility.title}</CardTitle>
-          <CardDescription className="text-base">
-            {he.renovationFeasibility.description}
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <PageHero
+        icon={<Hammer className="w-6 h-6 text-primary" />}
+        title={he.renovationFeasibility.title}
+        description={he.renovationFeasibility.description}
+      />
 
       {/* KPI Cards - Show after calculation */}
       {results && (
@@ -205,7 +208,13 @@ const RenovationFeasibility = () => {
 
       {/* Results */}
       {results && (
-        <div className="space-y-6 animate-in slide-in-from-bottom duration-500">
+        <motion.div
+          id="renovation-results"
+          className="space-y-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+        >
           {/* Before/After Chart */}
           <Card className="border-0 shadow-xl">
             <CardHeader>
@@ -335,7 +344,7 @@ const RenovationFeasibility = () => {
               </Card>
             </CardContent>
           </Card>
-        </div>
+        </motion.div>
       )}
     </div>
   );

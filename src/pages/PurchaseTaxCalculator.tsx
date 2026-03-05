@@ -12,6 +12,8 @@ import { formatCurrency } from '@/lib/validation/validators';
 import { StatsCard } from '@/components/StatsCard';
 import { SmartInsight, type Insight } from '@/components/SmartInsight';
 import { Calculator, Receipt, Percent, DollarSign, Home, Building2, Globe, Loader2, Check } from 'lucide-react';
+import { PageHero } from '@/components/PageHero';
+import { motion } from 'framer-motion';
 import { Switch } from '@/components/ui/switch';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { saveCalculation } from '@/lib/storage/calculator-history';
@@ -80,6 +82,10 @@ export default function PurchaseTaxCalculator() {
 
     toast({ title: 'החישוב הושלם', description: 'מס רכישה ועלויות נלוות חושבו בהצלחה' });
     setIsCalculating(false);
+
+    setTimeout(() => {
+      document.getElementById('tax-results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   };
 
   const totalCosts = (taxResult?.totalTax ?? 0) + (sideCostsResult?.totalSideCosts ?? 0);
@@ -91,13 +97,12 @@ export default function PurchaseTaxCalculator() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-6 py-6">
-      {/* Header */}
-      <Card className="border border-border/60 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold">מחשבון מס רכישה ועלויות נלוות</CardTitle>
-          <CardDescription>קבלו תוצאה מיידית! חשבו את מס הרכישה לפי מדרגות המס העדכניות ביותר וגלו בדיוק כמה תשלמו על כל העלויות הנלוות לעסקה</CardDescription>
-        </CardHeader>
-      </Card>
+      <PageHero
+        icon={<Receipt className="w-6 h-6 text-primary" />}
+        title="מחשבון מס רכישה ועלויות נלוות"
+        description="קבלו תוצאה מיידית! חשבו את מס הרכישה לפי מדרגות המס העדכניות ביותר וגלו בדיוק כמה תשלמו על כל העלויות הנלוות לעסקה"
+        badge="מדרגות 2025–2028"
+      />
 
       {/* KPI Cards */}
       {taxResult && (
@@ -213,7 +218,13 @@ export default function PurchaseTaxCalculator() {
 
       {/* Results */}
       {taxResult && (
-        <div className="space-y-6 animate-in slide-in-from-bottom duration-500">
+        <motion.div
+          id="tax-results"
+          className="space-y-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+        >
           {/* Smart Insights */}
           <SmartInsight insights={generateTaxInsights(taxResult, purchasePrice, buyerType)} />
 
@@ -309,7 +320,7 @@ export default function PurchaseTaxCalculator() {
               </CardContent>
             </Card>
           )}
-        </div>
+        </motion.div>
       )}
     </div>
   );
