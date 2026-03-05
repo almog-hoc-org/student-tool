@@ -292,7 +292,7 @@ export function ExecutiveSummary({
   return (
     <Card
       className={cn(
-        'overflow-hidden border-0',
+        'overflow-hidden border-0 glass-card-elevated relative',
         className
       )}
       dir="rtl"

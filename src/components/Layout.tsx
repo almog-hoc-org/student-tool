@@ -129,7 +129,7 @@ export function Layout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 border-b border-border/40 bg-background/85 backdrop-blur-xl">
         <div className="max-w-[1400px] mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {/* Mobile Menu (only on non-calculator pages) */}
@@ -261,10 +261,10 @@ export function Layout({ children }: { children: ReactNode }) {
           <AnimatePresence mode="wait">
             <motion.div
               key={currentPath}
-              initial={{ opacity: 0, y: 8 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2, ease: 'easeOut' }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
               className="p-4 sm:p-6"
             >
               {children}
@@ -290,8 +290,9 @@ export function Layout({ children }: { children: ReactNode }) {
                       : 'text-muted-foreground'
                   )}
                 >
-                  <item.icon className={cn('w-5 h-5', isActive && 'scale-110')} />
+                  <item.icon className={cn('w-5 h-5 transition-transform duration-200', isActive && 'scale-110')} />
                   <span className="text-[10px] font-medium">{item.name.split(' ')[0]}</span>
+                  {isActive && <div className="w-1 h-1 rounded-full bg-primary" />}
                 </Link>
               );
             })}
@@ -304,7 +305,7 @@ export function Layout({ children }: { children: ReactNode }) {
                 </button>
               </SheetTrigger>
               <SheetContent side="bottom" className="rounded-t-2xl pb-safe">
-                <div className="grid grid-cols-3 gap-3 p-4">
+                <div className="grid grid-cols-2 gap-3 p-4">
                   {[...flatNavItems.filter(item => !bottomTabItems.includes(item)), ...utilityNav].map((item) => (
                     <Link
                       key={item.href}
@@ -330,11 +331,11 @@ export function Layout({ children }: { children: ReactNode }) {
 
       {/* Footer - only on non-calculator pages */}
       {!isCalculatorPage && (
-        <footer className="border-t border-border/50 py-6 mt-auto">
-          <div className="max-w-6xl mx-auto px-4 text-center text-sm text-muted-foreground">
-            <p>© 2026 נווט הבית - כלים חכמים לנדל"ן ישראלי</p>
-            <p className="mt-1 text-xs opacity-60">
-              המידע המוצג הינו להמחשה בלבד ואינו מהווה ייעוץ פיננסי או משפטי
+        <footer className="border-t border-border/30 py-8 mt-auto">
+          <div className="max-w-6xl mx-auto px-4 text-center text-sm text-muted-foreground space-y-1">
+            <p className="font-medium">נווט הבית — כלים חכמים לנדל״ן ישראלי</p>
+            <p className="text-xs opacity-50">
+              המידע להמחשה בלבד ואינו מהווה ייעוץ פיננסי או משפטי
             </p>
           </div>
         </footer>

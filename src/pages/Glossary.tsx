@@ -156,7 +156,7 @@ export default function Glossary() {
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold">מילון מונחים</h1>
           <p className="text-muted-foreground max-w-lg mx-auto">
-            הסברים פשוטים למונחים חשובים בעולם הנדל"ן והמשכנתאות
+            נתקלתם במונח שלא הכרתם? כאן תמצאו הסברים פשוטים ודוגמאות ברורות לכל המושגים החשובים בעולם הנדל״ן והמשכנתאות
           </p>
         </div>
 
@@ -166,7 +166,7 @@ export default function Glossary() {
             <div className="relative">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
-                placeholder="חפש מונח..."
+                placeholder="הקלידו מונח או מילת מפתח לחיפוש..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pr-10 text-lg"

@@ -118,7 +118,7 @@ export default function History() {
                 היסטוריית חישובים
               </CardTitle>
               <CardDescription className="text-base mt-2">
-                כל החישובים שביצעת נשמרים כאן למעקב ושיתוף
+                כל החישובים שלך — במקום אחד, לצפייה, השוואה ושיתוף
               </CardDescription>
             </div>
             {history.length > 0 && (
@@ -233,12 +233,16 @@ export default function History() {
         </CardHeader>
         <CardContent>
           {filteredHistory.length === 0 ? (
-            <div className="text-center py-12">
-              <HistoryIcon className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
-              <h3 className="text-xl font-semibold mb-2">אין חישובים שמורים</h3>
-              <p className="text-muted-foreground">
-                התחל לבצע חישובים והם יופיעו כאן אוטומטית
-              </p>
+            <div className="text-center py-16 space-y-4">
+              <div className="w-20 h-20 mx-auto rounded-2xl bg-primary/8 flex items-center justify-center">
+                <HistoryIcon className="w-10 h-10 text-primary/40" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-semibold">עוד אין חישובים שמורים</h3>
+                <p className="text-muted-foreground max-w-md mx-auto">
+                  כל חישוב שתבצע יישמר כאן אוטומטית — כך תוכל לעקוב, להשוות ולשתף
+                </p>
+              </div>
             </div>
           ) : (
             <Table>

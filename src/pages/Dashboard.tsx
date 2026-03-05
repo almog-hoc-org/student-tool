@@ -100,12 +100,12 @@ export default function Dashboard() {
               <Sparkles className="h-6 w-6 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold">ברוך הבא לדשבורד שלך</h1>
-              <p className="text-muted-foreground">מרכז הבקרה הפיננסי שלך</p>
+              <h1 className="text-3xl font-bold">הדשבורד שלך</h1>
+              <p className="text-muted-foreground">כל החישובים והתובנות — במקום אחד</p>
             </div>
           </div>
           <p className="text-lg mb-6 max-w-2xl">
-            עקוב אחר החישובים שלך, נתח מגמות וקבל תובנות חכמות על הפעילות הפיננסית שלך
+            עקוב אחר חישובים, נתח מגמות וקבל המלצות חכמות
           </p>
         </div>
         <div className="absolute top-0 left-0 w-full h-full opacity-5">

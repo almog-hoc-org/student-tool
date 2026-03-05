@@ -1,128 +1,133 @@
-@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Lora&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Cascadia+Code&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Design System — "Boutique Fintech"
-   Palette: Warm Cream (#FFFDF5) / Deep Navy (#1A2238) / Burnt Orange (#E67E22)
-   Traffic Light: Green / Yellow / Red
+/* Design System — "Modern Fintech"
+   Palette: Soft White / Deep Indigo / Warm Gold Accent
+   Traffic Light: Green / Amber / Red
    All colors MUST be HSL.
 */
 
 @layer base {
   :root {
-    --background: 42 100% 98%;
-    --foreground: 220 40% 13%;
+    --background: 225 20% 97%;
+    --foreground: 230 35% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 40% 13%;
+    --card-foreground: 230 35% 15%;
 
-    --popover: 42 40% 96%;
-    --popover-foreground: 220 40% 13%;
+    --popover: 225 20% 97%;
+    --popover-foreground: 230 35% 15%;
 
-    --primary: 24 80% 52%;
+    --primary: 230 65% 52%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 40% 13%;
-    --secondary-foreground: 42 30% 95%;
+    --secondary: 230 35% 15%;
+    --secondary-foreground: 225 20% 95%;
 
-    --muted: 220 15% 85%;
-    --muted-foreground: 220 20% 40%;
+    --muted: 225 15% 88%;
+    --muted-foreground: 225 15% 42%;
 
-    --accent: 42 30% 95%;
-    --accent-foreground: 220 40% 13%;
+    --accent: 225 20% 95%;
+    --accent-foreground: 230 35% 15%;
 
     --destructive: 0 72% 50%;
     --destructive-foreground: 0 85% 97%;
 
-    --border: 220 15% 85%;
-    --input: 220 15% 85%;
-    --ring: 24 80% 52%;
+    --border: 225 15% 87%;
+    --input: 225 15% 87%;
+    --ring: 230 65% 52%;
 
     --radius: 1rem;
 
-    --sidebar-background: 220 40% 13%;
-    --sidebar-foreground: 42 30% 92%;
-    --sidebar-primary: 24 80% 52%;
+    /* Gold accent for CTAs and highlights */
+    --gold: 38 90% 55%;
+    --gold-light: 38 90% 92%;
+
+    --sidebar-background: 230 35% 15%;
+    --sidebar-foreground: 225 20% 92%;
+    --sidebar-primary: 230 65% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 35% 20%;
-    --sidebar-accent-foreground: 42 30% 92%;
-    --sidebar-border: 220 30% 22%;
-    --sidebar-ring: 24 80% 52%;
+    --sidebar-accent: 230 30% 22%;
+    --sidebar-accent-foreground: 225 20% 92%;
+    --sidebar-border: 230 25% 24%;
+    --sidebar-ring: 230 65% 55%;
 
     /* Traffic Light + Brand Chart Colors */
-    --chart-1: 142 71% 45%;
-    --chart-2: 45 93% 47%;
+    --chart-1: 152 60% 42%;
+    --chart-2: 38 90% 52%;
     --chart-3: 0 72% 50%;
-    --chart-4: 24 80% 52%;
-    --chart-5: 220 40% 13%;
+    --chart-4: 230 65% 52%;
+    --chart-5: 230 35% 15%;
 
-    --sidebar: 220 40% 13%;
+    --sidebar: 230 35% 15%;
 
-    --font-sans: Poppins, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji;
-    --font-serif: Lora, ui-serif, Georgia, Cambria, Times New Roman, Times, serif;
-    --font-mono: "Cascadia Code", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
+    --font-sans: Heebo, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji;
+    --font-serif: Heebo, ui-serif, Georgia, Cambria, Times New Roman, Times, serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
 
     --shadow-2xs: 0 1px 2px 0px hsl(0 0% 0% / 0.04);
     --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-    --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.08), 0 1px 2px -1px hsl(0 0% 0% / 0.08);
-    --shadow: 0 2px 4px 0px hsl(0 0% 0% / 0.06), 0 1px 2px -1px hsl(0 0% 0% / 0.06);
-    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.07), 0 2px 4px -2px hsl(0 0% 0% / 0.07);
-    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.07), 0 4px 6px -4px hsl(0 0% 0% / 0.07);
-    --shadow-xl: 0 20px 25px -5px hsl(0 0% 0% / 0.07), 0 8px 10px -6px hsl(0 0% 0% / 0.07);
-    --shadow-2xl: 0 25px 50px -12px hsl(0 0% 0% / 0.2);
+    --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.06), 0 1px 2px -1px hsl(0 0% 0% / 0.06);
+    --shadow: 0 2px 4px 0px hsl(0 0% 0% / 0.05), 0 1px 2px -1px hsl(0 0% 0% / 0.05);
+    --shadow-md: 0 4px 8px -2px hsl(230 65% 52% / 0.06), 0 2px 4px -2px hsl(0 0% 0% / 0.04);
+    --shadow-lg: 0 10px 20px -4px hsl(230 65% 52% / 0.08), 0 4px 8px -4px hsl(0 0% 0% / 0.04);
+    --shadow-xl: 0 20px 30px -6px hsl(230 65% 52% / 0.10), 0 8px 12px -6px hsl(0 0% 0% / 0.04);
+    --shadow-2xl: 0 25px 50px -12px hsl(230 65% 52% / 0.18);
 
     --tracking-normal: 0em;
     --spacing: 0.25rem;
   }
 
   .dark {
-    --background: 220 40% 8%;
-    --foreground: 42 30% 92%;
+    --background: 230 30% 8%;
+    --foreground: 225 20% 92%;
 
-    --card: 220 35% 14%;
-    --card-foreground: 42 30% 92%;
+    --card: 230 25% 13%;
+    --card-foreground: 225 20% 92%;
 
-    --popover: 220 35% 16%;
-    --popover-foreground: 42 30% 92%;
+    --popover: 230 25% 15%;
+    --popover-foreground: 225 20% 92%;
 
-    --primary: 24 85% 55%;
+    --primary: 230 70% 62%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 30% 75%;
-    --secondary-foreground: 220 40% 8%;
+    --secondary: 225 20% 78%;
+    --secondary-foreground: 230 30% 8%;
 
-    --muted: 220 15% 30%;
-    --muted-foreground: 220 15% 65%;
+    --muted: 230 15% 22%;
+    --muted-foreground: 225 12% 62%;
 
-    --accent: 220 30% 18%;
-    --accent-foreground: 42 30% 85%;
+    --accent: 230 20% 17%;
+    --accent-foreground: 225 20% 85%;
 
     --destructive: 0 72% 60%;
     --destructive-foreground: 0 85% 97%;
 
-    --border: 220 20% 22%;
-    --input: 220 20% 22%;
-    --ring: 24 85% 55%;
+    --border: 230 15% 20%;
+    --input: 230 15% 20%;
+    --ring: 230 70% 62%;
 
-    --sidebar-background: 220 42% 6%;
-    --sidebar-foreground: 42 30% 92%;
-    --sidebar-primary: 24 85% 55%;
+    --gold: 38 85% 60%;
+    --gold-light: 38 40% 18%;
+
+    --sidebar-background: 230 30% 6%;
+    --sidebar-foreground: 225 20% 92%;
+    --sidebar-primary: 230 70% 62%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 30% 14%;
-    --sidebar-accent-foreground: 42 30% 85%;
-    --sidebar-border: 220 25% 18%;
-    --sidebar-ring: 24 85% 55%;
+    --sidebar-accent: 230 22% 15%;
+    --sidebar-accent-foreground: 225 20% 85%;
+    --sidebar-border: 230 20% 17%;
+    --sidebar-ring: 230 70% 62%;
 
-    --chart-1: 142 71% 55%;
-    --chart-2: 45 93% 55%;
+    --chart-1: 152 60% 52%;
+    --chart-2: 38 85% 58%;
     --chart-3: 0 72% 60%;
-    --chart-4: 24 85% 55%;
-    --chart-5: 220 30% 60%;
+    --chart-4: 230 70% 62%;
+    --chart-5: 225 20% 60%;
 
-    --sidebar: 220 42% 6%;
+    --sidebar: 230 30% 6%;
 
     --shadow-2xs: 0 1px 2px 0px hsl(0 0% 0% / 0.12);
     --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.15);
@@ -138,13 +143,51 @@
 @layer components {
   /* Glassmorphism cards */
   .glass-card {
-    @apply backdrop-blur-xl shadow-xl rounded-xl;
-    background: hsl(0 0% 100% / 0.85);
-    border: 1px solid hsl(0 0% 100% / 0.3);
+    @apply backdrop-blur-xl rounded-xl;
+    background: hsl(0 0% 100% / 0.80);
+    border: 1px solid hsl(230 40% 90% / 0.6);
+    box-shadow: 0 4px 24px -4px hsl(230 65% 52% / 0.06), 0 1px 2px hsl(0 0% 0% / 0.03);
   }
   .dark .glass-card {
-    background: hsl(220 35% 14% / 0.80);
-    border-color: hsl(220 30% 30% / 0.3);
+    background: hsl(230 25% 13% / 0.80);
+    border-color: hsl(230 20% 30% / 0.3);
+    box-shadow: 0 4px 24px -4px hsl(0 0% 0% / 0.3);
+  }
+
+  /* Elevated glass variant */
+  .glass-card-elevated {
+    @apply glass-card;
+    box-shadow: 0 8px 32px -4px hsl(230 65% 52% / 0.10), 0 2px 6px hsl(0 0% 0% / 0.04);
+  }
+  .dark .glass-card-elevated {
+    box-shadow: 0 8px 32px -4px hsl(0 0% 0% / 0.4);
+  }
+
+  /* Gradient text utility */
+  .text-gradient-primary {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(230 65% 52%), hsl(260 60% 58%));
+  }
+  .dark .text-gradient-primary {
+    background-image: linear-gradient(135deg, hsl(230 70% 68%), hsl(260 65% 72%));
+  }
+
+  /* Gradient backgrounds */
+  .bg-gradient-hero {
+    background: linear-gradient(135deg, hsl(225 20% 97%) 0%, hsl(230 30% 94%) 50%, hsl(225 20% 97%) 100%);
+  }
+  .dark .bg-gradient-hero {
+    background: linear-gradient(135deg, hsl(230 30% 8%) 0%, hsl(230 25% 11%) 50%, hsl(230 30% 8%) 100%);
+  }
+
+  /* Subtle dot pattern for hero sections */
+  .bg-dots {
+    background-image: radial-gradient(hsl(230 30% 80% / 0.3) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+  .dark .bg-dots {
+    background-image: radial-gradient(hsl(230 20% 30% / 0.4) 1px, transparent 1px);
+    background-size: 24px 24px;
   }
 
   /* Traffic Light utilities */
@@ -158,16 +201,16 @@
     color: hsl(var(--chart-3));
   }
   .traffic-green-bg {
-    background-color: hsl(var(--chart-1) / 0.1);
-    border-color: hsl(var(--chart-1) / 0.3);
+    background-color: hsl(var(--chart-1) / 0.08);
+    border-color: hsl(var(--chart-1) / 0.25);
   }
   .traffic-yellow-bg {
-    background-color: hsl(var(--chart-2) / 0.1);
-    border-color: hsl(var(--chart-2) / 0.3);
+    background-color: hsl(var(--chart-2) / 0.08);
+    border-color: hsl(var(--chart-2) / 0.25);
   }
   .traffic-red-bg {
-    background-color: hsl(var(--chart-3) / 0.1);
-    border-color: hsl(var(--chart-3) / 0.3);
+    background-color: hsl(var(--chart-3) / 0.08);
+    border-color: hsl(var(--chart-3) / 0.25);
   }
 }
 

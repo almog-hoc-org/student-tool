@@ -95,7 +95,7 @@ export default function PurchaseTaxCalculator() {
       <Card className="border border-border/60 shadow-sm">
         <CardHeader>
           <CardTitle className="text-2xl font-bold">מחשבון מס רכישה ועלויות נלוות</CardTitle>
-          <CardDescription>חשב את מס הרכישה לפי מדרגות 2024 ואת כלל העלויות הנלוות לעסקה</CardDescription>
+          <CardDescription>קבלו תוצאה מיידית! חשבו את מס הרכישה לפי מדרגות המס העדכניות ביותר וגלו בדיוק כמה תשלמו על כל העלויות הנלוות לעסקה</CardDescription>
         </CardHeader>
       </Card>
 

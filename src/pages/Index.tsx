@@ -37,20 +37,20 @@ function CalculatorCard({ title, description, icon, link, iconBg, index }: Calcu
       transition={{ delay: index * 0.07, duration: 0.4, ease: 'easeOut' }}
     >
       <Link to={link} className="block group">
-        <Card className="glass-card border-transparent hover:border-primary/30 hover:shadow-2xl transition-all duration-300 h-full overflow-hidden">
+        <Card className="glass-card border-border/40 hover:border-primary/25 hover:shadow-xl transition-all duration-300 h-full overflow-hidden hover:-translate-y-1">
           <CardHeader className="pb-3">
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 ${iconBg} group-hover:scale-110 transition-transform duration-300`}>
+            <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-3 ${iconBg} group-hover:scale-110 transition-transform duration-300`}>
               {icon}
             </div>
-            <CardTitle className="text-lg">{title}</CardTitle>
+            <CardTitle className="text-lg leading-tight">{title}</CardTitle>
             <CardDescription className="text-sm leading-relaxed">
               {description}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between text-primary text-sm font-medium group-hover:gap-1 transition-all">
-              <span>התחל עכשיו</span>
-              <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            <div className="flex items-center justify-between text-primary text-sm font-medium">
+              <span>בוא נתחיל</span>
+              <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1.5 transition-transform duration-300" />
             </div>
           </CardContent>
         </Card>
@@ -63,56 +63,56 @@ export default function Index() {
   const calculators = [
     {
       title: 'בדיקה פיננסית',
-      description: 'כמה אתה באמת יכול להרשות לעצמך? גלה את התקציב האמיתי שלך',
+      description: 'כמה באמת יש לך? גלה בדיוק כמה דירה אתה יכול לקנות',
       icon: <Calculator className="w-6 h-6 text-secondary" />,
       link: '/financial-checkup',
       iconBg: 'bg-primary/15',
     },
     {
       title: 'מחשבון משכנתא',
-      description: 'בנה תמהיל חכם וראה כמה תשלם כל חודש ובסך הכל',
+      description: 'בנה תמהיל, השווה מסלולים וראה כמה תשלם — חודשי וכולל',
       icon: <Home className="w-6 h-6 text-secondary" />,
       link: '/mortgage-calculator',
       iconBg: 'bg-secondary/10',
     },
     {
       title: 'תוכנית עסקית',
-      description: 'בדוק כדאיות עסקה עם תשואה, IRR ותזרים מזומנים',
+      description: 'שווה לקנות? בדוק תשואה, IRR ותזרים על כל עסקה',
       icon: <TrendingUp className="w-6 h-6 text-secondary" />,
       link: '/deal-business-plan',
       iconBg: 'bg-[hsl(var(--chart-1)/0.15)]',
     },
     {
       title: 'כדאיות שיפוץ',
-      description: 'האם השיפוץ ישתלם? בדוק עליית ערך מול עלות',
+      description: 'שיפוץ = רווח? גלה אם הכסף יחזור אליך',
       icon: <Hammer className="w-6 h-6 text-secondary" />,
       link: '/renovation-feasibility',
       iconBg: 'bg-[hsl(var(--chart-2)/0.15)]',
     },
     {
       title: 'ביקור בנכס',
-      description: 'רשימת בדיקות מקצועית – אל תשכח שום דבר בביקור',
+      description: 'לא לפספס כלום — צ׳קליסט מקצועי לביקור בדירה',
       icon: <ClipboardCheck className="w-6 h-6 text-secondary" />,
       link: '/property-visit',
       iconBg: 'bg-primary/10',
     },
     {
       title: 'ציר זמן לעסקה',
-      description: 'כל השלבים, הזמנים והעלויות ברכישת דירה',
+      description: 'מהצעה ועד מפתח — כל שלב, זמן ועלות',
       icon: <Calendar className="w-6 h-6 text-secondary" />,
       link: '/transaction-timeline',
       iconBg: 'bg-secondary/10',
     },
     {
       title: 'התחדשות עירונית',
-      description: 'תמ"א 38 ופינוי-בינוי — מה זה ואיך מרוויחים מזה',
+      description: 'תמ״א 38 ופינוי-בינוי — מה זה שווה לך?',
       icon: <Building2 className="w-6 h-6 text-secondary" />,
       link: '/urban-renewal',
       iconBg: 'bg-[hsl(var(--chart-1)/0.12)]',
     },
     {
       title: 'מחשבון מס רכישה',
-      description: 'חישוב מס רכישה לפי מדרגות מוקפאות 2025-2028',
+      description: 'כמה מס תשלם? חישוב מיידי לפי מדרגות 2025–2028',
       icon: <Receipt className="w-6 h-6" />,
       link: '/purchase-tax',
       iconBg: 'bg-primary/10',
@@ -127,20 +127,20 @@ export default function Index() {
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-center space-y-4 py-8 sm:py-12"
+          className="text-center space-y-4 py-10 sm:py-14"
         >
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-primary/10 text-primary rounded-full text-sm font-medium mb-2">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-primary/8 text-primary rounded-full text-sm font-medium mb-2">
             <Sparkles className="w-4 h-4" />
-            <span>מעודכן פברואר 2026 — מדרגות מס, ריביות ומדדים</span>
+            <span>עדכון מרץ 2026 — מדרגות מס, ריביות ומדדים חדשים</span>
           </div>
-          <h1 className="text-3xl sm:text-5xl font-bold text-foreground leading-tight">
-            <span className="text-secondary">נווט הבית</span>
-            <br />
-            <span className="text-primary">הדרך החכמה לדירה</span>
+          <h1 className="text-3xl sm:text-5xl font-extrabold text-foreground leading-tight">
+            <span className="text-gradient-primary">נווט הבית</span>
           </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            מערכת מקצועית לתכנון רכישת נדל"ן בישראל.
-            מס רכישה, משכנתא, תשואה ותזרים — הכל במקום אחד.
+          <p className="text-xl sm:text-2xl font-medium text-foreground/80 max-w-2xl mx-auto">
+            כל הכלים שצריך כדי לקנות דירה בביטחון
+          </p>
+          <p className="text-base text-muted-foreground max-w-xl mx-auto leading-relaxed">
+            מס רכישה, משכנתא, תשואה ותזרים — הכל במקום אחד, בחינם.
           </p>
         </motion.div>
 
@@ -157,7 +157,7 @@ export default function Index() {
                   <Shield className="w-5 h-5 text-primary" />
                 </div>
                 <div className="space-y-2">
-                  <h3 className="font-semibold text-lg">3 צעדים לתכנון חכם:</h3>
+                  <h3 className="font-semibold text-lg">מתחילים? 3 צעדים וזהו:</h3>
                   <ol className="text-muted-foreground space-y-1 list-decimal list-inside text-sm sm:text-base">
                     <li><strong className="text-foreground">בדיקה פיננסית</strong> — גלה מה התקציב האמיתי שלך</li>
                     <li><strong className="text-foreground">מחשבון משכנתא</strong> — בנה תמהיל וחשב החזר חודשי</li>
