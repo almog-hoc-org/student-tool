@@ -139,7 +139,7 @@ export default {
   		},
   		fontFamily: {
   			sans: [
-  				'Poppins',
+  				'Heebo',
   				'ui-sans-serif',
   				'system-ui',
   				'sans-serif',
@@ -149,7 +149,7 @@ export default {
   				'Noto Color Emoji'
   			],
   			serif: [
-  				'Lora',
+  				'Heebo',
   				'ui-serif',
   				'Georgia',
   				'Cambria',
@@ -158,7 +158,6 @@ export default {
   				'serif'
   			],
   			mono: [
-  				'Cascadia Code',
   				'ui-monospace',
   				'SFMono-Regular',
   				'Menlo',

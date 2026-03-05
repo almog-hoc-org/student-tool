@@ -13,6 +13,7 @@ import { ConfidenceGauge } from '@/components/ConfidenceGauge';
 import { FuelGauge } from '@/components/FuelGauge';
 import { ExecutiveSummary } from '@/components/ExecutiveSummary';
 import { saveCalculation } from '@/lib/storage/calculator-history';
+import { motion } from 'framer-motion';
 import { useAutoPersist } from '@/hooks/useAutoPersist';
 import { formatCurrency as sharedFormatCurrency } from '@/lib/validation/validators';
 import {
@@ -493,11 +494,11 @@ const FinancialCheckup = () => {
       </div>
 
       {/* Calculate Button */}
-      <div className="flex justify-center pt-4">
-        <Button 
-          onClick={handleCalculate} 
-          size="lg" 
-          className="px-12 py-6 text-lg rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
+      <div className="flex justify-center sticky bottom-20 md:bottom-8 z-10">
+        <Button
+          onClick={handleCalculate}
+          size="lg"
+          className="px-12 py-6 text-lg shadow-2xl rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
         >
           <Calculator className="ml-2 h-5 w-5" />
           {he.common.calculate}
@@ -506,7 +507,13 @@ const FinancialCheckup = () => {
 
       {/* Results Section */}
       {results && (
-        <div id="results" className="space-y-8 animate-slide-up">
+        <motion.div
+          id="results"
+          className="space-y-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+        >
           {/* Smart Insights */}
           <SmartInsight
             insights={generateFinancialInsights({
@@ -703,7 +710,7 @@ const FinancialCheckup = () => {
               </CardContent>
             </Card>
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* Empty State */}

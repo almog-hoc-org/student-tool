@@ -12,6 +12,8 @@ import { formatCurrency } from '@/lib/validation/validators';
 import { StatsCard } from '@/components/StatsCard';
 import { SmartInsight, type Insight } from '@/components/SmartInsight';
 import { Calculator, Receipt, Percent, DollarSign, Home, Building2, Globe, Loader2, Check } from 'lucide-react';
+import { PageHero } from '@/components/PageHero';
+import { motion } from 'framer-motion';
 import { Switch } from '@/components/ui/switch';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { saveCalculation } from '@/lib/storage/calculator-history';
@@ -80,6 +82,10 @@ export default function PurchaseTaxCalculator() {
 
     toast({ title: 'החישוב הושלם', description: 'מס רכישה ועלויות נלוות חושבו בהצלחה' });
     setIsCalculating(false);
+
+    setTimeout(() => {
+      document.getElementById('tax-results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   };
 
   const totalCosts = (taxResult?.totalTax ?? 0) + (sideCostsResult?.totalSideCosts ?? 0);
@@ -91,17 +97,16 @@ export default function PurchaseTaxCalculator() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-6 py-6">
-      {/* Header */}
-      <Card className="border border-border/60 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold">מחשבון מס רכישה ועלויות נלוות</CardTitle>
-          <CardDescription>חשב את מס הרכישה לפי מדרגות 2024 ואת כלל העלויות הנלוות לעסקה</CardDescription>
-        </CardHeader>
-      </Card>
+      <PageHero
+        icon={<Receipt className="w-6 h-6 text-primary" />}
+        title="מחשבון מס רכישה ועלויות נלוות"
+        description="קבלו תוצאה מיידית! חשבו את מס הרכישה לפי מדרגות המס העדכניות ביותר וגלו בדיוק כמה תשלמו על כל העלויות הנלוות לעסקה"
+        badge="מדרגות 2025–2028"
+      />
 
       {/* KPI Cards */}
       {taxResult && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 animate-in slide-in-from-bottom duration-500">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
           <StatsCard title="מס רכישה" value={formatCurrency(taxResult.totalTax)} icon={Receipt} iconColor="orange" />
           <StatsCard title="שיעור אפקטיבי" value={`${(taxResult.effectiveRate * 100).toFixed(2)}%`} icon={Percent} iconColor="blue" />
           <StatsCard title="עלויות נלוות" value={formatCurrency(sideCostsResult?.totalSideCosts ?? 0)} icon={DollarSign} iconColor="purple" />
@@ -154,7 +159,7 @@ export default function PurchaseTaxCalculator() {
               value={purchasePrice || ''}
               onChange={(e) => setPurchasePrice(Number(e.target.value))}
               placeholder="למשל 2,000,000"
-              className="max-w-sm"
+              className="w-full sm:max-w-sm"
             />
           </div>
         </CardContent>
@@ -205,7 +210,7 @@ export default function PurchaseTaxCalculator() {
       </Card>
 
       {/* Calculate Button */}
-      <div className="flex justify-center sticky bottom-8 z-10">
+      <div className="flex justify-center sticky bottom-20 md:bottom-8 z-10">
         <Button onClick={handleCalculate} size="lg" disabled={isCalculating || purchasePrice <= 0} className="px-10 py-5 text-base shadow-lg rounded-full">
           {isCalculating ? (<><Loader2 className="ml-2 h-5 w-5 animate-spin" />מחשב...</>) : (<><Calculator className="ml-2 h-5 w-5" />חשב מס ועלויות</>)}
         </Button>
@@ -213,7 +218,13 @@ export default function PurchaseTaxCalculator() {
 
       {/* Results */}
       {taxResult && (
-        <div className="space-y-6 animate-in slide-in-from-bottom duration-500">
+        <motion.div
+          id="tax-results"
+          className="space-y-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+        >
           {/* Smart Insights */}
           <SmartInsight insights={generateTaxInsights(taxResult, purchasePrice, buyerType)} />
 
@@ -309,7 +320,7 @@ export default function PurchaseTaxCalculator() {
               </CardContent>
             </Card>
           )}
-        </div>
+        </motion.div>
       )}
     </div>
   );

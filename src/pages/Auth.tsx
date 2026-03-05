@@ -47,7 +47,7 @@ export default function Auth() {
         });
         if (error) throw error;
         toast({
-          title: 'נרשמת בהצלחה!',
+          title: 'ברוך הבא!',
           description: 'בדוק את המייל שלך לאישור החשבון',
         });
       }
@@ -83,16 +83,16 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4" dir="rtl">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen bg-gradient-hero bg-dots flex items-center justify-center p-4" dir="rtl">
+      <Card className="w-full max-w-md glass-card-elevated border-border/50">
         <CardHeader className="text-center space-y-4">
           <div className="mx-auto w-14 h-14 bg-primary rounded-2xl flex items-center justify-center">
             <Calculator className="w-7 h-7 text-primary-foreground" />
           </div>
           <div>
-            <CardTitle className="text-2xl">כלי נדל"ן</CardTitle>
+            <CardTitle className="text-2xl">נווט הבית</CardTitle>
             <CardDescription className="mt-2">
-              {isLogin ? 'התחבר כדי להמשיך' : 'צור חשבון חדש'}
+              {isLogin ? 'שמור את החישובים שלך ונתח מגמות' : 'צור חשבון חדש ותתחיל לתכנן'}
             </CardDescription>
           </div>
         </CardHeader>

@@ -46,7 +46,7 @@ const StatusIcon: Record<TrafficStatus, LucideIcon> = {
 export function StatsCard({ title, value, icon: Icon, iconColor = 'blue', status, trend, subtitle }: StatsCardProps) {
   return (
     <Card className={cn(
-      'border-0 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden glass-card',
+      'border-0 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden glass-card hover:-translate-y-0.5',
       status && statusBorderClasses[status]
     )}>
       <CardContent className="pt-5 pb-4">

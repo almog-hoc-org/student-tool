@@ -19,7 +19,9 @@ import { HiddenCostsChecklist } from '@/components/HiddenCostsChecklist';
 import { ExecutiveSummary } from '@/components/ExecutiveSummary';
 import { FuelGauge } from '@/components/FuelGauge';
 import { Building2, Wallet, TrendingUp, Calculator, Loader2, Users } from 'lucide-react';
+import { PageHero } from '@/components/PageHero';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line } from 'recharts';
+import { motion } from 'framer-motion';
 import { saveCalculation } from '@/lib/storage/calculator-history';
 import { useAutoPersist } from '@/hooks/useAutoPersist';
 import { toast } from '@/hooks/use-toast';
@@ -111,6 +113,10 @@ const DealBusinessPlan = () => {
     saveCalculation({ type: 'deal', title, result, input });
     toast({ title: "החישוב הושלם בהצלחה", description: "התוצאות נשמרו בהיסטוריה" });
     setIsCalculating(false);
+
+    setTimeout(() => {
+      document.getElementById('deal-results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   };
 
   // Equity growth projection for rental
@@ -137,18 +143,15 @@ const DealBusinessPlan = () => {
 
   return (
     <div className="space-y-6 pb-8">
-      <Card className="border-0 shadow-lg glass-card">
-        <CardHeader>
-          <CardTitle className="text-3xl font-bold">{he.dealBusinessPlan.title}</CardTitle>
-          <CardDescription className="text-base">
-            {he.dealBusinessPlan.description}
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <PageHero
+        icon={<TrendingUp className="w-6 h-6 text-primary" />}
+        title={he.dealBusinessPlan.title}
+        description={he.dealBusinessPlan.description}
+      />
 
       {/* KPI Cards */}
       {results && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           <StatsCard
             title={he.dealBusinessPlan.totalDealCost}
             value={formatCurrency(results.totalDealCost + (taxResult?.totalTax || 0))}
@@ -415,7 +418,7 @@ const DealBusinessPlan = () => {
         </Card>
       )}
 
-      <div className="flex justify-center sticky bottom-8 z-10">
+      <div className="flex justify-center sticky bottom-20 md:bottom-8 z-10">
         <Button onClick={handleCalculate} size="lg" disabled={isCalculating} className="px-12 py-6 text-lg shadow-2xl rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
           {isCalculating ? (<><Loader2 className="ml-2 h-5 w-5 animate-spin" />מחשב...</>) : (<><Calculator className="ml-2 h-5 w-5" />{he.common.calculate}</>)}
         </Button>
@@ -423,7 +426,13 @@ const DealBusinessPlan = () => {
 
       {/* Results */}
       {results && (
-        <div className="space-y-6">
+        <motion.div
+          id="deal-results"
+          className="space-y-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+        >
           {/* Executive Summary */}
           <ExecutiveSummary
             type={dealType === 'rental' ? 'deal-rental' : 'deal-flip'}
@@ -612,7 +621,7 @@ const DealBusinessPlan = () => {
               <CardTitle className="text-3xl">{he.dealBusinessPlan.resultsTitle}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <Card>
                   <CardHeader><CardTitle className="text-sm text-muted-foreground">{he.dealBusinessPlan.totalDealCost}</CardTitle></CardHeader>
                   <CardContent><p className="text-2xl font-bold">{formatCurrency(results.totalDealCost)}</p></CardContent>
@@ -677,7 +686,7 @@ const DealBusinessPlan = () => {
               </div>
             </CardContent>
           </Card>
-        </div>
+        </motion.div>
       )}
     </div>
   );

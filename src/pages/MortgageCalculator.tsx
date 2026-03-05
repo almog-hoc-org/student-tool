@@ -9,14 +9,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { calculateMortgage, generateAmortizationSchedule, sensitivityAnalysis, MARKET_CONSTANTS, simulateMadadImpact } from '@/lib/calculations/mortgage-calculator';
 import { MortgageTrack, MortgageCalculatorOutput, MortgageTrackType, AmortizationRow, SensitivityResult } from '@/types/mortgage-calculator';
-import { Plus, Trash2, Calculator, Wallet, Percent, TrendingUp, Loader2, FileDown, Save } from 'lucide-react';
+import { Plus, Trash2, Calculator, Wallet, Percent, TrendingUp, Loader2, FileDown, Save, Home as HomeIcon } from 'lucide-react';
 import { he } from '@/lib/translations/he';
 import { formatCurrency } from '@/lib/validation/validators';
 import { StatsCard } from '@/components/StatsCard';
+import { PageHero } from '@/components/PageHero';
 import { SmartInsight, generateMortgageInsights } from '@/components/SmartInsight';
 import { FuelGauge } from '@/components/FuelGauge';
 import { ExecutiveSummary } from '@/components/ExecutiveSummary';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid, BarChart, Bar } from 'recharts';
+import { motion } from 'framer-motion';
 import { saveCalculation } from '@/lib/storage/calculator-history';
 import { useAutoPersist } from '@/hooks/useAutoPersist';
 import { toast } from '@/hooks/use-toast';
@@ -85,6 +87,10 @@ const MortgageCalculator = () => {
 
     toast({ title: "החישוב הושלם בהצלחה", description: "התוצאות נשמרו בהיסטוריה" });
     setIsCalculating(false);
+
+    setTimeout(() => {
+      document.getElementById('mortgage-results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   };
 
   const trackTypeLabels: Record<MortgageTrackType, string> = {
@@ -121,22 +127,16 @@ const MortgageCalculator = () => {
 
   return (
     <div className="space-y-6 pb-8">
-      <Card className="border-0 shadow-lg glass-card">
-        <CardHeader>
-          <CardTitle className="text-3xl font-bold">{he.mortgageCalculator.title}</CardTitle>
-          <CardDescription className="text-base">
-            {he.mortgageCalculator.description}
-          </CardDescription>
-          <div className="flex gap-2 mt-2">
-            <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">פריים: {MARKET_CONSTANTS.PRIME_RATE}%</span>
-            <span className="text-xs bg-secondary/10 text-secondary-foreground px-2 py-1 rounded-full">ריבית בנק ישראל: {MARKET_CONSTANTS.BOI_RATE}%</span>
-          </div>
-        </CardHeader>
-      </Card>
+      <PageHero
+        icon={<HomeIcon className="w-6 h-6 text-primary" />}
+        title={he.mortgageCalculator.title}
+        description={he.mortgageCalculator.description}
+        badge={`פריים ${MARKET_CONSTANTS.PRIME_RATE}% · ריבית בנק ישראל ${MARKET_CONSTANTS.BOI_RATE}%`}
+      />
 
       {/* KPI Cards */}
       {results && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           <StatsCard
             title={he.mortgageCalculator.totalMonthlyPayment}
             value={formatCurrency(results.totalMonthlyPayment)}
@@ -183,7 +183,7 @@ const MortgageCalculator = () => {
             value={monthlyIncome || ''}
             onChange={(e) => setMonthlyIncome(Number(e.target.value))}
             placeholder="למשל 20000"
-            className="max-w-xs"
+            className="max-w-xs sm:max-w-none"
           />
           {monthlyIncome > 0 && (
             <p className="text-sm text-muted-foreground mt-2">
@@ -310,7 +310,7 @@ const MortgageCalculator = () => {
         </CardContent>
       </Card>
 
-      <div className="flex gap-4 justify-center sticky bottom-8 z-10">
+      <div className="flex gap-4 justify-center sticky bottom-20 md:bottom-8 z-10">
         <Button onClick={addTrack} variant="outline" size="lg" className="px-6 shadow-lg">
           <Plus className="h-5 w-5 ml-2" />
           {he.common.addTrack}
@@ -321,7 +321,13 @@ const MortgageCalculator = () => {
       </div>
 
       {results && (
-        <div className="space-y-6">
+        <motion.div
+          id="mortgage-results"
+          className="space-y-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+        >
           {/* Executive Summary */}
           <ExecutiveSummary
             type="mortgage"
@@ -579,7 +585,7 @@ const MortgageCalculator = () => {
               </div>
             </CardContent>
           </Card>
-        </div>
+        </motion.div>
       )}
     </div>
   );
