@@ -74,7 +74,7 @@ const RenovationFeasibility = () => {
 
       {/* KPI Cards - Show after calculation */}
       {results && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 animate-in slide-in-from-bottom duration-500">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           <StatsCard
             title={he.renovationFeasibility.totalRenovationCost}
             value={formatCurrency(results.totalRenovationCost)}
@@ -190,7 +190,7 @@ const RenovationFeasibility = () => {
         </Card>
       </div>
 
-      <div className="flex justify-center sticky bottom-8 z-10">
+      <div className="flex justify-center sticky bottom-20 md:bottom-8 z-10">
         <Button onClick={handleCalculate} size="lg" disabled={isCalculating} className="px-12 py-6 text-lg shadow-2xl rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
           {isCalculating ? (
             <>
@@ -245,7 +245,7 @@ const RenovationFeasibility = () => {
               <CardTitle className="text-3xl">{he.renovationFeasibility.resultsTitle}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card>
                 <CardHeader>
                   <CardTitle className="text-sm text-muted-foreground">{he.renovationFeasibility.totalRenovationCost}</CardTitle>

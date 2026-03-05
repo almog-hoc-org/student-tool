@@ -494,7 +494,7 @@ const FinancialCheckup = () => {
       </div>
 
       {/* Calculate Button */}
-      <div className="flex justify-center sticky bottom-8 z-10">
+      <div className="flex justify-center sticky bottom-20 md:bottom-8 z-10">
         <Button
           onClick={handleCalculate}
           size="lg"

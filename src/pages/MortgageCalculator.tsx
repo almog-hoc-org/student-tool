@@ -136,7 +136,7 @@ const MortgageCalculator = () => {
 
       {/* KPI Cards */}
       {results && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           <StatsCard
             title={he.mortgageCalculator.totalMonthlyPayment}
             value={formatCurrency(results.totalMonthlyPayment)}
@@ -183,7 +183,7 @@ const MortgageCalculator = () => {
             value={monthlyIncome || ''}
             onChange={(e) => setMonthlyIncome(Number(e.target.value))}
             placeholder="למשל 20000"
-            className="max-w-xs"
+            className="max-w-xs sm:max-w-none"
           />
           {monthlyIncome > 0 && (
             <p className="text-sm text-muted-foreground mt-2">
@@ -310,7 +310,7 @@ const MortgageCalculator = () => {
         </CardContent>
       </Card>
 
-      <div className="flex gap-4 justify-center sticky bottom-8 z-10">
+      <div className="flex gap-4 justify-center sticky bottom-20 md:bottom-8 z-10">
         <Button onClick={addTrack} variant="outline" size="lg" className="px-6 shadow-lg">
           <Plus className="h-5 w-5 ml-2" />
           {he.common.addTrack}

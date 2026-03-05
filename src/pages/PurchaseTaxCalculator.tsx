@@ -106,7 +106,7 @@ export default function PurchaseTaxCalculator() {
 
       {/* KPI Cards */}
       {taxResult && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 animate-in slide-in-from-bottom duration-500">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
           <StatsCard title="מס רכישה" value={formatCurrency(taxResult.totalTax)} icon={Receipt} iconColor="orange" />
           <StatsCard title="שיעור אפקטיבי" value={`${(taxResult.effectiveRate * 100).toFixed(2)}%`} icon={Percent} iconColor="blue" />
           <StatsCard title="עלויות נלוות" value={formatCurrency(sideCostsResult?.totalSideCosts ?? 0)} icon={DollarSign} iconColor="purple" />
@@ -159,7 +159,7 @@ export default function PurchaseTaxCalculator() {
               value={purchasePrice || ''}
               onChange={(e) => setPurchasePrice(Number(e.target.value))}
               placeholder="למשל 2,000,000"
-              className="max-w-sm"
+              className="w-full sm:max-w-sm"
             />
           </div>
         </CardContent>
@@ -210,7 +210,7 @@ export default function PurchaseTaxCalculator() {
       </Card>
 
       {/* Calculate Button */}
-      <div className="flex justify-center sticky bottom-8 z-10">
+      <div className="flex justify-center sticky bottom-20 md:bottom-8 z-10">
         <Button onClick={handleCalculate} size="lg" disabled={isCalculating || purchasePrice <= 0} className="px-10 py-5 text-base shadow-lg rounded-full">
           {isCalculating ? (<><Loader2 className="ml-2 h-5 w-5 animate-spin" />מחשב...</>) : (<><Calculator className="ml-2 h-5 w-5" />חשב מס ועלויות</>)}
         </Button>

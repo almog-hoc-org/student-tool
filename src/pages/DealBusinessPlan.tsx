@@ -151,7 +151,7 @@ const DealBusinessPlan = () => {
 
       {/* KPI Cards */}
       {results && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           <StatsCard
             title={he.dealBusinessPlan.totalDealCost}
             value={formatCurrency(results.totalDealCost + (taxResult?.totalTax || 0))}
@@ -418,7 +418,7 @@ const DealBusinessPlan = () => {
         </Card>
       )}
 
-      <div className="flex justify-center sticky bottom-8 z-10">
+      <div className="flex justify-center sticky bottom-20 md:bottom-8 z-10">
         <Button onClick={handleCalculate} size="lg" disabled={isCalculating} className="px-12 py-6 text-lg shadow-2xl rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
           {isCalculating ? (<><Loader2 className="ml-2 h-5 w-5 animate-spin" />מחשב...</>) : (<><Calculator className="ml-2 h-5 w-5" />{he.common.calculate}</>)}
         </Button>
@@ -621,7 +621,7 @@ const DealBusinessPlan = () => {
               <CardTitle className="text-3xl">{he.dealBusinessPlan.resultsTitle}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <Card>
                   <CardHeader><CardTitle className="text-sm text-muted-foreground">{he.dealBusinessPlan.totalDealCost}</CardTitle></CardHeader>
                   <CardContent><p className="text-2xl font-bold">{formatCurrency(results.totalDealCost)}</p></CardContent>
