@@ -3,21 +3,20 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Design System — "Modern Fintech"
-   Palette: Soft White / Deep Indigo / Warm Gold Accent
-   Traffic Light: Green / Amber / Red
+/* Design System — "App-Native"
+   Flat, solid colors. Touch-first. Compact & scannable.
    All colors MUST be HSL.
 */
 
 @layer base {
   :root {
-    --background: 225 20% 97%;
+    --background: 225 15% 96%;
     --foreground: 230 35% 15%;
 
     --card: 0 0% 100%;
     --card-foreground: 230 35% 15%;
 
-    --popover: 225 20% 97%;
+    --popover: 0 0% 100%;
     --popover-foreground: 230 35% 15%;
 
     --primary: 230 65% 52%;
@@ -26,7 +25,7 @@
     --secondary: 230 35% 15%;
     --secondary-foreground: 225 20% 95%;
 
-    --muted: 225 15% 88%;
+    --muted: 225 15% 90%;
     --muted-foreground: 225 15% 42%;
 
     --accent: 225 20% 95%;
@@ -35,13 +34,12 @@
     --destructive: 0 72% 50%;
     --destructive-foreground: 0 85% 97%;
 
-    --border: 225 15% 87%;
-    --input: 225 15% 87%;
+    --border: 225 15% 89%;
+    --input: 225 15% 89%;
     --ring: 230 65% 52%;
 
-    --radius: 1rem;
+    --radius: 0.75rem;
 
-    /* Gold accent for CTAs and highlights */
     --gold: 38 90% 55%;
     --gold-light: 38 90% 92%;
 
@@ -54,7 +52,6 @@
     --sidebar-border: 230 25% 24%;
     --sidebar-ring: 230 65% 55%;
 
-    /* Traffic Light + Brand Chart Colors */
     --chart-1: 152 60% 42%;
     --chart-2: 38 90% 52%;
     --chart-3: 0 72% 50%;
@@ -67,14 +64,14 @@
     --font-serif: Heebo, ui-serif, Georgia, Cambria, Times New Roman, Times, serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
 
-    --shadow-2xs: 0 1px 2px 0px hsl(0 0% 0% / 0.04);
-    --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-    --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.06), 0 1px 2px -1px hsl(0 0% 0% / 0.06);
-    --shadow: 0 2px 4px 0px hsl(0 0% 0% / 0.05), 0 1px 2px -1px hsl(0 0% 0% / 0.05);
-    --shadow-md: 0 4px 8px -2px hsl(230 65% 52% / 0.06), 0 2px 4px -2px hsl(0 0% 0% / 0.04);
-    --shadow-lg: 0 10px 20px -4px hsl(230 65% 52% / 0.08), 0 4px 8px -4px hsl(0 0% 0% / 0.04);
-    --shadow-xl: 0 20px 30px -6px hsl(230 65% 52% / 0.10), 0 8px 12px -6px hsl(0 0% 0% / 0.04);
-    --shadow-2xl: 0 25px 50px -12px hsl(230 65% 52% / 0.18);
+    --shadow-2xs: 0 1px 2px 0px hsl(0 0% 0% / 0.03);
+    --shadow-xs: 0 1px 2px 0px hsl(0 0% 0% / 0.04);
+    --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.04), 0 1px 2px -1px hsl(0 0% 0% / 0.03);
+    --shadow: 0 2px 4px 0px hsl(0 0% 0% / 0.04), 0 1px 2px -1px hsl(0 0% 0% / 0.03);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.05), 0 2px 4px -2px hsl(0 0% 0% / 0.03);
+    --shadow-lg: 0 8px 16px -4px hsl(0 0% 0% / 0.06), 0 4px 6px -4px hsl(0 0% 0% / 0.03);
+    --shadow-xl: 0 12px 24px -6px hsl(0 0% 0% / 0.08), 0 6px 10px -6px hsl(0 0% 0% / 0.03);
+    --shadow-2xl: 0 20px 40px -12px hsl(0 0% 0% / 0.12);
 
     --tracking-normal: 0em;
     --spacing: 0.25rem;
@@ -84,10 +81,10 @@
     --background: 230 30% 8%;
     --foreground: 225 20% 92%;
 
-    --card: 230 25% 13%;
+    --card: 230 25% 12%;
     --card-foreground: 225 20% 92%;
 
-    --popover: 230 25% 15%;
+    --popover: 230 25% 14%;
     --popover-foreground: 225 20% 92%;
 
     --primary: 230 70% 62%;
@@ -96,17 +93,17 @@
     --secondary: 225 20% 78%;
     --secondary-foreground: 230 30% 8%;
 
-    --muted: 230 15% 22%;
+    --muted: 230 15% 20%;
     --muted-foreground: 225 12% 62%;
 
-    --accent: 230 20% 17%;
+    --accent: 230 20% 16%;
     --accent-foreground: 225 20% 85%;
 
     --destructive: 0 72% 60%;
     --destructive-foreground: 0 85% 97%;
 
-    --border: 230 15% 20%;
-    --input: 230 15% 20%;
+    --border: 230 15% 18%;
+    --input: 230 15% 18%;
     --ring: 230 70% 62%;
 
     --gold: 38 85% 60%;
@@ -141,55 +138,6 @@
 }
 
 @layer components {
-  /* Glassmorphism cards */
-  .glass-card {
-    @apply backdrop-blur-xl rounded-xl;
-    background: hsl(0 0% 100% / 0.80);
-    border: 1px solid hsl(230 40% 90% / 0.6);
-    box-shadow: 0 4px 24px -4px hsl(230 65% 52% / 0.06), 0 1px 2px hsl(0 0% 0% / 0.03);
-  }
-  .dark .glass-card {
-    background: hsl(230 25% 13% / 0.80);
-    border-color: hsl(230 20% 30% / 0.3);
-    box-shadow: 0 4px 24px -4px hsl(0 0% 0% / 0.3);
-  }
-
-  /* Elevated glass variant */
-  .glass-card-elevated {
-    @apply glass-card;
-    box-shadow: 0 8px 32px -4px hsl(230 65% 52% / 0.10), 0 2px 6px hsl(0 0% 0% / 0.04);
-  }
-  .dark .glass-card-elevated {
-    box-shadow: 0 8px 32px -4px hsl(0 0% 0% / 0.4);
-  }
-
-  /* Gradient text utility */
-  .text-gradient-primary {
-    @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, hsl(230 65% 52%), hsl(260 60% 58%));
-  }
-  .dark .text-gradient-primary {
-    background-image: linear-gradient(135deg, hsl(230 70% 68%), hsl(260 65% 72%));
-  }
-
-  /* Gradient backgrounds */
-  .bg-gradient-hero {
-    background: linear-gradient(135deg, hsl(225 20% 97%) 0%, hsl(230 30% 94%) 50%, hsl(225 20% 97%) 100%);
-  }
-  .dark .bg-gradient-hero {
-    background: linear-gradient(135deg, hsl(230 30% 8%) 0%, hsl(230 25% 11%) 50%, hsl(230 30% 8%) 100%);
-  }
-
-  /* Subtle dot pattern for hero sections */
-  .bg-dots {
-    background-image: radial-gradient(hsl(230 30% 80% / 0.3) 1px, transparent 1px);
-    background-size: 24px 24px;
-  }
-  .dark .bg-dots {
-    background-image: radial-gradient(hsl(230 20% 30% / 0.4) 1px, transparent 1px);
-    background-size: 24px 24px;
-  }
-
   /* Traffic Light utilities */
   .traffic-green {
     color: hsl(var(--chart-1));
@@ -217,10 +165,11 @@
 @layer base {
   * {
     @apply border-border;
+    -webkit-tap-highlight-color: transparent;
   }
 
   html {
-    scroll-behavior: smooth;
+    overscroll-behavior: contain;
   }
 
   body {
@@ -235,7 +184,7 @@
   textarea:focus-visible,
   [role="combobox"]:focus-visible {
     @apply ring-2 ring-primary/30 ring-offset-1 outline-none;
-    transition: box-shadow 0.2s ease;
+    transition: box-shadow 0.15s ease;
   }
 
   /* Thumb-friendly mobile inputs */
@@ -246,18 +195,15 @@
     }
   }
 
-  /* Smoother scrollbar */
+  /* Thin scrollbar */
   ::-webkit-scrollbar {
-    width: 6px;
+    width: 4px;
   }
   ::-webkit-scrollbar-track {
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
     background: hsl(var(--muted));
-    border-radius: 3px;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--muted-foreground) / 0.5);
+    border-radius: 2px;
   }
 }

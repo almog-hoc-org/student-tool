@@ -91,7 +91,7 @@ export default {
   			'fade-in': {
   				'0%': {
   					opacity: '0',
-  					transform: 'translateY(10px)'
+  					transform: 'translateY(5px)'
   				},
   				'100%': {
   					opacity: '1',
@@ -105,12 +105,12 @@ export default {
   				},
   				'100%': {
   					opacity: '0',
-  					transform: 'translateY(10px)'
+  					transform: 'translateY(5px)'
   				}
   			},
   			'scale-in': {
   				'0%': {
-  					transform: 'scale(0.95)',
+  					transform: 'scale(0.97)',
   					opacity: '0'
   				},
   				'100%': {
@@ -120,7 +120,7 @@ export default {
   			},
   			'slide-up': {
   				'0%': {
-  					transform: 'translateY(20px)',
+  					transform: 'translateY(10px)',
   					opacity: '0'
   				},
   				'100%': {
@@ -132,10 +132,10 @@ export default {
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
   			'accordion-up': 'accordion-up 0.2s ease-out',
-  			'fade-in': 'fade-in 0.3s ease-out',
-  			'fade-out': 'fade-out 0.3s ease-out',
-  			'scale-in': 'scale-in 0.2s ease-out',
-  			'slide-up': 'slide-up 0.4s ease-out'
+  			'fade-in': 'fade-in 0.15s ease-out',
+  			'fade-out': 'fade-out 0.15s ease-out',
+  			'scale-in': 'scale-in 0.15s ease-out',
+  			'slide-up': 'slide-up 0.2s ease-out'
   		},
   		fontFamily: {
   			sans: [

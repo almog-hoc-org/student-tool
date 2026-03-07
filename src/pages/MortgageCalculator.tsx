@@ -19,7 +19,7 @@ import { FuelGauge } from '@/components/FuelGauge';
 import { ExecutiveSummary } from '@/components/ExecutiveSummary';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid, BarChart, Bar } from 'recharts';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { motion } from 'framer-motion';
+
 import { saveCalculation } from '@/lib/storage/calculator-history';
 import { useAutoPersist } from '@/hooks/useAutoPersist';
 import { toast } from '@/hooks/use-toast';
@@ -206,7 +206,7 @@ const MortgageCalculator = () => {
                 <CardTitle>מסלול {index + 1}</CardTitle>
               </div>
               {tracks.length > 1 && (
-                <Button variant="ghost" size="sm" onClick={() => removeTrack(track.id)} className="text-destructive hover:bg-destructive/10">
+                <Button variant="ghost" size="sm" onClick={() => removeTrack(track.id)} className="text-destructive active:bg-destructive/10">
                   <Trash2 className="h-4 w-4" />
                 </Button>
               )}
@@ -316,18 +316,15 @@ const MortgageCalculator = () => {
           <Plus className="h-5 w-5 ml-2" />
           {he.common.addTrack}
         </Button>
-        <Button onClick={handleCalculate} size="lg" disabled={isCalculating} className="px-12 py-6 text-lg shadow-2xl rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
+        <Button onClick={handleCalculate} size="lg" disabled={isCalculating} className="px-12 py-6 text-lg rounded-full">
           {isCalculating ? (<><Loader2 className="ml-2 h-5 w-5 animate-spin" />מחשב...</>) : (<><Calculator className="ml-2 h-5 w-5" />{he.common.calculate}</>)}
         </Button>
       </div>
 
       {results && (
-        <motion.div
+        <div
           id="mortgage-results"
           className="space-y-6"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
         >
           {/* Executive Summary */}
           <ExecutiveSummary
@@ -518,7 +515,7 @@ const MortgageCalculator = () => {
                         {results.tracks.map((trackResult, index) => {
                           const track = tracks.find((t) => t.id === trackResult.trackId)!;
                           return (
-                            <Card key={trackResult.trackId} className="border-0 shadow-md hover:shadow-lg transition-shadow">
+                            <Card key={trackResult.trackId} className="border">
                               <CardHeader className="pb-3">
                                 <div className="flex items-center gap-2 mb-2">
                                   <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
@@ -613,7 +610,7 @@ const MortgageCalculator = () => {
               </AccordionItem>
             )}
           </Accordion>
-        </motion.div>
+        </div>
       )}
     </div>
   );

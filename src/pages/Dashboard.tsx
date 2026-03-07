@@ -188,7 +188,7 @@ export default function Dashboard() {
               transition={{ delay: index * 0.1 }}
             >
               <Link to={calc.link}>
-                <Card className="hover:shadow-lg transition-all hover:scale-105 cursor-pointer border-2 hover:border-primary/50">
+                <Card className="active:bg-muted/50 transition-colors duration-150 cursor-pointer border">
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <calc.icon className="h-8 w-8 text-primary" />

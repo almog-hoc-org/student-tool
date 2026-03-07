@@ -140,7 +140,7 @@ const TransactionTimeline = () => {
       </div>
 
       {/* Cost Calculator */}
-      <Card className="border-0 shadow-xl bg-gradient-to-br from-primary/5 to-secondary/5">
+      <Card className="border">
         <CardHeader>
           <CardTitle className="flex items-center gap-3 text-2xl">
             <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">

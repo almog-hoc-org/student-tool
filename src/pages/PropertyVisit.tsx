@@ -294,7 +294,7 @@ const PropertyVisit = () => {
       </Card>
 
       <div className="flex justify-center sticky bottom-8 z-10">
-        <Button onClick={handleCalculate} size="lg" disabled={isCalculating} className="px-12 py-6 text-lg shadow-2xl rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
+        <Button onClick={handleCalculate} size="lg" disabled={isCalculating} className="px-12 py-6 text-lg rounded-full">
           {isCalculating ? (
             <>
               <Loader2 className="ml-2 h-5 w-5 animate-spin" />
@@ -341,13 +341,13 @@ const PropertyVisit = () => {
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-xl bg-gradient-to-br from-primary/5 to-secondary/5">
+          <Card className="border">
             <CardHeader>
-              <CardTitle className="text-3xl">{he.propertyVisit.resultsTitle}</CardTitle>
+              <CardTitle className="text-xl">{he.propertyVisit.resultsTitle}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="text-center p-8 bg-background/50 rounded-2xl">
-                <p className="text-7xl font-bold bg-gradient-to-br from-primary to-primary/60 bg-clip-text text-transparent mb-4">
+              <div className="text-center p-6 bg-muted/30 rounded-xl">
+                <p className="text-5xl font-bold text-primary mb-4">
                   {Math.round(results.overallPropertyScore)}/100
                 </p>
                 <Badge variant={getScoreLabel(results.overallPropertyScore).variant} className="text-lg px-6 py-2">
@@ -356,7 +356,7 @@ const PropertyVisit = () => {
               </div>
 
               <div className="grid md:grid-cols-3 gap-4">
-              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-emerald-50 to-background dark:from-emerald-950 dark:to-background">
+              <Card className="border">
                 <CardHeader>
                   <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
                     <Home className="w-4 h-4" />
@@ -379,7 +379,7 @@ const PropertyVisit = () => {
                 </CardContent>
               </Card>
 
-              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-orange-50 to-background dark:from-orange-950 dark:to-background">
+              <Card className="border">
                 <CardHeader>
                   <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
                     <MapPin className="w-4 h-4" />
@@ -402,7 +402,7 @@ const PropertyVisit = () => {
                 </CardContent>
               </Card>
 
-              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-purple-50 to-background dark:from-purple-950 dark:to-background">
+              <Card className="border">
                 <CardHeader>
                   <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
                     <Building2 className="w-4 h-4" />

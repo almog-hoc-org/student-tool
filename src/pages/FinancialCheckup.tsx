@@ -13,7 +13,6 @@ import { ConfidenceGauge } from '@/components/ConfidenceGauge';
 import { FuelGauge } from '@/components/FuelGauge';
 import { ExecutiveSummary } from '@/components/ExecutiveSummary';
 import { saveCalculation } from '@/lib/storage/calculator-history';
-import { motion } from 'framer-motion';
 import { useAutoPersist } from '@/hooks/useAutoPersist';
 import { formatCurrency as sharedFormatCurrency } from '@/lib/validation/validators';
 import {
@@ -114,7 +113,7 @@ const FinancialCheckup = () => {
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
       {/* Page Header */}
-      <div className="text-center space-y-3 animate-fade-in">
+      <div className="text-center space-y-3 ">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
           <Calculator className="w-8 h-8 text-primary" />
         </div>
@@ -126,7 +125,7 @@ const FinancialCheckup = () => {
 
       {/* KPI Cards - Show when there's input or results */}
       {(totalIncome > 0 || totalExpenses > 0 || results) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-slide-up">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatsCard
             title={he.financialCheckup.totalIncome}
             value={formatCurrency(totalIncome)}
@@ -525,12 +524,9 @@ const FinancialCheckup = () => {
 
       {/* Results Section */}
       {results && (
-        <motion.div
+        <div
           id="results"
-          className="space-y-8"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+          className="space-y-6"
         >
           {/* Smart Insights */}
           <SmartInsight
@@ -684,7 +680,7 @@ const FinancialCheckup = () => {
             </Card>
 
             {/* Insights */}
-            <Card className="border-0 shadow-xl bg-gradient-to-br from-card to-accent/20">
+            <Card className="border">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-xl">
                   {results.readinessLabel === 'High' ? (
@@ -728,7 +724,7 @@ const FinancialCheckup = () => {
               </CardContent>
             </Card>
           </div>
-        </motion.div>
+        </div>
       )}
 
       {/* Empty State */}

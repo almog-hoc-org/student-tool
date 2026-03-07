@@ -191,7 +191,7 @@ const RenovationFeasibility = () => {
       </div>
 
       <div className="flex justify-center sticky bottom-20 md:bottom-8 z-10">
-        <Button onClick={handleCalculate} size="lg" disabled={isCalculating} className="px-12 py-6 text-lg shadow-2xl rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
+        <Button onClick={handleCalculate} size="lg" disabled={isCalculating} className="px-12 py-6 text-lg rounded-full">
           {isCalculating ? (
             <>
               <Loader2 className="ml-2 h-5 w-5 animate-spin" />
@@ -240,7 +240,7 @@ const RenovationFeasibility = () => {
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-xl bg-gradient-to-br from-primary/5 to-secondary/5">
+          <Card className="border">
             <CardHeader>
               <CardTitle className="text-3xl">{he.renovationFeasibility.resultsTitle}</CardTitle>
             </CardHeader>

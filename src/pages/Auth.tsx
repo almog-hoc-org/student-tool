@@ -83,8 +83,8 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-hero bg-dots flex items-center justify-center p-4" dir="rtl">
-      <Card className="w-full max-w-md glass-card-elevated border-border/50">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4" dir="rtl">
+      <Card className="w-full max-w-md border">
         <CardHeader className="text-center space-y-4">
           <div className="mx-auto w-14 h-14 bg-primary rounded-2xl flex items-center justify-center">
             <Calculator className="w-7 h-7 text-primary-foreground" />
