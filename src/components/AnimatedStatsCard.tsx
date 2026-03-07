@@ -1,4 +1,3 @@
-import { motion, useInView } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { LucideIcon } from 'lucide-react';
 import { useRef, useEffect, useState } from 'react';
@@ -25,88 +24,76 @@ export function AnimatedStatsCard({
   value,
   icon: Icon,
   iconColor = 'blue',
-  delay = 0,
   animateNumber = false,
 }: AnimatedStatsCardProps) {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true });
+  const ref = useRef<HTMLDivElement>(null);
   const [displayValue, setDisplayValue] = useState(animateNumber ? 0 : value);
+  const [hasAnimated, setHasAnimated] = useState(false);
 
   useEffect(() => {
-    if (!animateNumber || !isInView) return;
+    if (!animateNumber || hasAnimated) return;
 
-    const numericValue = typeof value === 'string' 
-      ? parseFloat(value.replace(/[^\d.-]/g, '')) 
-      : value;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setHasAnimated(true);
+          const numericValue = typeof value === 'string'
+            ? parseFloat(value.replace(/[^\d.-]/g, ''))
+            : value;
 
-    if (isNaN(numericValue)) {
-      setDisplayValue(value);
-      return;
-    }
+          if (isNaN(numericValue)) {
+            setDisplayValue(value);
+            return;
+          }
 
-    const duration = 1000; // 1 second
-    const steps = 60;
-    const increment = numericValue / steps;
-    let current = 0;
-    let step = 0;
+          const duration = 600;
+          const steps = 30;
+          const increment = numericValue / steps;
+          let current = 0;
+          let step = 0;
 
-    const timer = setInterval(() => {
-      step++;
-      current = Math.min(current + increment, numericValue);
-      
-      if (typeof value === 'string') {
-        const formatted = value.replace(/[\d,.-]+/, Math.round(current).toLocaleString('he-IL'));
-        setDisplayValue(formatted);
-      } else {
-        setDisplayValue(Math.round(current));
-      }
+          const timer = setInterval(() => {
+            step++;
+            current = Math.min(current + increment, numericValue);
 
-      if (step >= steps) {
-        clearInterval(timer);
-        setDisplayValue(value);
-      }
-    }, duration / steps);
+            if (typeof value === 'string') {
+              const formatted = value.replace(/[\d,.-]+/, Math.round(current).toLocaleString('he-IL'));
+              setDisplayValue(formatted);
+            } else {
+              setDisplayValue(Math.round(current));
+            }
 
-    return () => clearInterval(timer);
-  }, [value, isInView, animateNumber]);
+            if (step >= steps) {
+              clearInterval(timer);
+              setDisplayValue(value);
+            }
+          }, duration / steps);
+        }
+      },
+      { threshold: 0.5 }
+    );
+
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [value, animateNumber, hasAnimated]);
 
   return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9 }}
-      transition={{ 
-        duration: 0.5, 
-        delay,
-        ease: [0.4, 0, 0.2, 1]
-      }}
-      whileHover={{ 
-        scale: 1.05,
-        transition: { duration: 0.2 }
-      }}
-    >
-      <Card className="border-0 shadow-lg bg-gradient-to-br from-card to-card/50">
-        <CardContent className="p-6">
+    <div ref={ref}>
+      <Card>
+        <CardContent className="p-4">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <p className="text-sm font-medium text-muted-foreground mb-2">{title}</p>
-              <motion.p 
-                className="text-2xl md:text-3xl font-bold"
-                key={displayValue.toString()}
-              >
+              <p className="text-xs font-medium text-muted-foreground mb-1">{title}</p>
+              <p className="text-xl font-bold">
                 {displayValue}
-              </motion.p>
+              </p>
             </div>
-            <motion.div
-              className={`p-3 rounded-xl ${iconColors[iconColor]}`}
-              whileHover={{ rotate: 360 }}
-              transition={{ duration: 0.6 }}
-            >
-              <Icon className="h-6 w-6" />
-            </motion.div>
+            <div className={`p-2 rounded-lg ${iconColors[iconColor]}`}>
+              <Icon className="h-5 w-5" />
+            </div>
           </div>
         </CardContent>
       </Card>
-    </motion.div>
+    </div>
   );
 }

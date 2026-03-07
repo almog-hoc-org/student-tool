@@ -45,30 +45,30 @@ export function Wizard({ steps, onComplete, title, icon }: WizardProps) {
   };
 
   return (
-    <Card className="border-0 shadow-lg overflow-hidden">
-      <CardHeader className="pb-4">
-        <div className="flex items-center gap-3 mb-4">
+    <Card className="overflow-hidden">
+      <CardHeader className="pb-3 px-4 sm:px-5">
+        <div className="flex items-center gap-3 mb-3">
           {icon && (
-            <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
               {icon}
             </div>
           )}
           <div>
-            <CardTitle className="text-2xl">{title}</CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
+            <CardTitle className="text-lg">{title}</CardTitle>
+            <p className="text-xs text-muted-foreground mt-0.5">
               שלב {currentStep + 1} מתוך {steps.length}
             </p>
           </div>
         </div>
 
-        {/* Enhanced Progress Bar */}
-        <div className="space-y-3">
+        {/* Progress Bar */}
+        <div className="space-y-2">
           <div className="h-2 bg-muted rounded-full overflow-hidden">
             <motion.div
-              className="h-full rounded-full bg-gradient-to-l from-primary to-primary/70"
+              className="h-full rounded-full bg-primary"
               initial={false}
               animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.4, ease: 'easeOut' }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
             />
           </div>
           <div className="flex justify-between">
@@ -82,20 +82,20 @@ export function Wizard({ steps, onComplete, title, icon }: WizardProps) {
                   }
                 }}
                 className={cn(
-                  'flex items-center gap-1.5 text-xs transition-all duration-300',
+                  'flex items-center gap-1.5 text-xs transition-colors duration-150',
                   index <= currentStep ? 'text-primary font-medium' : 'text-muted-foreground',
-                  index < currentStep && 'cursor-pointer hover:text-primary/80'
+                  index < currentStep && 'cursor-pointer'
                 )}
               >
                 <div className={cn(
-                  'w-6 h-6 rounded-full flex items-center justify-center text-[10px] transition-all duration-300',
+                  'w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-colors duration-150',
                   index < currentStep
-                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    ? 'bg-primary text-primary-foreground'
                     : index === currentStep
                       ? 'bg-primary/15 text-primary ring-2 ring-primary/30'
                       : 'bg-muted text-muted-foreground'
                 )}>
-                  {index < currentStep ? <Check className="w-3 h-3" /> : index + 1}
+                  {index < currentStep ? <Check className="w-3.5 h-3.5" /> : index + 1}
                 </div>
                 <span className="hidden sm:inline">{step.title}</span>
               </button>
@@ -104,36 +104,36 @@ export function Wizard({ steps, onComplete, title, icon }: WizardProps) {
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4 px-4 sm:px-5">
         {/* Step Title & Description */}
-        <div className="text-center py-2 border-b">
-          <h3 className="text-lg font-semibold">{currentStepData.title}</h3>
+        <div className="text-center py-1.5 border-b">
+          <h3 className="text-base font-semibold">{currentStepData.title}</h3>
           {currentStepData.description && (
-            <p className="text-sm text-muted-foreground mt-1">{currentStepData.description}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{currentStepData.description}</p>
           )}
         </div>
 
-        {/* Step Content with Animation */}
+        {/* Step Content */}
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={currentStep}
-            initial={{ opacity: 0, x: direction * 30 }}
+            initial={{ opacity: 0, x: direction * 15 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: direction * -30 }}
-            transition={{ duration: 0.25, ease: 'easeOut' }}
-            className="min-h-[200px]"
+            exit={{ opacity: 0, x: direction * -15 }}
+            transition={{ duration: 0.15, ease: 'easeOut' }}
+            className="min-h-[180px]"
           >
             {currentStepData.content}
           </motion.div>
         </AnimatePresence>
 
         {/* Navigation Buttons */}
-        <div className="flex justify-between pt-4 border-t">
+        <div className="flex gap-3 pt-3 border-t">
           <Button
             variant="outline"
             onClick={handleBack}
             disabled={isFirstStep}
-            className="gap-2"
+            className="flex-1 gap-2"
           >
             <ChevronRight className="w-4 h-4" />
             הקודם
@@ -142,7 +142,7 @@ export function Wizard({ steps, onComplete, title, icon }: WizardProps) {
           <Button
             onClick={handleNext}
             disabled={currentStepData.isValid === false}
-            className="gap-2"
+            className="flex-1 gap-2"
           >
             {isLastStep ? (
               <>

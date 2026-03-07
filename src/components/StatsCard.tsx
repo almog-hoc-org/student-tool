@@ -46,39 +46,39 @@ const StatusIcon: Record<TrafficStatus, LucideIcon> = {
 export function StatsCard({ title, value, icon: Icon, iconColor = 'blue', status, trend, subtitle }: StatsCardProps) {
   return (
     <Card className={cn(
-      'border-0 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden glass-card hover:-translate-y-0.5',
+      'overflow-hidden',
       status && statusBorderClasses[status]
     )}>
-      <CardContent className="pt-5 pb-4">
+      <CardContent className="pt-4 pb-3">
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
-            <p className="text-xs text-muted-foreground mb-1.5 truncate">{title}</p>
+            <p className="text-xs text-muted-foreground mb-1 truncate">{title}</p>
             <h3 className={cn(
-              'text-2xl font-bold tracking-tight',
+              'text-xl font-bold tracking-tight',
               status ? statusValueClasses[status] : 'text-foreground'
             )}>
               {value}
             </h3>
             {subtitle && (
-              <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>
             )}
             {trend && (
-              <p className={cn('text-xs mt-1.5 font-medium', trend.isPositive ? 'traffic-green' : 'traffic-red')}>
+              <p className={cn('text-xs mt-1 font-medium', trend.isPositive ? 'traffic-green' : 'traffic-red')}>
                 {trend.isPositive ? '↑' : '↓'} {Math.abs(trend.value)}%
               </p>
             )}
           </div>
           <div className={cn(
-            'w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0',
+            'w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0',
             status ? `bg-[hsl(var(--chart-${status === 'positive' ? '1' : status === 'neutral' ? '2' : '3'})/0.1)]` : iconColorClasses[iconColor]
           )}>
             {status ? (
               (() => {
                 const SIcon = StatusIcon[status];
-                return <SIcon className={cn('w-5 h-5', statusValueClasses[status])} />;
+                return <SIcon className={cn('w-4 h-4', statusValueClasses[status])} />;
               })()
             ) : (
-              <Icon className="w-5 h-5" />
+              <Icon className="w-4 h-4" />
             )}
           </div>
         </div>
