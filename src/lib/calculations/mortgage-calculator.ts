@@ -121,14 +121,17 @@ export function generateAmortizationSchedule(
   // Initialize balances
   const balances = tracks.map(t => t.principal);
 
+  // Accumulators for yearly sums (reset every 12 months)
+  let yearlyPrincipalSum = 0;
+  let yearlyInterestSum = 0;
+
   for (let month = 1; month <= maxMonths; month++) {
-    let totalPrincipalPayment = 0;
-    let totalInterestPayment = 0;
     let totalRemainingBalance = 0;
 
     tracks.forEach((track, i) => {
       const n = track.years * 12;
       if (month > n) {
+        totalRemainingBalance += balances[i];
         return; // track finished
       }
 
@@ -144,8 +147,8 @@ export function generateAmortizationSchedule(
       const principalPayment = mp - interestPayment;
       balances[i] = Math.max(0, balances[i] - principalPayment);
 
-      totalPrincipalPayment += principalPayment;
-      totalInterestPayment += interestPayment;
+      yearlyPrincipalSum += principalPayment;
+      yearlyInterestSum += interestPayment;
       totalRemainingBalance += balances[i];
     });
 
@@ -153,10 +156,13 @@ export function generateAmortizationSchedule(
     if (month % 12 === 0) {
       rows.push({
         year: month / 12,
-        principalPayment: Math.round(totalPrincipalPayment * 12),
-        interestPayment: Math.round(totalInterestPayment * 12),
+        principalPayment: Math.round(yearlyPrincipalSum),
+        interestPayment: Math.round(yearlyInterestSum),
         remainingBalance: Math.round(totalRemainingBalance),
       });
+      // Reset accumulators for next year
+      yearlyPrincipalSum = 0;
+      yearlyInterestSum = 0;
     }
   }
 

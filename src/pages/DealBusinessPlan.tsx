@@ -119,12 +119,25 @@ const DealBusinessPlan = () => {
     }, 100);
   };
 
-  // Equity growth projection for rental
+  // Equity growth projection for rental - real amortization formula
   const equityGrowthData = results && dealType === 'rental' ? Array.from({ length: holdingYears + 1 }, (_, year) => {
     const propertyValue = input.basic.purchasePrice * Math.pow(1 + annualAppreciation / 100, year);
-    const mortgageBalance = input.financing.mortgageAmount > 0
-      ? input.financing.mortgageAmount * Math.max(0, 1 - (year / 25))
-      : 0;
+    let mortgageBalance = 0;
+    if (input.financing.mortgageAmount > 0) {
+      const P = input.financing.mortgageAmount;
+      const annualRate = (input.financing.mortgageInterestRate || 5) / 100;
+      const r = annualRate / 12;
+      const n = 25 * 12; // 25 year mortgage
+      const k = year * 12; // payments made so far
+      if (r === 0) {
+        mortgageBalance = P * Math.max(0, 1 - k / n);
+      } else {
+        // B_k = P * [(1+r)^n - (1+r)^k] / [(1+r)^n - 1]
+        const factor_n = Math.pow(1 + r, n);
+        const factor_k = Math.pow(1 + r, k);
+        mortgageBalance = k >= n ? 0 : P * (factor_n - factor_k) / (factor_n - 1);
+      }
+    }
     return {
       year: `שנה ${year}`,
       'שווי נכס': Math.round(propertyValue),
@@ -306,6 +319,10 @@ const DealBusinessPlan = () => {
             <div>
               <Label>{he.dealBusinessPlan.mortgageMonthlyPayment} ({he.common.currency})</Label>
               <Input type="number" placeholder="למשל 5000" value={input.financing.mortgageMonthlyPayment || ''} onChange={(e) => setInput(prev => ({ ...prev, financing: { ...prev.financing, mortgageMonthlyPayment: Number(e.target.value) } }))} />
+            </div>
+            <div>
+              <Label>ריבית משכנתא שנתית (%)</Label>
+              <Input type="number" step="0.1" placeholder="למשל 5" value={input.financing.mortgageInterestRate || ''} onChange={(e) => setInput(prev => ({ ...prev, financing: { ...prev.financing, mortgageInterestRate: Number(e.target.value) } }))} />
             </div>
           </CardContent>
         </Card>

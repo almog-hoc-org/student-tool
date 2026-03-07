@@ -21,6 +21,7 @@ import History from "./pages/History";
 import Dashboard from "./pages/Dashboard";
 import Glossary from "./pages/Glossary";
 import PurchaseTaxCalculator from "./pages/PurchaseTaxCalculator";
+import Summary from "./pages/Summary";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -49,6 +50,7 @@ const App = () => (
                     <Route path="/renovation-feasibility" element={<RenovationFeasibility />} />
                     <Route path="/urban-renewal" element={<UrbanRenewal />} />
                     <Route path="/transaction-timeline" element={<TransactionTimeline />} />
+                    <Route path="/summary" element={<Summary />} />
                     <Route path="/history" element={<History />} />
                     <Route path="/glossary" element={<Glossary />} />
                     <Route path="/purchase-tax" element={<PurchaseTaxCalculator />} />

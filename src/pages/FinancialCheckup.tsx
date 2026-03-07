@@ -27,8 +27,10 @@ import {
   Sparkles,
   TrendingDown,
   DollarSign,
-  Shield
+  Shield,
+  CreditCard
 } from 'lucide-react';
+import { Wizard } from '@/components/Wizard';
 import { he } from '@/lib/translations/he';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 
@@ -152,358 +154,374 @@ const FinancialCheckup = () => {
         </div>
       )}
 
-      {/* Income & Expenses Grid */}
-      <div className="grid lg:grid-cols-2 gap-8">
-        {/* Income Section */}
-        <Card className="border-0 shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
-          <CardHeader className="bg-gradient-to-l from-primary/5 to-transparent border-b border-border/50">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-primary" />
+      <Wizard
+        title={he.financialCheckup.title}
+        icon={<Calculator className="w-6 h-6 text-primary" />}
+        onComplete={handleCalculate}
+        steps={[
+          {
+            title: 'הכנסות',
+            description: 'כמה נכנס?',
+            content: (
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium">{he.financialCheckup.salary1Net}</Label>
+                  <Input
+                    type="number"
+                    placeholder="12,000"
+                    value={input.income.salary1Net || ''}
+                    onChange={(e) => setInput({ ...input, income: { ...input.income, salary1Net: Number(e.target.value) } })}
+                    className="mt-1.5"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">{he.financialCheckup.salary2Net}</Label>
+                  <Input
+                    type="number"
+                    placeholder="8,000"
+                    value={input.income.salary2Net || ''}
+                    onChange={(e) => setInput({ ...input, income: { ...input.income, salary2Net: Number(e.target.value) } })}
+                    className="mt-1.5"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">{he.financialCheckup.pensionsOrAllowances}</Label>
+                  <Input
+                    type="number"
+                    placeholder="2,000"
+                    value={input.income.pensionsOrAllowances || ''}
+                    onChange={(e) => setInput({ ...input, income: { ...input.income, pensionsOrAllowances: Number(e.target.value) } })}
+                    className="mt-1.5"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">{he.financialCheckup.rentalIncome}</Label>
+                  <Input
+                    type="number"
+                    placeholder="3,500"
+                    value={input.income.rentalIncome || ''}
+                    onChange={(e) => setInput({ ...input, income: { ...input.income, rentalIncome: Number(e.target.value) } })}
+                    className="mt-1.5"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">{he.financialCheckup.businessIncome}</Label>
+                  <Input
+                    type="number"
+                    placeholder="5,000"
+                    value={input.income.businessIncome || ''}
+                    onChange={(e) => setInput({ ...input, income: { ...input.income, businessIncome: Number(e.target.value) } })}
+                    className="mt-1.5"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">{he.financialCheckup.otherIncome}</Label>
+                  <Input
+                    type="number"
+                    placeholder="1,000"
+                    value={input.income.otherIncome || ''}
+                    onChange={(e) => setInput({ ...input, income: { ...input.income, otherIncome: Number(e.target.value) } })}
+                    className="mt-1.5"
+                  />
+                </div>
               </div>
-              <div>
-                <CardTitle className="text-xl">{he.financialCheckup.incomeTitle}</CardTitle>
-                <CardDescription>{he.financialCheckup.step1Title}</CardDescription>
+            ),
+          },
+          {
+            title: 'הוצאות',
+            description: 'כמה יוצא?',
+            content: (
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium">{he.financialCheckup.housingCosts}</Label>
+                  <Input
+                    type="number"
+                    placeholder="4,500"
+                    value={input.expenses.housingCosts || ''}
+                    onChange={(e) => setInput({ ...input, expenses: { ...input.expenses, housingCosts: Number(e.target.value) } })}
+                    className="mt-1.5"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">{he.financialCheckup.carAndTransport}</Label>
+                  <Input
+                    type="number"
+                    placeholder="2,000"
+                    value={input.expenses.carAndTransport || ''}
+                    onChange={(e) => setInput({ ...input, expenses: { ...input.expenses, carAndTransport: Number(e.target.value) } })}
+                    className="mt-1.5"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">{he.financialCheckup.educationAndChildren}</Label>
+                  <Input
+                    type="number"
+                    placeholder="1,500"
+                    value={input.expenses.educationAndChildren || ''}
+                    onChange={(e) => setInput({ ...input, expenses: { ...input.expenses, educationAndChildren: Number(e.target.value) } })}
+                    className="mt-1.5"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">{he.financialCheckup.insurance}</Label>
+                  <Input
+                    type="number"
+                    placeholder="800"
+                    value={input.expenses.insurance || ''}
+                    onChange={(e) => setInput({ ...input, expenses: { ...input.expenses, insurance: Number(e.target.value) } })}
+                    className="mt-1.5"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">{he.financialCheckup.loanRepayments}</Label>
+                  <Input
+                    type="number"
+                    placeholder="1,000"
+                    value={input.expenses.loanRepayments || ''}
+                    onChange={(e) => setInput({ ...input, expenses: { ...input.expenses, loanRepayments: Number(e.target.value) } })}
+                    className="mt-1.5"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">{he.financialCheckup.foodAndGroceries}</Label>
+                  <Input
+                    type="number"
+                    placeholder="3,000"
+                    value={input.expenses.foodAndGroceries || ''}
+                    onChange={(e) => setInput({ ...input, expenses: { ...input.expenses, foodAndGroceries: Number(e.target.value) } })}
+                    className="mt-1.5"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">{he.financialCheckup.leisureAndVacations}</Label>
+                  <Input
+                    type="number"
+                    placeholder="1,500"
+                    value={input.expenses.leisureAndVacations || ''}
+                    onChange={(e) => setInput({ ...input, expenses: { ...input.expenses, leisureAndVacations: Number(e.target.value) } })}
+                    className="mt-1.5"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">{he.financialCheckup.otherExpenses}</Label>
+                  <Input
+                    type="number"
+                    placeholder="1,000"
+                    value={input.expenses.otherExpenses || ''}
+                    onChange={(e) => setInput({ ...input, expenses: { ...input.expenses, otherExpenses: Number(e.target.value) } })}
+                    className="mt-1.5"
+                  />
+                </div>
               </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4 pt-6">
-            <div>
-              <Label className="text-sm font-medium">{he.financialCheckup.salary1Net}</Label>
-              <Input
-                type="number"
-                placeholder="12,000"
-                value={input.income.salary1Net || ''}
-                onChange={(e) => setInput({ ...input, income: { ...input.income, salary1Net: Number(e.target.value) } })}
-                className="mt-1.5"
-              />
-            </div>
-            <div>
-              <Label className="text-sm font-medium">{he.financialCheckup.salary2Net}</Label>
-              <Input
-                type="number"
-                placeholder="8,000"
-                value={input.income.salary2Net || ''}
-                onChange={(e) => setInput({ ...input, income: { ...input.income, salary2Net: Number(e.target.value) } })}
-                className="mt-1.5"
-              />
-            </div>
-            <div>
-              <Label className="text-sm font-medium">{he.financialCheckup.pensionsOrAllowances}</Label>
-              <Input
-                type="number"
-                placeholder="2,000"
-                value={input.income.pensionsOrAllowances || ''}
-                onChange={(e) => setInput({ ...input, income: { ...input.income, pensionsOrAllowances: Number(e.target.value) } })}
-                className="mt-1.5"
-              />
-            </div>
-            <div>
-              <Label className="text-sm font-medium">{he.financialCheckup.rentalIncome}</Label>
-              <Input
-                type="number"
-                placeholder="3,500"
-                value={input.income.rentalIncome || ''}
-                onChange={(e) => setInput({ ...input, income: { ...input.income, rentalIncome: Number(e.target.value) } })}
-                className="mt-1.5"
-              />
-            </div>
-            <div>
-              <Label className="text-sm font-medium">{he.financialCheckup.businessIncome}</Label>
-              <Input
-                type="number"
-                placeholder="5,000"
-                value={input.income.businessIncome || ''}
-                onChange={(e) => setInput({ ...input, income: { ...input.income, businessIncome: Number(e.target.value) } })}
-                className="mt-1.5"
-              />
-            </div>
-            <div>
-              <Label className="text-sm font-medium">{he.financialCheckup.otherIncome}</Label>
-              <Input
-                type="number"
-                placeholder="1,000"
-                value={input.income.otherIncome || ''}
-                onChange={(e) => setInput({ ...input, income: { ...input.income, otherIncome: Number(e.target.value) } })}
-                className="mt-1.5"
-              />
-            </div>
-          </CardContent>
-        </Card>
+            ),
+          },
+          {
+            title: 'נכסים והתחייבויות',
+            description: 'מה יש לך?',
+            content: (
+              <div className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium">{he.financialCheckup.cashAndChecking}</Label>
+                    <Input
+                      type="number"
+                      placeholder="50,000"
+                      value={input.assets.cashAndChecking || ''}
+                      onChange={(e) => setInput({ ...input, assets: { ...input.assets, cashAndChecking: Number(e.target.value) } })}
+                      className="mt-1.5"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">{he.financialCheckup.shortTermSavings}</Label>
+                    <Input
+                      type="number"
+                      placeholder="100,000"
+                      value={input.assets.shortTermSavings || ''}
+                      onChange={(e) => setInput({ ...input, assets: { ...input.assets, shortTermSavings: Number(e.target.value) } })}
+                      className="mt-1.5"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">{he.financialCheckup.deposits}</Label>
+                    <Input
+                      type="number"
+                      placeholder="150,000"
+                      value={input.assets.deposits || ''}
+                      onChange={(e) => setInput({ ...input, assets: { ...input.assets, deposits: Number(e.target.value) } })}
+                      className="mt-1.5"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">{he.financialCheckup.semiLiquidInvestments}</Label>
+                    <Input
+                      type="number"
+                      placeholder="200,000"
+                      value={input.assets.semiLiquidInvestments || ''}
+                      onChange={(e) => setInput({ ...input, assets: { ...input.assets, semiLiquidInvestments: Number(e.target.value) } })}
+                      className="mt-1.5"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">{he.financialCheckup.realEstateMarketValue}</Label>
+                    <Input
+                      type="number"
+                      placeholder="1,500,000"
+                      value={input.assets.realEstateMarketValue || ''}
+                      onChange={(e) => setInput({ ...input, assets: { ...input.assets, realEstateMarketValue: Number(e.target.value) } })}
+                      className="mt-1.5"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">{he.financialCheckup.realEstateMortgageBalance}</Label>
+                    <Input
+                      type="number"
+                      placeholder="800,000"
+                      value={input.assets.realEstateMortgageBalance || ''}
+                      onChange={(e) => setInput({ ...input, assets: { ...input.assets, realEstateMortgageBalance: Number(e.target.value) } })}
+                      className="mt-1.5"
+                    />
+                  </div>
+                </div>
 
-        {/* Expenses Section */}
-        <Card className="border-0 shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
-          <CardHeader className="bg-gradient-to-l from-destructive/5 to-transparent border-b border-border/50">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-destructive/10 rounded-xl flex items-center justify-center">
-                <TrendingDown className="w-5 h-5 text-destructive" />
-              </div>
-              <div>
-                <CardTitle className="text-xl">{he.financialCheckup.expensesTitle}</CardTitle>
-                <CardDescription>{he.financialCheckup.step1Title}</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4 pt-6">
-            <div>
-              <Label className="text-sm font-medium">{he.financialCheckup.housingCosts}</Label>
-              <Input
-                type="number"
-                placeholder="4,500"
-                value={input.expenses.housingCosts || ''}
-                onChange={(e) => setInput({ ...input, expenses: { ...input.expenses, housingCosts: Number(e.target.value) } })}
-                className="mt-1.5"
-              />
-            </div>
-            <div>
-              <Label className="text-sm font-medium">{he.financialCheckup.carAndTransport}</Label>
-              <Input
-                type="number"
-                placeholder="2,000"
-                value={input.expenses.carAndTransport || ''}
-                onChange={(e) => setInput({ ...input, expenses: { ...input.expenses, carAndTransport: Number(e.target.value) } })}
-                className="mt-1.5"
-              />
-            </div>
-            <div>
-              <Label className="text-sm font-medium">{he.financialCheckup.educationAndChildren}</Label>
-              <Input
-                type="number"
-                placeholder="1,500"
-                value={input.expenses.educationAndChildren || ''}
-                onChange={(e) => setInput({ ...input, expenses: { ...input.expenses, educationAndChildren: Number(e.target.value) } })}
-                className="mt-1.5"
-              />
-            </div>
-            <div>
-              <Label className="text-sm font-medium">{he.financialCheckup.insurance}</Label>
-              <Input
-                type="number"
-                placeholder="800"
-                value={input.expenses.insurance || ''}
-                onChange={(e) => setInput({ ...input, expenses: { ...input.expenses, insurance: Number(e.target.value) } })}
-                className="mt-1.5"
-              />
-            </div>
-            <div>
-              <Label className="text-sm font-medium">{he.financialCheckup.loanRepayments}</Label>
-              <Input
-                type="number"
-                placeholder="1,000"
-                value={input.expenses.loanRepayments || ''}
-                onChange={(e) => setInput({ ...input, expenses: { ...input.expenses, loanRepayments: Number(e.target.value) } })}
-                className="mt-1.5"
-              />
-            </div>
-            <div>
-              <Label className="text-sm font-medium">{he.financialCheckup.foodAndGroceries}</Label>
-              <Input
-                type="number"
-                placeholder="3,000"
-                value={input.expenses.foodAndGroceries || ''}
-                onChange={(e) => setInput({ ...input, expenses: { ...input.expenses, foodAndGroceries: Number(e.target.value) } })}
-                className="mt-1.5"
-              />
-            </div>
-            <div>
-              <Label className="text-sm font-medium">{he.financialCheckup.leisureAndVacations}</Label>
-              <Input
-                type="number"
-                placeholder="1,500"
-                value={input.expenses.leisureAndVacations || ''}
-                onChange={(e) => setInput({ ...input, expenses: { ...input.expenses, leisureAndVacations: Number(e.target.value) } })}
-                className="mt-1.5"
-              />
-            </div>
-            <div>
-              <Label className="text-sm font-medium">{he.financialCheckup.otherExpenses}</Label>
-              <Input
-                type="number"
-                placeholder="1,000"
-                value={input.expenses.otherExpenses || ''}
-                onChange={(e) => setInput({ ...input, expenses: { ...input.expenses, otherExpenses: Number(e.target.value) } })}
-                className="mt-1.5"
-              />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+                <div className="border-t border-border/50" />
 
-      {/* Assets & Profile Grid */}
-      <div className="grid lg:grid-cols-2 gap-8">
-        {/* Assets Section */}
-        <Card className="border-0 shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
-          <CardHeader className="bg-gradient-to-l from-chart-1/10 to-transparent border-b border-border/50">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-chart-1/20 rounded-xl flex items-center justify-center">
-                <PiggyBank className="w-5 h-5 text-chart-1" />
+                <div className="flex items-center gap-2 mb-2">
+                  <CreditCard className="w-5 h-5 text-destructive" />
+                  <h4 className="font-semibold">התחייבויות</h4>
+                </div>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium">הלוואות צרכניות</Label>
+                    <Input
+                      type="number"
+                      placeholder="0"
+                      value={input.liabilities.consumerLoansBalance || ''}
+                      onChange={(e) => setInput({ ...input, liabilities: { ...input.liabilities, consumerLoansBalance: Number(e.target.value) } })}
+                      className="mt-1.5"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">הלוואת רכב</Label>
+                    <Input
+                      type="number"
+                      placeholder="0"
+                      value={input.liabilities.carLoansBalance || ''}
+                      onChange={(e) => setInput({ ...input, liabilities: { ...input.liabilities, carLoansBalance: Number(e.target.value) } })}
+                      className="mt-1.5"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">חובות כרטיסי אשראי</Label>
+                    <Input
+                      type="number"
+                      placeholder="0"
+                      value={input.liabilities.creditCardDebtsBalance || ''}
+                      onChange={(e) => setInput({ ...input, liabilities: { ...input.liabilities, creditCardDebtsBalance: Number(e.target.value) } })}
+                      className="mt-1.5"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">הלוואות משפחה/פרטיות</Label>
+                    <Input
+                      type="number"
+                      placeholder="0"
+                      value={input.liabilities.familyOrPrivateLoansBalance || ''}
+                      onChange={(e) => setInput({ ...input, liabilities: { ...input.liabilities, familyOrPrivateLoansBalance: Number(e.target.value) } })}
+                      className="mt-1.5"
+                    />
+                  </div>
+                </div>
               </div>
-              <div>
-                <CardTitle className="text-xl">{he.financialCheckup.liquidAssetsTitle}</CardTitle>
-                <CardDescription>{he.financialCheckup.step2Title}</CardDescription>
+            ),
+          },
+          {
+            title: he.financialCheckup.step3Title,
+            description: 'ספר על עצמך',
+            content: (
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium">{he.financialCheckup.age}</Label>
+                  <Input
+                    type="number"
+                    value={input.profile.age}
+                    onChange={(e) => setInput({ ...input, profile: { ...input.profile, age: Number(e.target.value) } })}
+                    className="mt-1.5"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">{he.financialCheckup.maritalStatus}</Label>
+                  <Select
+                    value={input.profile.maritalStatus}
+                    onValueChange={(value: any) => setInput({ ...input, profile: { ...input.profile, maritalStatus: value } })}
+                  >
+                    <SelectTrigger className="mt-1.5">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="single">{he.financialCheckup.maritalStatusOptions.single}</SelectItem>
+                      <SelectItem value="married">{he.financialCheckup.maritalStatusOptions.married}</SelectItem>
+                      <SelectItem value="divorced">{he.financialCheckup.maritalStatusOptions.divorced}</SelectItem>
+                      <SelectItem value="other">{he.financialCheckup.maritalStatusOptions.other}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">{he.financialCheckup.numberOfChildren}</Label>
+                  <Input
+                    type="number"
+                    value={input.profile.numberOfChildren}
+                    onChange={(e) => setInput({ ...input, profile: { ...input.profile, numberOfChildren: Number(e.target.value) } })}
+                    className="mt-1.5"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">{he.financialCheckup.goalType}</Label>
+                  <Select
+                    value={input.profile.goalType}
+                    onValueChange={(value: any) => setInput({ ...input, profile: { ...input.profile, goalType: value } })}
+                  >
+                    <SelectTrigger className="mt-1.5">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="firstHome">{he.financialCheckup.goalTypeOptions.firstHome}</SelectItem>
+                      <SelectItem value="investmentProperty">{he.financialCheckup.goalTypeOptions.investmentProperty}</SelectItem>
+                      <SelectItem value="upgradeHome">{he.financialCheckup.goalTypeOptions.upgradeHome}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">{he.financialCheckup.riskComfortLevel}</Label>
+                  <Select
+                    value={input.profile.riskComfortLevel}
+                    onValueChange={(value: any) => setInput({ ...input, profile: { ...input.profile, riskComfortLevel: value } })}
+                  >
+                    <SelectTrigger className="mt-1.5">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">{he.financialCheckup.riskLevelOptions.low}</SelectItem>
+                      <SelectItem value="medium">{he.financialCheckup.riskLevelOptions.medium}</SelectItem>
+                      <SelectItem value="high">{he.financialCheckup.riskLevelOptions.high}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">מחיר נכס משוער (₪)</Label>
+                  <Input
+                    type="number"
+                    placeholder="למשל 1800000"
+                    value={input.profile.targetPropertyPrice || ''}
+                    onChange={(e) => setInput({ ...input, profile: { ...input.profile, targetPropertyPrice: Number(e.target.value) } })}
+                    className="mt-1.5"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">אם לא תמלא, ישתמש בברירת מחדל לפי סוג העסקה</p>
+                </div>
               </div>
-            </div>
-          </CardHeader>
-          <CardContent className="grid md:grid-cols-2 gap-4 pt-6">
-            <div>
-              <Label className="text-sm font-medium">{he.financialCheckup.cashAndChecking}</Label>
-              <Input
-                type="number"
-                placeholder="50,000"
-                value={input.assets.cashAndChecking || ''}
-                onChange={(e) => setInput({ ...input, assets: { ...input.assets, cashAndChecking: Number(e.target.value) } })}
-                className="mt-1.5"
-              />
-            </div>
-            <div>
-              <Label className="text-sm font-medium">{he.financialCheckup.shortTermSavings}</Label>
-              <Input
-                type="number"
-                placeholder="100,000"
-                value={input.assets.shortTermSavings || ''}
-                onChange={(e) => setInput({ ...input, assets: { ...input.assets, shortTermSavings: Number(e.target.value) } })}
-                className="mt-1.5"
-              />
-            </div>
-            <div>
-              <Label className="text-sm font-medium">{he.financialCheckup.deposits}</Label>
-              <Input
-                type="number"
-                placeholder="150,000"
-                value={input.assets.deposits || ''}
-                onChange={(e) => setInput({ ...input, assets: { ...input.assets, deposits: Number(e.target.value) } })}
-                className="mt-1.5"
-              />
-            </div>
-            <div>
-              <Label className="text-sm font-medium">{he.financialCheckup.semiLiquidInvestments}</Label>
-              <Input
-                type="number"
-                placeholder="200,000"
-                value={input.assets.semiLiquidInvestments || ''}
-                onChange={(e) => setInput({ ...input, assets: { ...input.assets, semiLiquidInvestments: Number(e.target.value) } })}
-                className="mt-1.5"
-              />
-            </div>
-            <div>
-              <Label className="text-sm font-medium">{he.financialCheckup.realEstateMarketValue}</Label>
-              <Input
-                type="number"
-                placeholder="1,500,000"
-                value={input.assets.realEstateMarketValue || ''}
-                onChange={(e) => setInput({ ...input, assets: { ...input.assets, realEstateMarketValue: Number(e.target.value) } })}
-                className="mt-1.5"
-              />
-            </div>
-            <div>
-              <Label className="text-sm font-medium">{he.financialCheckup.realEstateMortgageBalance}</Label>
-              <Input
-                type="number"
-                placeholder="800,000"
-                value={input.assets.realEstateMortgageBalance || ''}
-                onChange={(e) => setInput({ ...input, assets: { ...input.assets, realEstateMortgageBalance: Number(e.target.value) } })}
-                className="mt-1.5"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Profile Section */}
-        <Card className="border-0 shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
-          <CardHeader className="bg-gradient-to-l from-secondary/10 to-transparent border-b border-border/50">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-secondary/20 rounded-xl flex items-center justify-center">
-                <Shield className="w-5 h-5 text-secondary" />
-              </div>
-              <div>
-                <CardTitle className="text-xl">{he.financialCheckup.step3Title}</CardTitle>
-                <CardDescription>{he.common.summary}</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="grid md:grid-cols-2 gap-4 pt-6">
-            <div>
-              <Label className="text-sm font-medium">{he.financialCheckup.age}</Label>
-              <Input
-                type="number"
-                value={input.profile.age}
-                onChange={(e) => setInput({ ...input, profile: { ...input.profile, age: Number(e.target.value) } })}
-                className="mt-1.5"
-              />
-            </div>
-            <div>
-              <Label className="text-sm font-medium">{he.financialCheckup.maritalStatus}</Label>
-              <Select
-                value={input.profile.maritalStatus}
-                onValueChange={(value: any) => setInput({ ...input, profile: { ...input.profile, maritalStatus: value } })}
-              >
-                <SelectTrigger className="mt-1.5">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="single">{he.financialCheckup.maritalStatusOptions.single}</SelectItem>
-                  <SelectItem value="married">{he.financialCheckup.maritalStatusOptions.married}</SelectItem>
-                  <SelectItem value="divorced">{he.financialCheckup.maritalStatusOptions.divorced}</SelectItem>
-                  <SelectItem value="other">{he.financialCheckup.maritalStatusOptions.other}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-sm font-medium">{he.financialCheckup.numberOfChildren}</Label>
-              <Input
-                type="number"
-                value={input.profile.numberOfChildren}
-                onChange={(e) => setInput({ ...input, profile: { ...input.profile, numberOfChildren: Number(e.target.value) } })}
-                className="mt-1.5"
-              />
-            </div>
-            <div>
-              <Label className="text-sm font-medium">{he.financialCheckup.goalType}</Label>
-              <Select
-                value={input.profile.goalType}
-                onValueChange={(value: any) => setInput({ ...input, profile: { ...input.profile, goalType: value } })}
-              >
-                <SelectTrigger className="mt-1.5">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="firstHome">{he.financialCheckup.goalTypeOptions.firstHome}</SelectItem>
-                  <SelectItem value="investmentProperty">{he.financialCheckup.goalTypeOptions.investmentProperty}</SelectItem>
-                  <SelectItem value="upgradeHome">{he.financialCheckup.goalTypeOptions.upgradeHome}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="md:col-span-2">
-              <Label className="text-sm font-medium">{he.financialCheckup.riskComfortLevel}</Label>
-              <Select
-                value={input.profile.riskComfortLevel}
-                onValueChange={(value: any) => setInput({ ...input, profile: { ...input.profile, riskComfortLevel: value } })}
-              >
-                <SelectTrigger className="mt-1.5">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">{he.financialCheckup.riskLevelOptions.low}</SelectItem>
-                  <SelectItem value="medium">{he.financialCheckup.riskLevelOptions.medium}</SelectItem>
-                  <SelectItem value="high">{he.financialCheckup.riskLevelOptions.high}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Calculate Button */}
-      <div className="flex justify-center sticky bottom-20 md:bottom-8 z-10">
-        <Button
-          onClick={handleCalculate}
-          size="lg"
-          className="px-12 py-6 text-lg shadow-2xl rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
-        >
-          <Calculator className="ml-2 h-5 w-5" />
-          {he.common.calculate}
-        </Button>
-      </div>
+            ),
+          },
+        ]}
+      />
 
       {/* Results Section */}
       {results && (
