@@ -2,12 +2,12 @@ import { createContext, useContext, useCallback, useEffect, useState, ReactNode 
 
 type CalculatorType = 'financial-checkup' | 'mortgage' | 'deal-business-plan' | 'property-visit' | 'renovation';
 
-interface JourneyData {
+type JourneyData = {
   [key in CalculatorType]?: {
     timestamp: number;
     data: Record<string, any>;
   };
-}
+};
 
 interface JourneyContextType {
   journeyData: JourneyData;

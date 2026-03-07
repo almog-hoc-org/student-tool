@@ -94,7 +94,7 @@ export function Layout({ children }: { children: ReactNode }) {
                 <Home className="w-4 h-4 text-primary-foreground" />
               </div>
               {isHomePage && (
-                <span className="font-bold text-sm">נווט הבית</span>
+                <span className="font-bold text-sm">ארגז הכלים</span>
               )}
             </Link>
 
