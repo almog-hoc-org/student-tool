@@ -1,3 +1,4 @@
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,12 +16,11 @@ import {
   BarChart3,
   Bookmark,
   Sparkles,
-  Shield,
   Receipt
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-interface CalculatorCardProps {
+interface PrimaryCardProps {
   title: string;
   description: string;
   icon: React.ReactNode;
@@ -29,7 +29,7 @@ interface CalculatorCardProps {
   index: number;
 }
 
-function CalculatorCard({ title, description, icon, link, iconBg, index }: CalculatorCardProps) {
+function PrimaryCard({ title, description, icon, link, iconBg, index }: PrimaryCardProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -37,21 +37,21 @@ function CalculatorCard({ title, description, icon, link, iconBg, index }: Calcu
       transition={{ delay: index * 0.07, duration: 0.4, ease: 'easeOut' }}
     >
       <Link to={link} className="block group">
-        <Card className="glass-card border-border/40 hover:border-primary/25 hover:shadow-xl transition-all duration-300 h-full overflow-hidden hover:-translate-y-1">
-          <CardHeader className="pb-3">
-            <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-3 ${iconBg} group-hover:scale-110 transition-transform duration-300`}>
-              {icon}
+        <Card className="glass-card border-border/40 hover:border-primary/25 hover:shadow-xl transition-all duration-300 h-full overflow-hidden hover:-translate-y-1 min-h-[200px]">
+          <CardHeader className="pb-4">
+            <div className={`w-14 h-14 rounded-xl flex items-center justify-center mb-4 ${iconBg} group-hover:scale-110 transition-transform duration-300`}>
+              {React.cloneElement(icon as React.ReactElement, { className: 'w-7 h-7 text-secondary' })}
             </div>
-            <CardTitle className="text-lg leading-tight">{title}</CardTitle>
-            <CardDescription className="text-sm leading-relaxed">
+            <CardTitle className="text-xl leading-tight">{title}</CardTitle>
+            <CardDescription className="text-base leading-relaxed">
               {description}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between text-primary text-sm font-medium">
+            <Button variant="default" size="sm" className="gap-2 group-hover:gap-3 transition-all duration-300">
               <span>בוא נתחיל</span>
-              <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1.5 transition-transform duration-300" />
-            </div>
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
           </CardContent>
         </Card>
       </Link>
@@ -59,8 +59,41 @@ function CalculatorCard({ title, description, icon, link, iconBg, index }: Calcu
   );
 }
 
+interface SecondaryCardProps {
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  link: string;
+  iconBg: string;
+  index: number;
+}
+
+function SecondaryCard({ title, description, icon, link, iconBg, index }: SecondaryCardProps) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.21 + index * 0.05, duration: 0.4, ease: 'easeOut' }}
+    >
+      <Link to={link} className="block group">
+        <Card className="glass-card border-border/40 hover:border-primary/25 hover:shadow-lg transition-all duration-300 h-full overflow-hidden hover:-translate-y-0.5">
+          <CardHeader className="pb-2 pt-4 px-4">
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-2 ${iconBg} group-hover:scale-110 transition-transform duration-300`}>
+              {icon}
+            </div>
+            <CardTitle className="text-sm font-semibold leading-tight">{title}</CardTitle>
+            <CardDescription className="text-xs leading-relaxed line-clamp-2">
+              {description}
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </Link>
+    </motion.div>
+  );
+}
+
 export default function Index() {
-  const calculators = [
+  const primaryTools = [
     {
       title: 'בדיקה פיננסית',
       description: 'כמה באמת יש לך? גלה בדיוק כמה דירה אתה יכול לקנות',
@@ -81,6 +114,16 @@ export default function Index() {
       icon: <TrendingUp className="w-6 h-6 text-secondary" />,
       link: '/deal-business-plan',
       iconBg: 'bg-[hsl(var(--chart-1)/0.15)]',
+    },
+  ];
+
+  const secondaryTools = [
+    {
+      title: 'מחשבון מס רכישה',
+      description: 'כמה מס תשלם? חישוב מיידי לפי מדרגות 2025–2028',
+      icon: <Receipt className="w-6 h-6 text-secondary" />,
+      link: '/purchase-tax',
+      iconBg: 'bg-primary/10',
     },
     {
       title: 'כדאיות שיפוץ',
@@ -110,13 +153,6 @@ export default function Index() {
       link: '/urban-renewal',
       iconBg: 'bg-[hsl(var(--chart-1)/0.12)]',
     },
-    {
-      title: 'מחשבון מס רכישה',
-      description: 'כמה מס תשלם? חישוב מיידי לפי מדרגות 2025–2028',
-      icon: <Receipt className="w-6 h-6" />,
-      link: '/purchase-tax',
-      iconBg: 'bg-primary/10',
-    },
   ];
 
   return (
@@ -144,41 +180,22 @@ export default function Index() {
           </p>
         </motion.div>
 
-        {/* Quick Start Guide */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.4 }}
-        >
-          <Card className="glass-card border-primary/10 overflow-hidden">
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
-                  <Shield className="w-5 h-5 text-primary" />
-                </div>
-                <div className="space-y-2">
-                  <h3 className="font-semibold text-lg">מתחילים? 3 צעדים וזהו:</h3>
-                  <ol className="text-muted-foreground space-y-1 list-decimal list-inside text-sm sm:text-base">
-                    <li><strong className="text-foreground">בדיקה פיננסית</strong> — גלה מה התקציב האמיתי שלך</li>
-                    <li><strong className="text-foreground">מחשבון משכנתא</strong> — בנה תמהיל וחשב החזר חודשי</li>
-                    <li><strong className="text-foreground">תוכנית עסקית</strong> — בדוק תשואה וכדאיות העסקה</li>
-                  </ol>
-                  <Link to="/glossary" className="inline-flex items-center gap-1 text-sm text-primary hover:underline mt-2">
-                    <BookOpen className="w-4 h-4" />
-                    לא מכיר מונחים? לחץ כאן למילון
-                  </Link>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* Calculator Cards Grid */}
+        {/* Section 1 – Primary Tools */}
         <div className="space-y-4">
-          <h2 className="text-xl font-bold text-foreground">בחר כלי</h2>
+          <h2 className="text-xl font-bold text-foreground">כלים מרכזיים</h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-            {calculators.map((calc, index) => (
-              <CalculatorCard key={calc.link} {...calc} index={index} />
+            {primaryTools.map((calc, index) => (
+              <PrimaryCard key={calc.link} {...calc} index={index} />
+            ))}
+          </div>
+        </div>
+
+        {/* Section 2 – Secondary Tools */}
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold text-muted-foreground">כלים נוספים</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+            {secondaryTools.map((calc, index) => (
+              <SecondaryCard key={calc.link} {...calc} index={index} />
             ))}
           </div>
         </div>

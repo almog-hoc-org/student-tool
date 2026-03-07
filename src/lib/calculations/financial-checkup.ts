@@ -44,8 +44,15 @@ export function calculateFinancialCheckup(
     realEstateBuffer;
   const realEstateEquityEffective = Math.max(0, rawEquity);
 
+  // Calculate total liabilities
+  const totalLiabilities =
+    liabilities.consumerLoansBalance +
+    liabilities.carLoansBalance +
+    liabilities.creditCardDebtsBalance +
+    liabilities.familyOrPrivateLoansBalance;
+
   const availableEquity =
-    liquidEquity + semiLiquidEquityEffective + realEstateEquityEffective;
+    liquidEquity + semiLiquidEquityEffective + realEstateEquityEffective - totalLiabilities;
 
   // Calculate max safe mortgage payment
   const maxByIncome = totalIncome * 0.35;
@@ -55,9 +62,23 @@ export function calculateFinancialCheckup(
     Math.min(maxByIncome, maxByCashFlow)
   );
 
+  // Calculate dynamic target equity based on goal type and target property price
+  const defaultPrices: Record<string, number> = {
+    firstHome: 1800000,
+    investmentProperty: 1200000,
+    upgradeHome: 2200000,
+  };
+  const ltvByGoal: Record<string, number> = {
+    firstHome: 0.25,       // LTV 75% → need 25% equity
+    investmentProperty: 0.50, // LTV 50% → need 50% equity
+    upgradeHome: 0.30,     // LTV 70% → need 30% equity
+  };
+  const propertyPrice = profile.targetPropertyPrice || defaultPrices[profile.goalType] || 1800000;
+  const equityRequired = ltvByGoal[profile.goalType] || 0.25;
+  const targetEquity = propertyPrice * equityRequired;
+
   // Calculate readiness score
   const cashFlowRatio = totalIncome > 0 ? freeCashFlow / totalIncome : 0;
-  const targetEquity = 300000;
   const equityRatio = targetEquity > 0 ? availableEquity / targetEquity : 0;
 
   const stabilityFactor =
@@ -87,6 +108,7 @@ export function calculateFinancialCheckup(
     liquidEquity,
     semiLiquidEquityEffective,
     realEstateEquityEffective,
+    totalLiabilities,
     availableEquity,
     maxSafeMortgagePayment,
     readinessScore,

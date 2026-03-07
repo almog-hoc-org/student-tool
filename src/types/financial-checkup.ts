@@ -40,6 +40,7 @@ export type FinancialCheckupProfile = {
   numberOfChildren: number;
   goalType: 'firstHome' | 'investmentProperty' | 'upgradeHome';
   riskComfortLevel: 'low' | 'medium' | 'high';
+  targetPropertyPrice?: number;
 };
 
 export type FinancialCheckupInput = {
@@ -58,6 +59,7 @@ export type FinancialCheckupOutput = {
   liquidEquity: number;
   semiLiquidEquityEffective: number;
   realEstateEquityEffective: number;
+  totalLiabilities: number;
   availableEquity: number;
   maxSafeMortgagePayment: number;
   readinessScore: number;

@@ -50,28 +50,23 @@ interface NavItem {
 
 const navGroups: NavGroup[] = [
   {
-    label: 'הערכת כדאיות',
+    label: 'כלים מרכזיים',
     items: [
       { name: 'בדיקה פיננסית', href: '/financial-checkup', icon: Calculator },
+      { name: 'מחשבון משכנתא', href: '/mortgage-calculator', icon: Home },
       { name: 'תוכנית עסקית', href: '/deal-business-plan', icon: TrendingUp },
     ]
   },
   {
-    label: 'מימון',
+    label: 'בדיקות נכס',
     items: [
-      { name: 'מחשבון משכנתא', href: '/mortgage-calculator', icon: Home },
       { name: 'מס רכישה', href: '/purchase-tax', icon: Receipt },
-    ]
-  },
-  {
-    label: 'בדיקת נכס',
-    items: [
       { name: 'כדאיות שיפוץ', href: '/renovation-feasibility', icon: Hammer },
       { name: 'ביקור בנכס', href: '/property-visit', icon: ClipboardCheck },
     ]
   },
   {
-    label: 'תהליכים',
+    label: 'מדריכים',
     items: [
       { name: 'ציר זמן', href: '/transaction-timeline', icon: Calendar },
       { name: 'התחדשות עירונית', href: '/urban-renewal', icon: Building2 },
@@ -82,9 +77,8 @@ const navGroups: NavGroup[] = [
 const flatNavItems = navGroups.flatMap(g => g.items);
 const bottomTabItems = [
   flatNavItems[0], // בדיקה פיננסית
-  flatNavItems[2], // מחשבון משכנתא
-  flatNavItems[1], // תוכנית עסקית
-  flatNavItems[4], // ביקור בנכס
+  flatNavItems[1], // מחשבון משכנתא
+  flatNavItems[2], // תוכנית עסקית
 ];
 
 const utilityNav = [

@@ -12,6 +12,7 @@ export type DealFinancingInputs = {
   equityInvested: number;
   mortgageAmount: number;
   mortgageMonthlyPayment: number;
+  mortgageInterestRate?: number;
 };
 
 export type DealRentalInputs = {

@@ -77,3 +77,38 @@ export const formatPercent = (value: number, decimals: number = 2): string => {
   // Multiply by 100 since value is typically a decimal (e.g. 0.035 for 3.5%)
   return `${(value * 100).toFixed(decimals)}%`;
 };
+
+/** Smart warnings - not blocking, just informational */
+export function getSmartWarnings(fieldName: string, value: number, context?: Record<string, number>): string | null {
+  if (value < 0) return 'ערך לא יכול להיות שלילי';
+
+  switch (fieldName) {
+    case 'expectedMonthlyRent':
+      if (context?.purchasePrice && value > 0) {
+        const rentRatio = (value * 12) / context.purchasePrice;
+        if (rentRatio > 0.08) return 'שכירות גבוהה מאוד יחסית למחיר הנכס - בדוק שוב';
+      }
+      break;
+    case 'annualInterestRate':
+    case 'mortgageInterestRate':
+      if (value > 10) return 'ריבית גבוהה מאוד - נכון?';
+      if (value > 0 && value < 1) return 'שים לב - ריבית נמוכה מאוד';
+      break;
+    case 'totalExpenses':
+      if (context?.totalIncome && value > context.totalIncome) return 'שים לב - הוצאות גבוהות מהכנסות';
+      break;
+    case 'holdingPeriodYears':
+      if (value > 30) return 'תקופה ארוכה מאוד - בדוק שוב';
+      break;
+  }
+  return null;
+}
+
+/** Smart defaults for common fields */
+export const SMART_DEFAULTS: Record<string, { value: number; label: string }> = {
+  annualInsurance: { value: 3000, label: 'ביטוח בניין ממוצע' },
+  annualPropertyTax: { value: 5000, label: 'ארנונה ממוצעת' },
+  annualMaintenance: { value: 3600, label: 'ועד בית ממוצע (300/חודש)' },
+  occupancyRate: { value: 0.95, label: 'תפוסה סטנדרטית (95%)' },
+  annualAppreciation: { value: 3, label: 'עליית ערך ממוצעת (3%)' },
+};
