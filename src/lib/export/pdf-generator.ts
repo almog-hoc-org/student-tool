@@ -57,7 +57,7 @@ export async function exportToPDF(
   y = 18;
   doc.setFontSize(10);
   doc.setTextColor(BRAND_ORANGE_R, BRAND_ORANGE_G, BRAND_ORANGE_B);
-  doc.text('נווט הבית', pageWidth - margin, y, { align: 'right' });
+  doc.text('ארגז הכלים - הדרך לדירה', pageWidth - margin, y, { align: 'right' });
 
   // Date
   const date = new Date().toLocaleDateString('he-IL', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -175,7 +175,7 @@ export async function exportToPDF(
   }
 
   // --- Disclaimer ---
-  const disclaimer = opts.disclaimer || 'המידע המוצג הינו להמחשה בלבד ואינו מהווה ייעוץ פיננסי או משפטי. נווט הבית © 2026';
+  const disclaimer = opts.disclaimer || 'המידע המוצג הינו להמחשה בלבד ואינו מהווה ייעוץ פיננסי או משפטי. ארגז הכלים - הדרך לדירה © 2026';
   if (y + 20 > 270) {
     doc.addPage();
     y = 20;

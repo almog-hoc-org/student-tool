@@ -135,9 +135,9 @@ export default function Index() {
     <div className="space-y-6 max-w-2xl mx-auto">
       {/* Header */}
       <div className="py-4">
-        <h1 className="text-2xl font-bold">נווט הבית</h1>
+        <h1 className="text-2xl font-bold">ארגז הכלים</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
-          כל הכלים שצריך כדי לקנות דירה בביטחון
+          הדרך לדירה – כל הכלים שצריך כדי לקנות דירה בביטחון
         </p>
       </div>
 

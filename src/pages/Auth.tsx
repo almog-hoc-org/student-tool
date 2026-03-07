@@ -90,7 +90,7 @@ export default function Auth() {
             <Calculator className="w-7 h-7 text-primary-foreground" />
           </div>
           <div>
-            <CardTitle className="text-2xl">נווט הבית</CardTitle>
+            <CardTitle className="text-2xl">ארגז הכלים</CardTitle>
             <CardDescription className="mt-2">
               {isLogin ? 'שמור את החישובים שלך ונתח מגמות' : 'צור חשבון חדש ותתחיל לתכנן'}
             </CardDescription>
