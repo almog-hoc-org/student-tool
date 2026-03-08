@@ -487,18 +487,61 @@ const DealBusinessPlan = () => {
           transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
         >
           {/* Executive Summary */}
-          <ExecutiveSummary
-            type={dealType === 'rental' ? 'deal-rental' : 'deal-flip'}
-            data={{
-              cocYield: results.cocYield,
-              irr: irrResult,
-              netCashFlow: results.netCashflowAnnual !== undefined ? results.netCashflowAnnual / 12 : undefined,
-              grossProfit: results.grossProfit,
-              roi: results.roi,
-              annualizedRoi: results.annualizedRoi,
-              classification: he.dealBusinessPlan.classificationLabels[results.classification as keyof typeof he.dealBusinessPlan.classificationLabels],
-            }}
-          />
+          {dealType !== 'ownUse' && (
+            <ExecutiveSummary
+              type={dealType === 'rental' ? 'deal-rental' : 'deal-flip'}
+              data={{
+                cocYield: results.cocYield,
+                irr: irrResult,
+                netCashFlow: results.netCashflowAnnual !== undefined ? results.netCashflowAnnual / 12 : undefined,
+                grossProfit: results.grossProfit,
+                roi: results.roi,
+                annualizedRoi: results.annualizedRoi,
+                classification: he.dealBusinessPlan.classificationLabels[results.classification as keyof typeof he.dealBusinessPlan.classificationLabels],
+              }}
+            />
+          )}
+
+          {/* Own Use Summary */}
+          {dealType === 'ownUse' && results.monthlyOwnershipCost != null && (
+            <Card className="border shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-lg">השוואת בעלות מול שכירות</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 rounded-xl bg-accent/50 text-center">
+                    <p className="text-sm text-muted-foreground mb-1">עלות חודשית בעלות</p>
+                    <p className="text-2xl font-bold">{formatCurrency(results.monthlyOwnershipCost)}</p>
+                    <p className="text-xs text-muted-foreground mt-1">משכנתא + ארנונה + ועד + תחזוקה</p>
+                  </div>
+                  <div className="p-4 rounded-xl bg-secondary/10 text-center">
+                    <p className="text-sm text-muted-foreground mb-1">שכירות חלופית</p>
+                    <p className="text-2xl font-bold">{formatCurrency(results.alternativeMonthlyRent || 0)}</p>
+                    <p className="text-xs text-muted-foreground mt-1">עלות חודשית לשוכר</p>
+                  </div>
+                </div>
+                <div className={`p-4 rounded-xl text-center ${(results.monthlySavings || 0) > 0 ? 'bg-primary/5' : 'bg-destructive/5'}`}>
+                  <p className="text-sm text-muted-foreground mb-1">
+                    {(results.monthlySavings || 0) > 0 ? 'חיסכון חודשי ברכישה' : 'עלות נוספת חודשית ברכישה'}
+                  </p>
+                  <p className={`text-3xl font-bold ${(results.monthlySavings || 0) > 0 ? 'text-primary' : 'text-destructive'}`}>
+                    {formatCurrency(Math.abs(results.monthlySavings || 0))}
+                  </p>
+                  {results.breakEvenYears != null && (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      נקודת איזון: <span className="font-bold">{results.breakEvenYears.toFixed(1)} שנים</span> — אחרי תקופה זו הרכישה משתלמת
+                    </p>
+                  )}
+                  {results.breakEvenYears == null && (results.monthlySavings || 0) <= 0 && (
+                    <p className="text-sm text-destructive mt-2">
+                      הרכישה יקרה יותר מדי חודש — אין נקודת איזון
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Smart Insights */}
           <SmartInsight
