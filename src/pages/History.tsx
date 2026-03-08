@@ -3,7 +3,6 @@ import { PageHero } from '@/components/PageHero';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Table,
   TableBody,
@@ -35,6 +34,8 @@ import { toast } from '@/hooks/use-toast';
 import { ShareButton } from '@/components/ShareButton';
 import { ComparisonView } from '@/components/ComparisonView';
 import { AnimatedStatsCard } from '@/components/AnimatedStatsCard';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const typeLabels: Record<CalculationHistory['type'], string> = {
   mortgage: 'משכנתא',
@@ -56,11 +57,23 @@ const typeColors: Record<CalculationHistory['type'], string> = {
   'urban-renewal': 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200',
 };
 
+const filterTypes = [
+  { value: 'all', label: 'הכל' },
+  { value: 'mortgage', label: 'משכנתא' },
+  { value: 'financial-checkup', label: 'צ\'ק-אפ' },
+  { value: 'deal', label: 'עסקה' },
+  { value: 'renovation', label: 'שיפוץ' },
+  { value: 'property-visit', label: 'ביקור' },
+  { value: 'transaction-timeline', label: 'ציר זמן' },
+  { value: 'urban-renewal', label: 'התחדשות' },
+] as const;
+
 export default function History() {
   const [history, setHistory] = useState<CalculationHistory[]>(getCalculationHistory());
   const [selectedType, setSelectedType] = useState<'all' | CalculationHistory['type']>('all');
   const [selectedForComparison, setSelectedForComparison] = useState<string[]>([]);
   const [showComparison, setShowComparison] = useState(false);
+  const isMobile = useIsMobile();
 
   const handleDelete = (id: string) => {
     deleteCalculation(id);
@@ -210,25 +223,35 @@ export default function History() {
         </Card>
       )}
 
-      {/* History Table */}
-      <Card className="border-0 shadow-lg">
-        <CardHeader>
-          <Tabs value={selectedType} onValueChange={(v) => setSelectedType(v as any)}>
-            <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
-              <TabsTrigger value="all">הכל ({stats.total})</TabsTrigger>
-              <TabsTrigger value="mortgage">משכנתא</TabsTrigger>
-              <TabsTrigger value="financial-checkup">צ'ק-אפ</TabsTrigger>
-              <TabsTrigger value="deal">עסקה</TabsTrigger>
-              <TabsTrigger value="renovation">שיפוץ</TabsTrigger>
-              <TabsTrigger value="property-visit">ביקור</TabsTrigger>
-              <TabsTrigger value="transaction-timeline">ציר זמן</TabsTrigger>
-              <TabsTrigger value="urban-renewal">התחדשות</TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </CardHeader>
-        <CardContent>
+      {/* Filter chips - scrollable on mobile */}
+      <ScrollArea className="w-full">
+        <div className="flex gap-2 pb-2">
+          {filterTypes.map((ft) => {
+            const count = ft.value === 'all' ? stats.total : stats[ft.value as keyof typeof stats] || 0;
+            const isActive = selectedType === ft.value;
+            return (
+              <button
+                key={ft.value}
+                onClick={() => setSelectedType(ft.value as any)}
+                className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                  isActive
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted text-muted-foreground'
+                }`}
+              >
+                {ft.label} ({count})
+              </button>
+            );
+          })}
+        </div>
+        <ScrollBar orientation="horizontal" />
+      </ScrollArea>
+
+      {/* History Content */}
+      <Card className="border shadow-sm">
+        <CardContent className="p-0 sm:p-0">
           {filteredHistory.length === 0 ? (
-            <div className="text-center py-16 space-y-4">
+            <div className="text-center py-16 space-y-4 px-4">
               <div className="w-20 h-20 mx-auto rounded-2xl bg-primary/8 flex items-center justify-center">
                 <HistoryIcon className="w-10 h-10 text-primary/40" />
               </div>
@@ -239,7 +262,63 @@ export default function History() {
                 </p>
               </div>
             </div>
+          ) : isMobile ? (
+            /* Mobile: Card layout */
+            <div className="divide-y divide-border">
+              {filteredHistory.map((item) => (
+                <div key={item.id} className="p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Badge className={typeColors[item.type]} variant="secondary">
+                      {typeLabels[item.type]}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(item.timestamp).toLocaleDateString('he-IL', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                  </div>
+                  <p className="text-sm font-medium truncate">{item.title}</p>
+                  <p className="text-sm font-semibold">{item.result}</p>
+                  <div className="flex items-center gap-2 pt-1">
+                    <Button
+                      variant={selectedForComparison.includes(item.id) ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => toggleComparisonSelection(item.id)}
+                    >
+                      <ArrowLeftRight className="h-3 w-3 ml-1" />
+                      השווה
+                    </Button>
+                    <ShareButton title={item.title} text={item.result} />
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>מחיקת חישוב</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            האם אתה בטוח שברצונך למחוק חישוב זה?
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>ביטול</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDelete(item.id)}>
+                            מחק
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : (
+            /* Desktop: Table layout */
             <Table>
               <TableHeader>
                 <TableRow>
@@ -247,6 +326,7 @@ export default function History() {
                   <TableHead>סוג</TableHead>
                   <TableHead>כותרת</TableHead>
                   <TableHead>תוצאה</TableHead>
+                  <TableHead className="text-left">השוואה</TableHead>
                   <TableHead className="text-left">פעולות</TableHead>
                 </TableRow>
               </TableHeader>

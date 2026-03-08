@@ -1,7 +1,9 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { BookOpen, Search } from 'lucide-react';
 import { useState } from 'react';
+import { PageHero } from '@/components/PageHero';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 interface Term {
   term: string;
@@ -51,91 +53,99 @@ const terms: Term[] = [
   },
   {
     term: 'מס רכישה',
-    definition: 'מס שמשלמים למדינה בקניית דירה. האחוז משתנה לפי מחיר הדירה ואם זו דירה יחידה.',
-    example: 'על דירה יחידה עד 1.9 מיליון אין מס. מעל זה - מתחיל ב-3.5%.',
+    definition: 'מס שמשולם למדינה בעת רכישת נכס. האחוז עולה בהתאם למחיר ומספר הדירות.',
+    example: 'על דירה ראשונה עד 1,978,745 ₪ אין מס רכישה. על דירה שנייה: 8% מהשקל הראשון.',
     category: 'עלויות',
   },
   {
-    term: 'מס שבח',
-    definition: 'מס על הרווח במכירת דירה. לרוב פטור בדירה יחידה (עם תנאים).',
-    example: 'קנית ב-1 מיליון, מכרת ב-1.5 מיליון. הרווח 500,000 ₪ - על זה משלמים מס.',
+    term: 'דמי תיווך',
+    definition: 'עמלה שמשולמת למתווך (בדרך כלל 2% + מע"מ ממחיר העסקה).',
+    example: 'על דירה של 2 מיליון, דמי תיווך של 2%+מע"מ = כ-46,800 ₪.',
     category: 'עלויות',
   },
-  // תשואות
+  // תשואה
   {
-    term: 'תשואה ברוטו',
-    definition: 'הכנסה שנתית משכירות חלקי מחיר הדירה, לפני הוצאות.',
-    example: 'דירה ב-1 מיליון שמשכירים ב-4,000 ₪/חודש = 48,000 ₪/שנה = 4.8% תשואה ברוטו.',
-    category: 'תשואות',
+    term: 'תשואת שכירות',
+    definition: 'הכנסה שנתית משכירות חלקי מחיר הנכס. מודד כמה הנכס "מרוויח" ביחס למחירו.',
+    example: 'דירה ב-1.5 מיליון שמשכירים ב-5,000 ₪/חודש = תשואה של 4% (60,000/1,500,000).',
+    category: 'תשואה',
   },
   {
-    term: 'תשואה נטו',
-    definition: 'הכנסה שנתית משכירות אחרי הוצאות (ארנונה, ועד בית, תיקונים וכו\').',
-    example: 'מ-48,000 ₪ הכנסה, אחרי הוצאות של 8,000 ₪ נשארים 40,000 ₪ = 4% נטו.',
-    category: 'תשואות',
+    term: 'IRR (תשואה פנימית)',
+    definition: 'שיעור התשואה השנתי הממוצע על ההשקעה, כולל תזרים שוטף ועליית ערך.',
+    example: 'IRR של 12% אומר שההשקעה מניבה בממוצע 12% לשנה, כולל שכירות ומכירה.',
+    category: 'תשואה',
   },
   {
-    term: 'תשואה על ההון (Cash on Cash)',
-    definition: 'כמה אתה מרוויח ביחס לכסף שלך (לא כולל המשכנתא). המדד החשוב ביותר למשקיעים.',
-    example: 'השקעת 500,000 ₪ הון עצמי ומרוויח 24,000 ₪ נטו בשנה = 4.8% תשואה על ההון.',
-    category: 'תשואות',
+    term: 'Cash on Cash (תשואה על הון עצמי)',
+    definition: 'כמה תזרים מזומנים נקי מקבלים ביחס להון העצמי שהושקע.',
+    example: 'השקעת 400,000 ₪ הון עצמי ומקבל 20,000 ₪ נקי בשנה = CoC של 5%.',
+    category: 'תשואה',
+  },
+  {
+    term: 'מנוף פיננסי (Leverage)',
+    definition: 'שימוש בכסף של הבנק (משכנתא) כדי להגדיל את התשואה על ההון העצמי שלך.',
+    example: 'אם הנכס עלה 5% ואתה מימנת רק 25% מההון — הרווח על ההון שלך הוא 20%.',
+    category: 'תשואה',
   },
   // שיפוץ
   {
     term: 'מרווח ביטחון',
-    definition: 'סכום נוסף שמוסיפים לתקציב השיפוץ למקרה של הפתעות. מומלץ 15-20%.',
-    example: 'תקציב שיפוץ 200,000 ₪ + 15% מרווח = 230,000 ₪ תקציב כולל.',
+    definition: 'תוספת של 10-20% מעלות השיפוץ המתוכננת כנגד הפתעות.',
+    example: 'אם השיפוץ מתוכנן ל-200,000 ₪, תקצב 230,000-240,000 ₪.',
     category: 'שיפוץ',
   },
   {
-    term: 'עליית ערך (Value Uplift)',
-    definition: 'כמה עולה ערך הדירה אחרי השיפוץ, ביחס לערך לפני.',
-    example: 'דירה שווה 1.2 מיליון, אחרי שיפוץ שווה 1.5 מיליון = עליית ערך של 300,000 ₪.',
+    term: 'עליית ערך מוספת (Value Uplift)',
+    definition: 'ההפרש בין ערך הנכס אחרי שיפוץ לבין הערך לפני + עלות השיפוץ.',
+    example: 'נכס ששווה 1.2M, שופץ ב-200K ועכשיו שווה 1.6M → עליית ערך מוספת של 200K.',
     category: 'שיפוץ',
+  },
+  // משפטי
+  {
+    term: 'נסח טאבו',
+    definition: 'מסמך רשמי מרשם המקרקעין שמפרט בעלות, שעבודים והערות אזהרה על הנכס.',
+    example: 'לפני רכישה חובה לבדוק נסח טאבו — לוודא שאין עיקולים או שעבודים.',
+    category: 'משפטי',
+  },
+  {
+    term: 'הערת אזהרה',
+    definition: 'רישום בטאבו שמתריע שיש התחייבות כלפי הנכס (למשל חוזה מכר).',
+    example: 'אחרי חתימת חוזה, רושמים הערת אזהרה כדי למנוע מהמוכר למכור לאחר.',
+    category: 'משפטי',
+  },
+  {
+    term: 'ייפוי כוח',
+    definition: 'מסמך שמאפשר לעורך הדין לפעול בשמך — חובה ברכישת נכס.',
+    example: 'נותנים ייפוי כוח לעו"ד כדי שיוכל לרשום הערת אזהרה ולהעביר בעלות.',
+    category: 'משפטי',
   },
   // התחדשות עירונית
   {
     term: 'תמ"א 38',
-    definition: 'תוכנית לחיזוק מבנים נגד רעידות אדמה, שכוללת הוספת דירות וקומות.',
-    example: 'הבניין מקבל חיזוק, מעלית וחניה. הדיירים מקבלים ממ"ד ומרפסת.',
-    category: 'התחדשות עירונית',
+    definition: 'תוכנית לחיזוק מבנים מפני רעידות אדמה, הכוללת בדרך כלל תוספת קומות ושדרוג.',
+    example: 'בניין ישן מקבל חיזוק, מעלית, מרפסת חדשה ו-2 קומות נוספות ליזם.',
+    category: 'התחדשות',
   },
   {
-    term: 'פינוי-בינוי',
-    definition: 'הריסת בניין ישן ובניית חדש במקומו. הדיירים מקבלים דירות חדשות.',
-    example: 'דירת 70 מ"ר הופכת לדירת 100 מ"ר חדשה, עם מעלית וחניה.',
-    category: 'התחדשות עירונית',
-  },
-  // תהליכים
-  {
-    term: 'בדיקת נאותות (Due Diligence)',
-    definition: 'בדיקה מקיפה של הנכס והעסקה לפני הרכישה.',
-    example: 'בדיקת נסח טאבו, היתרי בנייה, חובות לעירייה, מצב הבניין וכו\'.',
-    category: 'תהליכים',
-  },
-  {
-    term: 'נסח טאבו',
-    definition: 'מסמך רשמי שמראה מי הבעלים של הנכס ואם יש עליו שעבודים או עיקולים.',
-    example: 'בנסח רואים את שם הבעלים, גודל החלק, משכנתא רשומה והערות אזהרה.',
-    category: 'תהליכים',
-  },
-  {
-    term: 'הערת אזהרה',
-    definition: 'רישום בטאבו שמודיע שיש התחייבות על הנכס (למשל, שהוא נמכר למישהו).',
-    example: 'אחרי חתימת חוזה, רושמים הערת אזהרה כדי למנוע מכירה כפולה.',
-    category: 'תהליכים',
+    term: 'פינוי בינוי',
+    definition: 'הריסת בניין ישן ובניית בניין חדש תחתיו, כשהדיירים מקבלים דירות חדשות.',
+    example: 'בניין של 30 דירות נהרס ובמקומו נבנה מגדל של 120 דירות.',
+    category: 'התחדשות',
   },
 ];
-
-const categories = [...new Set(terms.map(t => t.category))];
 
 export default function Glossary() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
+  const categories = [...new Set(terms.map(t => t.category))];
+
   const filteredTerms = terms.filter(term => {
-    const matchesSearch = term.term.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         term.definition.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = searchQuery === '' || 
+      term.term.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      term.definition.includes(searchQuery) ||
+      (term.example && term.example.includes(searchQuery));
     const matchesCategory = !selectedCategory || term.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
@@ -147,42 +157,37 @@ export default function Glossary() {
   }, {} as Record<string, Term[]>);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
-      <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
-        {/* Header */}
-        <div className="text-center space-y-4 py-6">
-          <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto">
-            <BookOpen className="w-8 h-8 text-primary" />
+    <div className="space-y-6 pb-8">
+      <PageHero
+        icon={<BookOpen className="w-6 h-6 text-primary" />}
+        title="מילון מונחים"
+        description="נתקלתם במונח שלא הכרתם? כאן תמצאו הסברים פשוטים ודוגמאות ברורות לכל המושגים בעולם הנדל״ן"
+      />
+
+      {/* Search */}
+      <Card className="border shadow-sm">
+        <CardContent className="p-4">
+          <div className="relative">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            <Input
+              placeholder="חפש מונח או מילת מפתח..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pr-10"
+            />
           </div>
-          <h1 className="text-3xl sm:text-4xl font-bold">מילון מונחים</h1>
-          <p className="text-muted-foreground max-w-lg mx-auto">
-            נתקלתם במונח שלא הכרתם? כאן תמצאו הסברים פשוטים ודוגמאות ברורות לכל המושגים החשובים בעולם הנדל״ן והמשכנתאות
-          </p>
-        </div>
+        </CardContent>
+      </Card>
 
-        {/* Search */}
-        <Card className="border-0 shadow-md">
-          <CardContent className="p-4">
-            <div className="relative">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <Input
-                placeholder="הקלידו מונח או מילת מפתח לחיפוש..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pr-10 text-lg"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Category Filter */}
-        <div className="flex flex-wrap gap-2">
+      {/* Category Filter - scrollable on mobile */}
+      <ScrollArea className="w-full">
+        <div className="flex gap-2 pb-2">
           <button
             onClick={() => setSelectedCategory(null)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+            className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
               !selectedCategory 
                 ? 'bg-primary text-primary-foreground' 
-                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                : 'bg-muted text-muted-foreground'
             }`}
           >
             הכל
@@ -191,55 +196,53 @@ export default function Glossary() {
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat === selectedCategory ? null : cat)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+              className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                 selectedCategory === cat 
                   ? 'bg-primary text-primary-foreground' 
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                  : 'bg-muted text-muted-foreground'
               }`}
             >
               {cat}
             </button>
           ))}
         </div>
+        <ScrollBar orientation="horizontal" />
+      </ScrollArea>
 
-        {/* Terms */}
-        <div className="space-y-6">
-          {Object.entries(groupedTerms).map(([category, categoryTerms]) => (
-            <div key={category} className="space-y-3">
-              <h2 className="text-xl font-bold text-primary">{category}</h2>
-              <div className="grid gap-3">
-                {categoryTerms.map((term, index) => (
-                  <Card 
-                    key={index} 
-                    className="border-0 shadow-sm hover:shadow-md transition-shadow"
-                  >
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg">{term.term}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      <p className="text-muted-foreground">{term.definition}</p>
-                      {term.example && (
-                        <div className="bg-primary/5 rounded-lg p-3 text-sm">
-                          <span className="font-medium text-primary">דוגמה: </span>
-                          {term.example}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+      {/* Terms */}
+      <div className="space-y-6">
+        {Object.entries(groupedTerms).map(([category, categoryTerms]) => (
+          <div key={category} className="space-y-3">
+            <h2 className="text-lg font-bold text-primary">{category}</h2>
+            <div className="grid gap-3">
+              {categoryTerms.map((term, index) => (
+                <Card key={index} className="border shadow-sm">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">{term.term}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <p className="text-sm text-muted-foreground">{term.definition}</p>
+                    {term.example && (
+                      <div className="bg-accent/50 rounded-lg p-3 text-sm">
+                        <span className="font-medium text-primary">דוגמה: </span>
+                        {term.example}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
             </div>
-          ))}
-        </div>
-
-        {filteredTerms.length === 0 && (
-          <Card className="border-0 shadow-md">
-            <CardContent className="p-8 text-center">
-              <p className="text-muted-foreground">לא נמצאו מונחים התואמים לחיפוש</p>
-            </CardContent>
-          </Card>
-        )}
+          </div>
+        ))}
       </div>
+
+      {filteredTerms.length === 0 && (
+        <Card className="border shadow-sm">
+          <CardContent className="p-8 text-center">
+            <p className="text-muted-foreground">לא נמצאו מונחים התואמים לחיפוש</p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
