@@ -89,48 +89,11 @@ function getLatestByType(history: CalculationHistory[]): Record<CalcType, Calcul
 }
 
 function renderDetails(item: CalculationHistory): React.ReactNode {
-  const result = item.result;
-
-  switch (item.type) {
-    case 'financial-checkup':
-      // result format: "תזרים פנוי: ₪X | דירוג: High/Medium/Low"
-      return (
-        <div className="space-y-1 text-sm">
-          <p>{result}</p>
-        </div>
-      );
-
-    case 'mortgage':
-      // result format: "תשלום חודשי: ₪X"
-      return (
-        <div className="space-y-1 text-sm">
-          <p>{result}</p>
-        </div>
-      );
-
-    case 'deal':
-      // result format: "תשואה: X%" or "רווח: ₪X"
-      return (
-        <div className="space-y-1 text-sm">
-          <p>{result}</p>
-        </div>
-      );
-
-    case 'property-visit':
-      // result format: "ציון כולל: X/100"
-      return (
-        <div className="space-y-1 text-sm">
-          <p>{result}</p>
-        </div>
-      );
-
-    default:
-      return (
-        <div className="space-y-1 text-sm">
-          <p>{result}</p>
-        </div>
-      );
-  }
+  return (
+    <div className="space-y-1 text-sm">
+      <p>{item.result}</p>
+    </div>
+  );
 }
 
 export default function Summary() {

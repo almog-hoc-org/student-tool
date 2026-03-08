@@ -96,7 +96,7 @@ export default function PurchaseTaxCalculator() {
   ] : [];
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-6 py-6">
+    <div className="space-y-6 pb-8">
       <PageHero
         icon={<Receipt className="w-6 h-6 text-primary" />}
         title="מחשבון מס רכישה ועלויות נלוות"
@@ -115,7 +115,7 @@ export default function PurchaseTaxCalculator() {
       )}
 
       {/* Buyer Type Selection */}
-      <Card className="border border-border/60 shadow-sm">
+      <Card className="border shadow-sm">
         <CardHeader>
           <CardTitle className="text-lg">סוג הרוכש</CardTitle>
           <CardDescription>בחר את סוג הרוכש – המדרגות משתנות בהתאם</CardDescription>
@@ -147,7 +147,7 @@ export default function PurchaseTaxCalculator() {
       </Card>
 
       {/* Purchase Price */}
-      <Card className="border border-border/60 shadow-sm">
+      <Card className="border shadow-sm">
         <CardHeader>
           <CardTitle className="text-lg">מחיר הנכס</CardTitle>
         </CardHeader>
@@ -166,7 +166,7 @@ export default function PurchaseTaxCalculator() {
       </Card>
 
       {/* Side Costs Settings */}
-      <Card className="border border-border/60 shadow-sm">
+      <Card className="border shadow-sm">
         <CardHeader>
           <CardTitle className="text-lg">עלויות נלוות</CardTitle>
           <CardDescription>התאם את העלויות הנלוות לעסקה שלך</CardDescription>
@@ -229,7 +229,7 @@ export default function PurchaseTaxCalculator() {
           <SmartInsight insights={generateTaxInsights(taxResult, purchasePrice, buyerType)} />
 
           {/* Tax Brackets Table */}
-          <Card className="border border-border/60 shadow-sm">
+          <Card className="border shadow-sm">
             <CardHeader>
               <CardTitle className="text-lg">פירוט מדרגות מס רכישה</CardTitle>
             </CardHeader>
@@ -265,7 +265,7 @@ export default function PurchaseTaxCalculator() {
 
           {/* Side Costs Breakdown */}
           {sideCostsResult && (
-            <Card className="border border-border/60 shadow-sm">
+            <Card className="border shadow-sm">
               <CardHeader>
                 <CardTitle className="text-lg">פירוט עלויות נלוות</CardTitle>
               </CardHeader>

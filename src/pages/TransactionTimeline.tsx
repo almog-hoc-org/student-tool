@@ -15,7 +15,7 @@ import { saveCalculation } from '@/lib/storage/calculator-history';
 import { toast } from '@/hooks/use-toast';
 
 const TransactionTimeline = () => {
-  const [purchasePrice, setPurchasePrice] = useState<number>(0);
+  const [purchasePrice, setPurchasePrice] = useState<number>(1800000);
   const [sideCostsPercent, setSideCostsPercent] = useState<number>(7);
   const [results, setResults] = useState<TransactionCostCalculatorOutput | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
