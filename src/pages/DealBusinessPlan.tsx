@@ -11,7 +11,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { calculateDealBusinessPlan } from '@/lib/calculations/deal-business-plan';
 import { calculatePurchaseTax, BuyerType } from '@/lib/calculations/purchase-tax';
 import { calculateRentalIRR, calculateFlipIRR } from '@/lib/calculations/irr';
-import { DealBusinessPlanInput, DealBusinessPlanOutput, DealType } from '@/types/deal-business-plan';
+import { DealBusinessPlanInput, DealBusinessPlanOutput, DealType, DealOwnUseInputs } from '@/types/deal-business-plan';
 import { he } from '@/lib/translations/he';
 import { formatCurrency, formatPercent } from '@/lib/validation/validators';
 import { StatsCard } from '@/components/StatsCard';
@@ -19,7 +19,7 @@ import { SmartInsight, generateDealInsights } from '@/components/SmartInsight';
 import { HiddenCostsChecklist } from '@/components/HiddenCostsChecklist';
 import { ExecutiveSummary } from '@/components/ExecutiveSummary';
 import { FuelGauge } from '@/components/FuelGauge';
-import { Building2, Wallet, TrendingUp, Calculator, Loader2, Users } from 'lucide-react';
+import { Building2, Wallet, TrendingUp, Calculator, Loader2, Users, Home } from 'lucide-react';
 import { PageHero } from '@/components/PageHero';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line } from 'recharts';
 import { saveCalculation } from '@/lib/storage/calculator-history';
@@ -58,6 +58,12 @@ const DealBusinessPlan = () => {
     flip: {
       expectedSalePrice: 0,
       saleCosts: 0,
+    },
+    ownUse: {
+      alternativeMonthlyRent: 4500,
+      monthlyPropertyTax: 250,
+      monthlyHoaFees: 400,
+      monthlyMaintenance: 300,
     },
   });
 
@@ -119,7 +125,9 @@ const DealBusinessPlan = () => {
     const title = `עסקה ${he.dealBusinessPlan.dealTypeOptions[dealType]} - ${formatCurrency(input.basic.purchasePrice)}`;
     const result = dealType === 'rental'
       ? `תשואה: ${formatPercent(output.cocYield || 0)}`
-      : `רווח: ${formatCurrency(output.grossProfit || 0)}`;
+      : dealType === 'flip'
+      ? `רווח: ${formatCurrency(output.grossProfit || 0)}`
+      : `חיסכון חודשי: ${formatCurrency(output.monthlySavings || 0)}`;
 
     saveCalculation({ type: 'deal', title, result, input });
     toast({ title: "החישוב הושלם בהצלחה", description: "התוצאות נשמרו בהיסטוריה" });
