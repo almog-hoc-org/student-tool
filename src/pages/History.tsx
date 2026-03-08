@@ -138,9 +138,8 @@ export default function History() {
                 </AlertDialogContent>
               </AlertDialog>
             )}
-          </div>
-        </CardHeader>
-      </Card>
+        </div>
+      </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
