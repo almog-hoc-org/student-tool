@@ -71,6 +71,12 @@ const MortgageCalculator = () => {
   };
 
   const handleCalculate = async () => {
+    const hasValidTrack = tracks.some(t => t.principal > 0);
+    if (!hasValidTrack) {
+      toast({ title: 'שגיאה', description: 'יש להזין סכום קרן חיובי באחד המסלולים לפחות', variant: 'destructive' });
+      return;
+    }
+
     setIsCalculating(true);
     await new Promise(resolve => setTimeout(resolve, 400));
 
@@ -169,29 +175,40 @@ const MortgageCalculator = () => {
       )}
 
       {/* Monthly Income */}
-      <Card className="border-0 shadow-lg">
+      <Card className="border shadow-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-3">
             <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
               <Wallet className="w-5 h-5 text-primary" />
             </div>
-            כמה אתה מרוויח בחודש? (לבדיקת יחס החזר/הכנסה)
+            נתוני הרוכש
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <Label>הכנסה חודשית נטו ({he.common.currency})</Label>
-          <Input
-            type="number"
-            value={monthlyIncome || ''}
-            onChange={(e) => setMonthlyIncome(Number(e.target.value))}
-            placeholder="למשל 20000"
-            className="max-w-xs sm:max-w-none"
-          />
-          {monthlyIncome > 0 && (
-            <p className="text-sm text-muted-foreground mt-2">
-              תשלום מקסימלי מותר (40%): <span className="font-semibold text-foreground">{formatCurrency(monthlyIncome * MARKET_CONSTANTS.MAX_DTI)}</span>
-            </p>
-          )}
+        <CardContent className="grid md:grid-cols-2 gap-4">
+          <div>
+            <Label>הכנסה חודשית נטו ({he.common.currency})</Label>
+            <Input
+              type="number"
+              value={monthlyIncome || ''}
+              onChange={(e) => setMonthlyIncome(Number(e.target.value))}
+              placeholder="למשל 20000"
+            />
+            {monthlyIncome > 0 && (
+              <p className="text-sm text-muted-foreground mt-1">
+                תשלום מקסימלי מותר (40%): <span className="font-semibold text-foreground">{formatCurrency(monthlyIncome * MARKET_CONSTANTS.MAX_DTI)}</span>
+              </p>
+            )}
+          </div>
+          <div>
+            <Label>מחיר הנכס ({he.common.currency})</Label>
+            <Input
+              type="number"
+              value={propertyPrice || ''}
+              onChange={(e) => setPropertyPrice(Number(e.target.value))}
+              placeholder="למשל 1600000"
+            />
+            <p className="text-xs text-muted-foreground mt-1">נדרש לסימולציית מדד תשומות</p>
+          </div>
         </CardContent>
       </Card>
 
