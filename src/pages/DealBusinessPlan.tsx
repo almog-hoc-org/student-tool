@@ -178,18 +178,35 @@ const DealBusinessPlan = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
           <StatsCard title={he.dealBusinessPlan.totalDealCost} value={formatCurrency(results.totalDealCost + (taxResult?.totalTax || 0))} icon={Building2} iconColor="navy" />
           <StatsCard title={he.dealBusinessPlan.equityInvested} value={formatCurrency(input.financing.equityInvested)} icon={Wallet} iconColor="orange" />
-          <StatsCard
-            title={dealType === 'rental' ? he.dealBusinessPlan.cocYield : he.dealBusinessPlan.annualizedRoi}
-            value={dealType === 'rental' ? formatPercent(results.cocYield || 0) : formatPercent(results.annualizedRoi || 0)}
-            icon={TrendingUp}
-            iconColor="green"
-            status={dealType === 'rental'
-              ? ((results.cocYield || 0) >= 0.07 ? 'positive' : (results.cocYield || 0) >= 0.03 ? 'neutral' : 'negative')
-              : ((results.annualizedRoi || 0) >= 0.10 ? 'positive' : (results.annualizedRoi || 0) >= 0.05 ? 'neutral' : 'negative')
-            }
-          />
-          {irrResult !== null && (
-            <StatsCard title="IRR (תשואה פנימית)" value={formatPercent(irrResult)} icon={Calculator} iconColor="green" status={irrResult >= 0.10 ? 'positive' : irrResult >= 0.05 ? 'neutral' : 'negative'} />
+          {dealType === 'ownUse' ? (
+            <>
+              <StatsCard
+                title="חיסכון חודשי"
+                value={formatCurrency(results.monthlySavings || 0)}
+                icon={Home}
+                iconColor="green"
+                status={(results.monthlySavings || 0) > 0 ? 'positive' : 'negative'}
+              />
+              {results.breakEvenYears != null && (
+                <StatsCard title="נקודת איזון" value={`${results.breakEvenYears.toFixed(1)} שנים`} icon={Calculator} iconColor="blue" />
+              )}
+            </>
+          ) : (
+            <>
+              <StatsCard
+                title={dealType === 'rental' ? he.dealBusinessPlan.cocYield : he.dealBusinessPlan.annualizedRoi}
+                value={dealType === 'rental' ? formatPercent(results.cocYield || 0) : formatPercent(results.annualizedRoi || 0)}
+                icon={TrendingUp}
+                iconColor="green"
+                status={dealType === 'rental'
+                  ? ((results.cocYield || 0) >= 0.07 ? 'positive' : (results.cocYield || 0) >= 0.03 ? 'neutral' : 'negative')
+                  : ((results.annualizedRoi || 0) >= 0.10 ? 'positive' : (results.annualizedRoi || 0) >= 0.05 ? 'neutral' : 'negative')
+                }
+              />
+              {irrResult !== null && (
+                <StatsCard title="IRR (תשואה פנימית)" value={formatPercent(irrResult)} icon={Calculator} iconColor="green" status={irrResult >= 0.10 ? 'positive' : irrResult >= 0.05 ? 'neutral' : 'negative'} />
+              )}
+            </>
           )}
         </div>
       )}
