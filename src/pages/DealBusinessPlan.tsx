@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { calculateDealBusinessPlan } from '@/lib/calculations/deal-business-plan';
 import { calculatePurchaseTax, BuyerType } from '@/lib/calculations/purchase-tax';
 import { calculateRentalIRR, calculateFlipIRR } from '@/lib/calculations/irr';
@@ -24,9 +25,9 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { saveCalculation } from '@/lib/storage/calculator-history';
 import { useAutoPersist } from '@/hooks/useAutoPersist';
 import { toast } from '@/hooks/use-toast';
+import { motion } from 'framer-motion';
 
 const DealBusinessPlan = () => {
-  const [dealType, setDealType] = useAutoPersist<DealType>('deal-type', 'rental');
   const [buyerType, setBuyerType] = useAutoPersist<BuyerType>('deal-buyer-type', 'singleApartment');
   const [holdingYears, setHoldingYears] = useAutoPersist<number>('deal-holding-years', 10);
   const [exitValue, setExitValue] = useAutoPersist<number>('deal-exit-value', 0);
@@ -35,22 +36,22 @@ const DealBusinessPlan = () => {
   const [input, setInput] = useAutoPersist<DealBusinessPlanInput>('deal-inputs', {
     basic: {
       dealType: 'rental',
-      purchasePrice: 0,
+      purchasePrice: 1500000,
       sideCosts: 0,
       renovationCost: 0,
       holdingPeriodYears: 2,
     },
     financing: {
-      equityInvested: 0,
-      mortgageAmount: 0,
-      mortgageMonthlyPayment: 0,
+      equityInvested: 500000,
+      mortgageAmount: 1000000,
+      mortgageMonthlyPayment: 5000,
     },
     rental: {
-      expectedMonthlyRent: 0,
+      expectedMonthlyRent: 5500,
       occupancyRate: 0.95,
-      annualPropertyTax: 0,
-      annualInsurance: 0,
-      annualMaintenance: 0,
+      annualPropertyTax: 3000,
+      annualInsurance: 1500,
+      annualMaintenance: 4000,
       annualManagementFees: 0,
       otherAnnualCosts: 0,
     },
@@ -60,28 +61,39 @@ const DealBusinessPlan = () => {
     },
   });
 
+  const dealType = input.basic.dealType;
+  const setDealType = (value: DealType) => {
+    setInput(prev => ({ ...prev, basic: { ...prev.basic, dealType: value } }));
+  };
+
   const [results, setResults] = useState<DealBusinessPlanOutput | null>(null);
   const [irrResult, setIrrResult] = useState<number | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
 
-  // Purchase tax calculation (live)
   const taxResult = input.basic.purchasePrice > 0
     ? calculatePurchaseTax({ purchasePrice: input.basic.purchasePrice, buyerType })
     : null;
 
-  // Handle hidden costs change
   const handleHiddenCostsChange = (totalCosts: number) => {
     setInput(prev => ({ ...prev, basic: { ...prev.basic, sideCosts: totalCosts } }));
   };
 
   const handleCalculate = async () => {
+    if (input.basic.purchasePrice <= 0) {
+      toast({ title: 'שגיאה', description: 'יש להזין מחיר רכישה חיובי', variant: 'destructive' });
+      return;
+    }
+    if (input.financing.equityInvested <= 0) {
+      toast({ title: 'שגיאה', description: 'יש להזין הון עצמי חיובי', variant: 'destructive' });
+      return;
+    }
+
     setIsCalculating(true);
     await new Promise(resolve => setTimeout(resolve, 400));
 
     const output = calculateDealBusinessPlan(input);
     setResults(output);
 
-    // Calculate IRR
     if (dealType === 'rental' && output.netCashflowAnnual !== undefined) {
       const computedExitValue = exitValue > 0
         ? exitValue
@@ -118,7 +130,6 @@ const DealBusinessPlan = () => {
     }, 100);
   };
 
-  // Equity growth projection for rental - real amortization formula
   const equityGrowthData = results && dealType === 'rental' ? Array.from({ length: holdingYears + 1 }, (_, year) => {
     const propertyValue = input.basic.purchasePrice * Math.pow(1 + annualAppreciation / 100, year);
     let mortgageBalance = 0;
@@ -126,12 +137,11 @@ const DealBusinessPlan = () => {
       const P = input.financing.mortgageAmount;
       const annualRate = (input.financing.mortgageInterestRate || 5) / 100;
       const r = annualRate / 12;
-      const n = 25 * 12; // 25 year mortgage
-      const k = year * 12; // payments made so far
+      const n = 25 * 12;
+      const k = year * 12;
       if (r === 0) {
         mortgageBalance = P * Math.max(0, 1 - k / n);
       } else {
-        // B_k = P * [(1+r)^n - (1+r)^k] / [(1+r)^n - 1]
         const factor_n = Math.pow(1 + r, n);
         const factor_k = Math.pow(1 + r, k);
         mortgageBalance = k >= n ? 0 : P * (factor_n - factor_k) / (factor_n - 1);
@@ -147,12 +157,6 @@ const DealBusinessPlan = () => {
 
   const equityPercent = results && results.totalDealCost > 0 ? (input.financing.equityInvested / results.totalDealCost) * 100 : 0;
 
-  const classificationVariant = (classification: string) => {
-    if (classification === 'Excellent' || classification === 'Good') return 'default';
-    if (classification === 'Average') return 'secondary';
-    return 'destructive';
-  };
-
   return (
     <div className="space-y-6 pb-8">
       <PageHero
@@ -164,18 +168,8 @@ const DealBusinessPlan = () => {
       {/* KPI Cards */}
       {results && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <StatsCard
-            title={he.dealBusinessPlan.totalDealCost}
-            value={formatCurrency(results.totalDealCost + (taxResult?.totalTax || 0))}
-            icon={Building2}
-            iconColor="navy"
-          />
-          <StatsCard
-            title={he.dealBusinessPlan.equityInvested}
-            value={formatCurrency(input.financing.equityInvested)}
-            icon={Wallet}
-            iconColor="orange"
-          />
+          <StatsCard title={he.dealBusinessPlan.totalDealCost} value={formatCurrency(results.totalDealCost + (taxResult?.totalTax || 0))} icon={Building2} iconColor="navy" />
+          <StatsCard title={he.dealBusinessPlan.equityInvested} value={formatCurrency(input.financing.equityInvested)} icon={Wallet} iconColor="orange" />
           <StatsCard
             title={dealType === 'rental' ? he.dealBusinessPlan.cocYield : he.dealBusinessPlan.annualizedRoi}
             value={dealType === 'rental' ? formatPercent(results.cocYield || 0) : formatPercent(results.annualizedRoi || 0)}
@@ -187,24 +181,18 @@ const DealBusinessPlan = () => {
             }
           />
           {irrResult !== null && (
-            <StatsCard
-              title="IRR (תשואה פנימית)"
-              value={formatPercent(irrResult)}
-              icon={Calculator}
-              iconColor="green"
-              status={irrResult >= 0.10 ? 'positive' : irrResult >= 0.05 ? 'neutral' : 'negative'}
-            />
+            <StatsCard title="IRR (תשואה פנימית)" value={formatPercent(irrResult)} icon={Calculator} iconColor="green" status={irrResult >= 0.10 ? 'positive' : irrResult >= 0.05 ? 'neutral' : 'negative'} />
           )}
         </div>
       )}
 
       {/* Deal Type & Buyer Type */}
       <div className="grid md:grid-cols-2 gap-6">
-        <Card className="border-0 shadow-lg">
+        <Card className="border shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
-                <Calculator className="w-5 h-5 text-primary-foreground" />
+              <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                <Calculator className="w-5 h-5 text-primary" />
               </div>
               {he.dealBusinessPlan.dealTypeTitle}
             </CardTitle>
@@ -212,13 +200,7 @@ const DealBusinessPlan = () => {
           <CardContent className="space-y-4">
             <div>
               <Label>{he.dealBusinessPlan.dealType}</Label>
-              <Select
-                value={dealType}
-                onValueChange={(value: DealType) => {
-                  setDealType(value);
-                  setInput(prev => ({ ...prev, basic: { ...prev.basic, dealType: value } }));
-                }}
-              >
+              <Select value={dealType} onValueChange={(value: DealType) => setDealType(value)}>
                 <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="rental">{he.dealBusinessPlan.dealTypeOptions.rental}</SelectItem>
@@ -230,10 +212,10 @@ const DealBusinessPlan = () => {
           </CardContent>
         </Card>
 
-        <Card className="border-0 shadow-lg">
+        <Card className="border shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-secondary rounded-xl flex items-center justify-center">
+              <div className="w-10 h-10 bg-secondary/10 rounded-xl flex items-center justify-center">
                 <Users className="w-5 h-5 text-secondary-foreground" />
               </div>
               סוג רוכש (למס רכישה)
@@ -270,7 +252,7 @@ const DealBusinessPlan = () => {
 
       {/* Basic Deal + Financing */}
       <div className="grid md:grid-cols-2 gap-6">
-        <Card className="border-0 shadow-lg">
+        <Card className="border shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-3">
               <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
@@ -297,7 +279,7 @@ const DealBusinessPlan = () => {
           </CardContent>
         </Card>
 
-        <Card className="border-0 shadow-lg">
+        <Card className="border shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-3">
               <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
@@ -329,15 +311,12 @@ const DealBusinessPlan = () => {
 
       {/* Hidden Costs Checklist */}
       {input.basic.purchasePrice > 0 && (
-        <HiddenCostsChecklist
-          purchasePrice={input.basic.purchasePrice}
-          onChange={handleHiddenCostsChange}
-        />
+        <HiddenCostsChecklist purchasePrice={input.basic.purchasePrice} onChange={handleHiddenCostsChange} />
       )}
 
       {/* Rental Inputs */}
       {dealType === 'rental' && (
-        <Card className="border-0 shadow-lg">
+        <Card className="border shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-3">
               <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
@@ -377,11 +356,11 @@ const DealBusinessPlan = () => {
 
       {/* Rental: IRR inputs */}
       {dealType === 'rental' && (
-        <Card className="border-0 shadow-lg">
+        <Card className="border shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-3 text-lg">
-              <div className="w-10 h-10 bg-secondary/10 rounded-xl flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-secondary-foreground" />
+              <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-primary" />
               </div>
               תכנון לטווח ארוך (IRR)
             </CardTitle>
@@ -412,7 +391,7 @@ const DealBusinessPlan = () => {
 
       {/* Flip Inputs */}
       {dealType === 'flip' && (
-        <Card className="border-0 shadow-lg">
+        <Card className="border shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-3">
               <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
@@ -442,9 +421,12 @@ const DealBusinessPlan = () => {
 
       {/* Results */}
       {results && (
-        <div
+        <motion.div
           id="deal-results"
           className="space-y-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
         >
           {/* Executive Summary */}
           <ExecutiveSummary
@@ -480,226 +462,167 @@ const DealBusinessPlan = () => {
             thresholds={{ green: 50, yellow: 75 }}
           />
 
-          {/* Purchase Tax Breakdown */}
-          {taxResult && taxResult.totalTax > 0 && (
-            <Card className="border-0 shadow-xl">
-              <CardHeader>
-                <CardTitle className="text-xl">פירוט מס רכישה</CardTitle>
-                <CardDescription>מדרגות מוקפאות 2025-2028</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>מדרגה</TableHead>
-                      <TableHead className="text-left">שיעור</TableHead>
-                      <TableHead className="text-left">סכום</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {taxResult.brackets.map((b, i) => (
-                      <TableRow key={i}>
-                        <TableCell>{formatCurrency(b.from)} – {formatCurrency(b.to)}</TableCell>
-                        <TableCell>{(b.rate * 100).toFixed(1)}%</TableCell>
-                        <TableCell>{formatCurrency(b.taxInBracket)}</TableCell>
-                      </TableRow>
-                    ))}
-                    <TableRow className="font-bold bg-primary/5">
-                      <TableCell>סה"כ</TableCell>
-                      <TableCell>{(taxResult.effectiveRate * 100).toFixed(2)}%</TableCell>
-                      <TableCell>{formatCurrency(taxResult.totalTax)}</TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Rental Cash Flow Chart */}
-          {dealType === 'rental' && results.netCashflowAnnual !== undefined && (
-            <Card className="border-0 shadow-xl">
-              <CardHeader>
-                <CardTitle className="text-2xl">ניתוח תזרים מזומנים</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Tabs defaultValue="chart" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2 mb-6">
-                    <TabsTrigger value="chart">גרף</TabsTrigger>
-                    <TabsTrigger value="table">טבלה</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="chart">
-                    <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={[
-                        { name: 'הכנסה שנתית', value: (input.rental?.expectedMonthlyRent || 0) * 12 * (input.rental?.occupancyRate || 0.95) },
-                        { name: 'הוצאות + משכנתא', value: (input.rental?.expectedMonthlyRent || 0) * 12 * (input.rental?.occupancyRate || 0.95) - results.netCashflowAnnual },
-                        { name: 'תזרים נקי', value: results.netCashflowAnnual },
-                      ]}>
-                        <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                        <Bar dataKey="value" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </TabsContent>
-                  <TabsContent value="table">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>פריט</TableHead>
-                          <TableHead className="text-left">סכום שנתי</TableHead>
-                          <TableHead className="text-left">סכום חודשי</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        <TableRow>
-                          <TableCell className="font-medium">הכנסה משכירות</TableCell>
-                          <TableCell>{formatCurrency((input.rental?.expectedMonthlyRent || 0) * 12 * (input.rental?.occupancyRate || 0.95))}</TableCell>
-                          <TableCell>{formatCurrency((input.rental?.expectedMonthlyRent || 0) * (input.rental?.occupancyRate || 0.95))}</TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell className="font-medium">הוצאות תפעוליות</TableCell>
-                          <TableCell>{formatCurrency((input.rental?.annualPropertyTax || 0) + (input.rental?.annualInsurance || 0) + (input.rental?.annualMaintenance || 0) + (input.rental?.annualManagementFees || 0) + (input.rental?.otherAnnualCosts || 0))}</TableCell>
-                          <TableCell>{formatCurrency(((input.rental?.annualPropertyTax || 0) + (input.rental?.annualInsurance || 0) + (input.rental?.annualMaintenance || 0) + (input.rental?.annualManagementFees || 0) + (input.rental?.otherAnnualCosts || 0)) / 12)}</TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell className="font-medium">תשלום משכנתא</TableCell>
-                          <TableCell>{formatCurrency(input.financing.mortgageMonthlyPayment * 12)}</TableCell>
-                          <TableCell>{formatCurrency(input.financing.mortgageMonthlyPayment)}</TableCell>
-                        </TableRow>
-                        <TableRow className="font-bold bg-primary/5">
-                          <TableCell>תזרים מזומנים נקי</TableCell>
-                          <TableCell>{formatCurrency(results.netCashflowAnnual)}</TableCell>
-                          <TableCell>{formatCurrency(results.netCashflowAnnual / 12)}</TableCell>
-                        </TableRow>
-                      </TableBody>
-                    </Table>
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Equity Growth Chart for Rental */}
-          {dealType === 'rental' && equityGrowthData.length > 0 && (
-            <Card className="border-0 shadow-xl">
-              <CardHeader>
-                <CardTitle className="text-2xl">גרף צמיחת הון עצמי</CardTitle>
-                <CardDescription>חיזוי שווי הנכס, יתרת המשכנתא, והון עצמי נקי לאורך {holdingYears} שנים</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={350}>
-                  <LineChart data={equityGrowthData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="year" />
-                    <YAxis tickFormatter={(v) => `₪${(v / 1000000).toFixed(1)}M`} />
-                    <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                    <Legend />
-                    <Line type="monotone" dataKey="שווי נכס" stroke="hsl(var(--secondary))" strokeWidth={2} dot={false} />
-                    <Line type="monotone" dataKey="יתרת משכנתא" stroke="hsl(var(--chart-3))" strokeWidth={2} dot={false} />
-                    <Line type="monotone" dataKey="הון עצמי נקי" stroke="hsl(var(--chart-1))" strokeWidth={3} dot={false} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Flip Chart */}
-          {dealType === 'flip' && results.grossProfit !== undefined && (
-            <Card className="border-0 shadow-xl">
-              <CardHeader>
-                <CardTitle className="text-2xl">ניתוח עסקת היפוך</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={[
-                    { name: 'עלות כוללת', value: results.totalDealCost },
-                    { name: 'מחיר מכירה', value: input.flip?.expectedSalePrice || 0 },
-                    { name: 'רווח גולמי', value: results.grossProfit },
-                  ]}>
-                    <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                    <Bar dataKey="value" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Detailed Results */}
-          <Card className="border-0 shadow-xl">
-            <CardHeader>
-              <CardTitle className="text-3xl">{he.dealBusinessPlan.resultsTitle}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <Card>
-                  <CardHeader><CardTitle className="text-sm text-muted-foreground">{he.dealBusinessPlan.totalDealCost}</CardTitle></CardHeader>
-                  <CardContent><p className="text-2xl font-bold">{formatCurrency(results.totalDealCost)}</p></CardContent>
-                </Card>
-
-                {taxResult && (
-                  <Card>
-                    <CardHeader><CardTitle className="text-sm text-muted-foreground">מס רכישה</CardTitle></CardHeader>
-                    <CardContent><p className="text-2xl font-bold">{formatCurrency(taxResult.totalTax)}</p></CardContent>
+          {/* Charts Accordion */}
+          <Accordion type="multiple" defaultValue={['charts']}>
+            {/* Tax Breakdown */}
+            {taxResult && taxResult.totalTax > 0 && (
+              <AccordionItem value="tax">
+                <AccordionTrigger className="text-lg font-semibold">פירוט מס רכישה</AccordionTrigger>
+                <AccordionContent>
+                  <Card className="border shadow-sm">
+                    <CardContent className="pt-6">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>מדרגה</TableHead>
+                            <TableHead className="text-left">שיעור</TableHead>
+                            <TableHead className="text-left">סכום</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {taxResult.brackets.map((b, i) => (
+                            <TableRow key={i}>
+                              <TableCell>{formatCurrency(b.from)} – {formatCurrency(b.to)}</TableCell>
+                              <TableCell>{(b.rate * 100).toFixed(1)}%</TableCell>
+                              <TableCell>{formatCurrency(b.taxInBracket)}</TableCell>
+                            </TableRow>
+                          ))}
+                          <TableRow className="font-bold bg-primary/5">
+                            <TableCell>סה"כ</TableCell>
+                            <TableCell>{(taxResult.effectiveRate * 100).toFixed(2)}%</TableCell>
+                            <TableCell>{formatCurrency(taxResult.totalTax)}</TableCell>
+                          </TableRow>
+                        </TableBody>
+                      </Table>
+                    </CardContent>
                   </Card>
-                )}
+                </AccordionContent>
+              </AccordionItem>
+            )}
 
-                {results.netCashflowAnnual !== undefined && (
-                  <>
-                    <Card>
-                      <CardHeader><CardTitle className="text-sm text-muted-foreground">{he.dealBusinessPlan.netCashflowAnnual}</CardTitle></CardHeader>
+            {/* Cash Flow Chart */}
+            {dealType === 'rental' && results.netCashflowAnnual !== undefined && (
+              <AccordionItem value="charts">
+                <AccordionTrigger className="text-lg font-semibold">גרפים מפורטים</AccordionTrigger>
+                <AccordionContent>
+                  <div className="space-y-6">
+                    <Card className="border shadow-sm">
+                      <CardHeader>
+                        <CardTitle className="text-lg">ניתוח תזרים מזומנים</CardTitle>
+                      </CardHeader>
                       <CardContent>
-                        <p className={`text-2xl font-bold ${results.netCashflowAnnual >= 0 ? 'text-[hsl(var(--chart-1))]' : 'text-destructive'}`}>
-                          {formatCurrency(results.netCashflowAnnual)}
-                        </p>
+                        <Tabs defaultValue="chart" className="w-full">
+                          <TabsList className="grid w-full grid-cols-2 mb-4">
+                            <TabsTrigger value="chart">גרף</TabsTrigger>
+                            <TabsTrigger value="table">טבלה</TabsTrigger>
+                          </TabsList>
+                          <TabsContent value="chart">
+                            <ResponsiveContainer width="100%" height={300}>
+                              <BarChart data={[
+                                { name: 'הכנסה שנתית', value: (input.rental?.expectedMonthlyRent || 0) * 12 * (input.rental?.occupancyRate || 0.95) },
+                                { name: 'הוצאות + משכנתא', value: (input.rental?.expectedMonthlyRent || 0) * 12 * (input.rental?.occupancyRate || 0.95) - results.netCashflowAnnual },
+                                { name: 'תזרים נקי', value: results.netCashflowAnnual },
+                              ]}>
+                                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                                <XAxis dataKey="name" />
+                                <YAxis />
+                                <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                                <Bar dataKey="value" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </TabsContent>
+                          <TabsContent value="table">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>פריט</TableHead>
+                                  <TableHead className="text-left">סכום שנתי</TableHead>
+                                  <TableHead className="text-left">סכום חודשי</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                <TableRow>
+                                  <TableCell className="font-medium">הכנסה משכירות</TableCell>
+                                  <TableCell>{formatCurrency((input.rental?.expectedMonthlyRent || 0) * 12 * (input.rental?.occupancyRate || 0.95))}</TableCell>
+                                  <TableCell>{formatCurrency((input.rental?.expectedMonthlyRent || 0) * (input.rental?.occupancyRate || 0.95))}</TableCell>
+                                </TableRow>
+                                <TableRow>
+                                  <TableCell className="font-medium">הוצאות תפעוליות</TableCell>
+                                  <TableCell>{formatCurrency((input.rental?.annualPropertyTax || 0) + (input.rental?.annualInsurance || 0) + (input.rental?.annualMaintenance || 0) + (input.rental?.annualManagementFees || 0) + (input.rental?.otherAnnualCosts || 0))}</TableCell>
+                                  <TableCell>{formatCurrency(((input.rental?.annualPropertyTax || 0) + (input.rental?.annualInsurance || 0) + (input.rental?.annualMaintenance || 0) + (input.rental?.annualManagementFees || 0) + (input.rental?.otherAnnualCosts || 0)) / 12)}</TableCell>
+                                </TableRow>
+                                <TableRow>
+                                  <TableCell className="font-medium">תשלום משכנתא</TableCell>
+                                  <TableCell>{formatCurrency(input.financing.mortgageMonthlyPayment * 12)}</TableCell>
+                                  <TableCell>{formatCurrency(input.financing.mortgageMonthlyPayment)}</TableCell>
+                                </TableRow>
+                                <TableRow className="font-bold bg-primary/5">
+                                  <TableCell>תזרים מזומנים נקי</TableCell>
+                                  <TableCell>{formatCurrency(results.netCashflowAnnual)}</TableCell>
+                                  <TableCell>{formatCurrency(results.netCashflowAnnual / 12)}</TableCell>
+                                </TableRow>
+                              </TableBody>
+                            </Table>
+                          </TabsContent>
+                        </Tabs>
                       </CardContent>
                     </Card>
-                    <Card>
-                      <CardHeader><CardTitle className="text-sm text-muted-foreground">{he.dealBusinessPlan.cocYield}</CardTitle></CardHeader>
-                      <CardContent><p className="text-2xl font-bold text-primary">{formatPercent(results.cocYield || 0)}</p></CardContent>
-                    </Card>
-                  </>
-                )}
 
-                {irrResult !== null && (
-                  <Card>
-                    <CardHeader><CardTitle className="text-sm text-muted-foreground">IRR (תשואה פנימית)</CardTitle></CardHeader>
-                    <CardContent><p className="text-2xl font-bold text-[hsl(var(--chart-1))]">{formatPercent(irrResult)}</p></CardContent>
+                    {/* Equity Growth Chart */}
+                    {equityGrowthData.length > 0 && (
+                      <Card className="border shadow-sm">
+                        <CardHeader>
+                          <CardTitle className="text-lg">גרף צמיחת הון עצמי</CardTitle>
+                          <CardDescription>חיזוי שווי הנכס, יתרת המשכנתא, והון עצמי נקי לאורך {holdingYears} שנים</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <ResponsiveContainer width="100%" height={350}>
+                            <LineChart data={equityGrowthData}>
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis dataKey="year" />
+                              <YAxis tickFormatter={(v) => `₪${(v / 1000000).toFixed(1)}M`} />
+                              <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                              <Legend />
+                              <Line type="monotone" dataKey="שווי נכס" stroke="hsl(var(--secondary))" strokeWidth={2} dot={false} />
+                              <Line type="monotone" dataKey="יתרת משכנתא" stroke="hsl(var(--chart-3))" strokeWidth={2} dot={false} />
+                              <Line type="monotone" dataKey="הון עצמי נקי" stroke="hsl(var(--chart-1))" strokeWidth={3} dot={false} />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            )}
+
+            {/* Flip Chart */}
+            {dealType === 'flip' && results.grossProfit !== undefined && (
+              <AccordionItem value="charts">
+                <AccordionTrigger className="text-lg font-semibold">ניתוח עסקת היפוך</AccordionTrigger>
+                <AccordionContent>
+                  <Card className="border shadow-sm">
+                    <CardContent className="pt-6">
+                      <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={[
+                          { name: 'עלות כוללת', value: results.totalDealCost },
+                          { name: 'מחיר מכירה', value: input.flip?.expectedSalePrice || 0 },
+                          { name: 'רווח גולמי', value: results.grossProfit },
+                        ]}>
+                          <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                          <XAxis dataKey="name" />
+                          <YAxis />
+                          <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                          <Bar dataKey="value" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </CardContent>
                   </Card>
-                )}
-
-                {results.grossProfit !== undefined && (
-                  <>
-                    <Card>
-                      <CardHeader><CardTitle className="text-sm text-muted-foreground">{he.dealBusinessPlan.grossProfit}</CardTitle></CardHeader>
-                      <CardContent>
-                        <p className={`text-2xl font-bold ${results.grossProfit >= 0 ? 'text-[hsl(var(--chart-1))]' : 'text-destructive'}`}>
-                          {formatCurrency(results.grossProfit)}
-                        </p>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardHeader><CardTitle className="text-sm text-muted-foreground">{he.dealBusinessPlan.annualizedRoi}</CardTitle></CardHeader>
-                      <CardContent><p className="text-2xl font-bold text-primary">{formatPercent(results.annualizedRoi || 0)}</p></CardContent>
-                    </Card>
-                  </>
-                )}
-
-                <Card>
-                  <CardHeader><CardTitle className="text-sm text-muted-foreground">{he.dealBusinessPlan.classification}</CardTitle></CardHeader>
-                  <CardContent>
-                    <Badge variant={classificationVariant(results.classification)} className="text-lg px-3 py-1">
-                      {he.dealBusinessPlan.classificationLabels[results.classification as keyof typeof he.dealBusinessPlan.classificationLabels]}
-                    </Badge>
-                  </CardContent>
-                </Card>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                </AccordionContent>
+              </AccordionItem>
+            )}
+          </Accordion>
+        </motion.div>
       )}
     </div>
   );
