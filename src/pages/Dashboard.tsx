@@ -95,16 +95,16 @@ export default function Dashboard() {
         className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-background to-secondary/10 p-8 border-2 border-primary/20"
       >
         <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
-              <Sparkles className="h-6 w-6 text-primary-foreground" />
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+              <Sparkles className="h-5 w-5 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold">הדשבורד שלך</h1>
-              <p className="text-muted-foreground">כל החישובים והתובנות — במקום אחד</p>
+              <h1 className="text-xl sm:text-2xl font-bold">הדשבורד שלך</h1>
+              <p className="text-sm text-muted-foreground">כל החישובים והתובנות — במקום אחד</p>
             </div>
           </div>
-          <p className="text-lg mb-6 max-w-2xl">
+          <p className="text-sm sm:text-base max-w-2xl">
             עקוב אחר חישובים, נתח מגמות וקבל המלצות חכמות
           </p>
         </div>
