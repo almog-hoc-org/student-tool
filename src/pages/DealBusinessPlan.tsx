@@ -167,7 +167,7 @@ const DealBusinessPlan = () => {
 
       {/* KPI Cards */}
       {results && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
           <StatsCard title={he.dealBusinessPlan.totalDealCost} value={formatCurrency(results.totalDealCost + (taxResult?.totalTax || 0))} icon={Building2} iconColor="navy" />
           <StatsCard title={he.dealBusinessPlan.equityInvested} value={formatCurrency(input.financing.equityInvested)} icon={Wallet} iconColor="orange" />
           <StatsCard

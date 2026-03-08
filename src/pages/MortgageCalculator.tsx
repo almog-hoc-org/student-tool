@@ -144,7 +144,7 @@ const MortgageCalculator = () => {
 
       {/* KPI Cards */}
       {results && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
           <StatsCard
             title={he.mortgageCalculator.totalMonthlyPayment}
             value={formatCurrency(results.totalMonthlyPayment)}
@@ -230,7 +230,7 @@ const MortgageCalculator = () => {
               )}
             </div>
           </CardHeader>
-          <CardContent className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 pt-6">
+          <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-6">
             <div>
               <Label>{he.mortgageCalculator.trackName}</Label>
               <Input value={track.name} onChange={(e) => updateTrack(track.id, { name: e.target.value })} />
@@ -301,7 +301,7 @@ const MortgageCalculator = () => {
               </div>
               {madadResult && (
                 <div className="md:col-span-2 p-4 rounded-xl bg-card border">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 text-center">
                     <div>
                       <p className="text-xs text-muted-foreground">סכום מקורי</p>
                       <p className="text-lg font-bold">{formatCurrency(madadResult.originalTotal)}</p>

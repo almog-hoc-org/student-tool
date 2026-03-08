@@ -60,7 +60,7 @@ const TransactionTimeline = () => {
 
       {/* KPI Cards - Show after calculation */}
       {results && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-in slide-in-from-bottom duration-500">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 animate-in slide-in-from-bottom duration-500">
           <StatsCard
             title={he.transactionTimeline.purchasePrice}
             value={formatCurrency(purchasePrice)}
