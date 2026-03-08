@@ -438,6 +438,39 @@ const DealBusinessPlan = () => {
         </Card>
       )}
 
+      {/* Own Use Inputs */}
+      {dealType === 'ownUse' && (
+        <Card className="border shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                <Home className="w-5 h-5 text-primary" />
+              </div>
+              מגורים עצמיים — השוואה לשכירות
+            </CardTitle>
+            <CardDescription>הזן את העלויות החודשיות הצפויות והשכירות החלופית</CardDescription>
+          </CardHeader>
+          <CardContent className="grid md:grid-cols-2 gap-4 pt-6">
+            <div>
+              <Label>שכירות חלופית חודשית ({he.common.currency})</Label>
+              <Input type="number" placeholder="למשל 4500" value={input.ownUse?.alternativeMonthlyRent || ''} onChange={(e) => setInput(prev => ({ ...prev, ownUse: { ...prev.ownUse!, alternativeMonthlyRent: Number(e.target.value) } }))} />
+            </div>
+            <div>
+              <Label>ארנונה חודשית ({he.common.currency})</Label>
+              <Input type="number" placeholder="למשל 250" value={input.ownUse?.monthlyPropertyTax || ''} onChange={(e) => setInput(prev => ({ ...prev, ownUse: { ...prev.ownUse!, monthlyPropertyTax: Number(e.target.value) } }))} />
+            </div>
+            <div>
+              <Label>ועד בית חודשי ({he.common.currency})</Label>
+              <Input type="number" placeholder="למשל 400" value={input.ownUse?.monthlyHoaFees || ''} onChange={(e) => setInput(prev => ({ ...prev, ownUse: { ...prev.ownUse!, monthlyHoaFees: Number(e.target.value) } }))} />
+            </div>
+            <div>
+              <Label>תחזוקה חודשית ({he.common.currency})</Label>
+              <Input type="number" placeholder="למשל 300" value={input.ownUse?.monthlyMaintenance || ''} onChange={(e) => setInput(prev => ({ ...prev, ownUse: { ...prev.ownUse!, monthlyMaintenance: Number(e.target.value) } }))} />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="flex justify-center sticky bottom-20 md:bottom-8 z-10">
         <Button onClick={handleCalculate} size="lg" disabled={isCalculating} className="px-12 py-6 text-lg rounded-full">
           {isCalculating ? (<><Loader2 className="ml-2 h-5 w-5 animate-spin" />מחשב...</>) : (<><Calculator className="ml-2 h-5 w-5" />{he.common.calculate}</>)}
