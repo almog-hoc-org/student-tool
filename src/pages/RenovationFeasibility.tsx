@@ -72,7 +72,7 @@ const RenovationFeasibility = () => {
 
       {/* KPI Cards */}
       {results && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
           <StatsCard title={he.renovationFeasibility.totalRenovationCost} value={formatCurrency(results.totalRenovationCost)} icon={Hammer} iconColor="orange" />
           <StatsCard title={he.renovationFeasibility.valueUplift} value={formatCurrency(results.valueUplift)} icon={TrendingUp} iconColor="green" />
           <StatsCard title={he.renovationFeasibility.paperProfit} value={formatCurrency(results.paperProfit)} icon={DollarSign} iconColor={results.paperProfit >= 0 ? 'green' : 'orange'} />

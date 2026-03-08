@@ -118,7 +118,7 @@ const FinancialCheckup = () => {
 
       {/* KPI Cards */}
       {(totalIncome > 0 || totalExpenses > 0 || results) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <StatsCard
             title={he.financialCheckup.totalIncome}
             value={formatCurrency(totalIncome)}

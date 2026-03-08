@@ -52,9 +52,9 @@ export function StatsCard({ title, value, icon: Icon, iconColor = 'blue', status
       <CardContent className="pt-4 pb-3">
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
-            <p className="text-xs text-muted-foreground mb-1 truncate">{title}</p>
+            <p className="text-[11px] sm:text-xs text-muted-foreground mb-1 truncate">{title}</p>
             <h3 className={cn(
-              'text-xl font-bold tracking-tight',
+              'text-base sm:text-xl font-bold tracking-tight',
               status ? statusValueClasses[status] : 'text-foreground'
             )}>
               {value}
