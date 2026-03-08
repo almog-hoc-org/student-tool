@@ -16,10 +16,12 @@ import {
 } from '@/types/property-visit';
 import { he } from '@/lib/translations/he';
 import { StatsCard } from '@/components/StatsCard';
+import { PageHero } from '@/components/PageHero';
 import { Building2, Home, MapPin, Award, Calculator, Loader2 } from 'lucide-react';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, Tooltip } from 'recharts';
 import { saveCalculation } from '@/lib/storage/calculator-history';
 import { toast } from '@/hooks/use-toast';
+import { motion } from 'framer-motion';
 
 const PropertyVisit = () => {
   const [basicInfo, setBasicInfo] = useState<PropertyBasicInfo>({
@@ -69,7 +71,6 @@ const PropertyVisit = () => {
     const summary = scoreProperty(basicInfo, condition, environment, legal);
     setResults(summary);
     
-    // Save to history
     saveCalculation({
       type: 'property-visit',
       title: `ביקור - ${basicInfo.address}`,
@@ -111,18 +112,20 @@ const PropertyVisit = () => {
 
   return (
     <div className="space-y-6 pb-8">
-      <Card className="border-0 shadow-lg">
-        <CardHeader className="bg-gradient-to-r from-primary/5 via-background to-secondary/5">
-          <CardTitle className="text-3xl font-bold">{he.propertyVisit.title}</CardTitle>
-          <CardDescription className="text-base">
-            {he.propertyVisit.description}
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <PageHero
+        icon={<Building2 className="w-6 h-6 text-primary" />}
+        title={he.propertyVisit.title}
+        description={he.propertyVisit.description}
+      />
 
       {/* KPI Cards - Show after calculation */}
       {results && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 animate-in slide-in-from-bottom duration-500">
+        <motion.div
+          className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+        >
           <StatsCard
             title={he.propertyVisit.resultsTitle}
             value={`${Math.round(results.overallPropertyScore)}/100`}
@@ -147,15 +150,15 @@ const PropertyVisit = () => {
             icon={Building2}
             iconColor="purple"
           />
-        </div>
+        </motion.div>
       )}
 
       {/* Basic Info */}
-      <Card className="border-0 shadow-lg">
-        <CardHeader className="bg-gradient-to-r from-blue-50 to-background dark:from-blue-950 dark:to-background">
+      <Card className="border shadow-sm">
+        <CardHeader>
           <CardTitle className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center">
-              <Building2 className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+              <Building2 className="w-5 h-5 text-primary" />
             </div>
             {he.propertyVisit.basicInfoTitle}
           </CardTitle>
@@ -234,11 +237,11 @@ const PropertyVisit = () => {
       </Card>
 
       {/* Physical Condition */}
-      <Card className="border-0 shadow-lg">
-        <CardHeader className="bg-gradient-to-r from-emerald-50 to-background dark:from-emerald-950 dark:to-background">
+      <Card className="border shadow-sm">
+        <CardHeader>
           <CardTitle className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center">
-              <Home className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+              <Home className="w-5 h-5 text-primary" />
             </div>
             {he.propertyVisit.conditionTitle} (דרג 1-10)
           </CardTitle>
@@ -264,11 +267,11 @@ const PropertyVisit = () => {
       </Card>
 
       {/* Environment */}
-      <Card className="border-0 shadow-lg">
-        <CardHeader className="bg-gradient-to-r from-orange-50 to-background dark:from-orange-950 dark:to-background">
+      <Card className="border shadow-sm">
+        <CardHeader>
           <CardTitle className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center">
-              <MapPin className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+              <MapPin className="w-5 h-5 text-primary" />
             </div>
             {he.propertyVisit.environmentTitle} (דרג 1-10)
           </CardTitle>
@@ -293,7 +296,7 @@ const PropertyVisit = () => {
         </CardContent>
       </Card>
 
-      <div className="flex justify-center sticky bottom-8 z-10">
+      <div className="flex justify-center sticky bottom-20 md:bottom-8 z-10">
         <Button onClick={handleCalculate} size="lg" disabled={isCalculating} className="px-12 py-6 text-lg rounded-full">
           {isCalculating ? (
             <>
@@ -311,14 +314,19 @@ const PropertyVisit = () => {
 
       {/* Results */}
       {results && (
-        <div className="space-y-6 animate-in slide-in-from-bottom duration-500">
+        <motion.div
+          className="space-y-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+        >
           {/* Radar Chart */}
-          <Card className="border-0 shadow-xl">
+          <Card className="border shadow-sm">
             <CardHeader>
-              <CardTitle className="text-2xl">ניתוח ויזואלי של הנכס</CardTitle>
+              <CardTitle className="text-lg">ניתוח ויזואלי של הנכס</CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={400}>
+              <ResponsiveContainer width="100%" height={350}>
                 <RadarChart
                   data={[
                     ...Object.entries(condition).map(([key, value]) => ({
@@ -341,22 +349,22 @@ const PropertyVisit = () => {
             </CardContent>
           </Card>
 
-          <Card className="border">
+          <Card className="border shadow-sm">
             <CardHeader>
-              <CardTitle className="text-xl">{he.propertyVisit.resultsTitle}</CardTitle>
+              <CardTitle className="text-lg">{he.propertyVisit.resultsTitle}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="text-center p-6 bg-muted/30 rounded-xl">
-                <p className="text-5xl font-bold text-primary mb-4">
+                <p className="text-3xl font-bold text-primary mb-4">
                   {Math.round(results.overallPropertyScore)}/100
                 </p>
-                <Badge variant={getScoreLabel(results.overallPropertyScore).variant} className="text-lg px-6 py-2">
+                <Badge variant={getScoreLabel(results.overallPropertyScore).variant} className="text-base px-4 py-1.5">
                   {getScoreLabel(results.overallPropertyScore).text}
                 </Badge>
               </div>
 
               <div className="grid md:grid-cols-3 gap-4">
-              <Card className="border">
+              <Card className="border shadow-sm">
                 <CardHeader>
                   <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
                     <Home className="w-4 h-4" />
@@ -368,7 +376,7 @@ const PropertyVisit = () => {
                     <div className="flex items-center gap-2">
                       <div className="flex-1 bg-muted rounded-full h-3">
                         <div
-                          className="bg-gradient-to-r from-emerald-500 to-emerald-600 h-3 rounded-full transition-all duration-500"
+                          className="bg-primary h-3 rounded-full transition-all duration-500"
                           style={{ width: `${results.conditionScoreWeighted * 2.5}%` }}
                         />
                       </div>
@@ -379,7 +387,7 @@ const PropertyVisit = () => {
                 </CardContent>
               </Card>
 
-              <Card className="border">
+              <Card className="border shadow-sm">
                 <CardHeader>
                   <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
                     <MapPin className="w-4 h-4" />
@@ -391,7 +399,7 @@ const PropertyVisit = () => {
                     <div className="flex items-center gap-2">
                       <div className="flex-1 bg-muted rounded-full h-3">
                         <div
-                          className="bg-gradient-to-r from-orange-500 to-orange-600 h-3 rounded-full transition-all duration-500"
+                          className="bg-secondary h-3 rounded-full transition-all duration-500"
                           style={{ width: `${(results.environmentScoreWeighted / 30) * 100}%` }}
                         />
                       </div>
@@ -402,7 +410,7 @@ const PropertyVisit = () => {
                 </CardContent>
               </Card>
 
-              <Card className="border">
+              <Card className="border shadow-sm">
                 <CardHeader>
                   <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
                     <Building2 className="w-4 h-4" />
@@ -414,7 +422,7 @@ const PropertyVisit = () => {
                     <div className="flex items-center gap-2">
                       <div className="flex-1 bg-muted rounded-full h-3">
                         <div
-                          className="bg-gradient-to-r from-purple-500 to-purple-600 h-3 rounded-full transition-all duration-500"
+                          className="bg-[hsl(var(--chart-2))] h-3 rounded-full transition-all duration-500"
                           style={{ width: `${(results.basicFeaturesScoreWeighted / 30) * 100}%` }}
                         />
                       </div>
@@ -427,7 +435,7 @@ const PropertyVisit = () => {
               </div>
             </CardContent>
           </Card>
-        </div>
+        </motion.div>
       )}
     </div>
   );

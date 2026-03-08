@@ -30,11 +30,19 @@ export type DealFlipInputs = {
   saleCosts: number;
 };
 
+export type DealOwnUseInputs = {
+  alternativeMonthlyRent: number;
+  monthlyPropertyTax: number;
+  monthlyHoaFees: number;
+  monthlyMaintenance: number;
+};
+
 export type DealBusinessPlanInput = {
   basic: DealBasicInputs;
   financing: DealFinancingInputs;
   rental?: DealRentalInputs;
   flip?: DealFlipInputs;
+  ownUse?: DealOwnUseInputs;
 };
 
 export type DealBusinessPlanOutput = {
@@ -44,5 +52,10 @@ export type DealBusinessPlanOutput = {
   grossProfit?: number;
   roi?: number;
   annualizedRoi?: number;
+  // Own use specific
+  monthlyOwnershipCost?: number;
+  alternativeMonthlyRent?: number;
+  monthlySavings?: number;
+  breakEvenYears?: number;
   classification: 'Weak' | 'Average' | 'Good' | 'Excellent';
 };
