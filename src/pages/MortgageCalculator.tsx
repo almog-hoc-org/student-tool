@@ -33,13 +33,14 @@ const MortgageCalculator = () => {
       id: '1',
       name: he.mortgageCalculator.trackTypeOptions.fixedUnlinked,
       type: 'fixedUnlinked',
-      principal: 0,
-      annualInterestRate: 0,
-      years: 20,
+      principal: 800000,
+      annualInterestRate: 5.5,
+      years: 25,
     },
   ]);
 
-  const [monthlyIncome, setMonthlyIncome] = useAutoPersist<number>('mortgage-income', 0);
+  const [monthlyIncome, setMonthlyIncome] = useAutoPersist<number>('mortgage-income', 20000);
+  const [propertyPrice, setPropertyPrice] = useAutoPersist<number>('mortgage-property-price', 1600000);
   const [isOffPlan, setIsOffPlan] = useAutoPersist<boolean>('mortgage-offplan', false);
   const [madadRate, setMadadRate] = useAutoPersist<number>('mortgage-madad-rate', MARKET_CONSTANTS.DEFAULT_MADAD_RATE);
   const [madadYears, setMadadYears] = useAutoPersist<number>('mortgage-madad-years', 3);
