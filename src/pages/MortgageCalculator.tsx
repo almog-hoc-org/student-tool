@@ -214,7 +214,7 @@ const MortgageCalculator = () => {
 
       {/* Track Cards */}
       {tracks.map((track, index) => (
-        <Card key={track.id} className="border-0 shadow-lg">
+        <Card key={track.id} className="border shadow-sm">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -264,7 +264,7 @@ const MortgageCalculator = () => {
       ))}
 
       {/* Madad Simulator */}
-      <Card className="border-0 shadow-lg">
+      <Card className="border shadow-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-3 text-lg">
             <div className="w-10 h-10 bg-secondary/10 rounded-xl flex items-center justify-center">
@@ -391,9 +391,9 @@ const MortgageCalculator = () => {
               <AccordionContent>
                 <div className="space-y-6">
                   {/* Principal vs Interest Donut */}
-                  <Card className="border-0 shadow-xl">
+                  <Card className="border shadow-sm">
                     <CardHeader>
-                      <CardTitle className="text-2xl">התפלגות קרן מול ריבית</CardTitle>
+                      <CardTitle className="text-lg">התפלגות קרן מול ריבית</CardTitle>
                       <CardDescription>כמה מסך התשלום הולך לקרן וכמה לריבית</CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -428,9 +428,9 @@ const MortgageCalculator = () => {
 
                   {/* Monthly Payment Distribution by Track */}
                   {tracks.length > 1 && (
-                    <Card className="border-0 shadow-xl">
+                    <Card className="border shadow-sm">
                       <CardHeader>
-                        <CardTitle className="text-2xl">התפלגות תשלום חודשי לפי מסלולים</CardTitle>
+                        <CardTitle className="text-lg">התפלגות תשלום חודשי לפי מסלולים</CardTitle>
                       </CardHeader>
                       <CardContent>
                         <Tabs defaultValue="chart" className="w-full">
@@ -494,9 +494,9 @@ const MortgageCalculator = () => {
 
                   {/* Amortization Chart */}
                   {amortization.length > 0 && (
-                    <Card className="border-0 shadow-xl">
+                    <Card className="border shadow-sm">
                       <CardHeader>
-                        <CardTitle className="text-2xl">גרף אמורטיזציה – קרן מול ריבית לאורך השנים</CardTitle>
+                        <CardTitle className="text-lg">גרף אמורטיזציה – קרן מול ריבית לאורך השנים</CardTitle>
                         <CardDescription>כמה מהתשלום השנתי שלך הולך לקרן וכמה לריבית</CardDescription>
                       </CardHeader>
                       <CardContent>
@@ -522,9 +522,9 @@ const MortgageCalculator = () => {
             <AccordionItem value="amortization">
               <AccordionTrigger className="text-xl font-semibold">לוח סילוקין</AccordionTrigger>
               <AccordionContent>
-                <Card className="border-0 shadow-xl">
+                <Card className="border shadow-sm">
                   <CardHeader>
-                    <CardTitle className="text-3xl">{he.mortgageCalculator.resultsTitle}</CardTitle>
+                    <CardTitle className="text-lg">{he.mortgageCalculator.resultsTitle}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-6">
                     <div>
@@ -568,9 +568,9 @@ const MortgageCalculator = () => {
               <AccordionItem value="sensitivity">
                 <AccordionTrigger className="text-xl font-semibold">ניתוח רגישות</AccordionTrigger>
                 <AccordionContent>
-                  <Card className="border-0 shadow-xl">
+                  <Card className="border shadow-sm">
                     <CardHeader>
-                      <CardTitle className="text-2xl">ניתוח רגישות – מה קורה אם הריבית משתנה?</CardTitle>
+                      <CardTitle className="text-lg">ניתוח רגישות – מה קורה אם הריבית משתנה?</CardTitle>
                       <CardDescription>השפעת שינויי ריבית על ההחזר החודשי שלך</CardDescription>
                     </CardHeader>
                     <CardContent>
