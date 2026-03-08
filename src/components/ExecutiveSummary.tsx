@@ -205,7 +205,7 @@ function generateFinancialCheckupSummary(data: Record<string, any>): SummaryLine
     const label =
       score >= 70 ? 'מוכנות גבוהה' : score >= 40 ? 'מוכנות חלקית' : 'דרושה הכנה נוספת';
     lines.push({
-      text: `ציון המוכנות שלך: ${score}/100 – ${label}.`,
+      text: `ציון המוכנות שלך: ${Math.round(score)}/100 – ${label}.`,
       sentiment,
     });
   }
