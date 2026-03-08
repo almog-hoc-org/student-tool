@@ -49,7 +49,7 @@ export function StatsCard({ title, value, icon: Icon, iconColor = 'blue', status
       'overflow-hidden',
       status && statusBorderClasses[status]
     )}>
-      <CardContent className="pt-4 pb-3">
+      <CardContent className="pt-3 pb-2.5 px-3 sm:pt-4 sm:pb-3 sm:px-4">
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
             <p className="text-[11px] sm:text-xs text-muted-foreground mb-1 truncate">{title}</p>
@@ -69,7 +69,7 @@ export function StatsCard({ title, value, icon: Icon, iconColor = 'blue', status
             )}
           </div>
           <div className={cn(
-            'w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0',
+            'w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center flex-shrink-0',
             status ? `bg-[hsl(var(--chart-${status === 'positive' ? '1' : status === 'neutral' ? '2' : '3'})/0.1)]` : iconColorClasses[iconColor]
           )}>
             {status ? (

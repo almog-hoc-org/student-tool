@@ -301,7 +301,7 @@ const MortgageCalculator = () => {
               </div>
               {madadResult && (
                 <div className="md:col-span-2 p-4 rounded-xl bg-card border">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 text-center">
                     <div>
                       <p className="text-xs text-muted-foreground">סכום מקורי</p>
                       <p className="text-lg font-bold">{formatCurrency(madadResult.originalTotal)}</p>
