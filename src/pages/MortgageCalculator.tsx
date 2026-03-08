@@ -33,13 +33,14 @@ const MortgageCalculator = () => {
       id: '1',
       name: he.mortgageCalculator.trackTypeOptions.fixedUnlinked,
       type: 'fixedUnlinked',
-      principal: 0,
-      annualInterestRate: 0,
-      years: 20,
+      principal: 800000,
+      annualInterestRate: 5.5,
+      years: 25,
     },
   ]);
 
-  const [monthlyIncome, setMonthlyIncome] = useAutoPersist<number>('mortgage-income', 0);
+  const [monthlyIncome, setMonthlyIncome] = useAutoPersist<number>('mortgage-income', 20000);
+  const [propertyPrice, setPropertyPrice] = useAutoPersist<number>('mortgage-property-price', 1600000);
   const [isOffPlan, setIsOffPlan] = useAutoPersist<boolean>('mortgage-offplan', false);
   const [madadRate, setMadadRate] = useAutoPersist<number>('mortgage-madad-rate', MARKET_CONSTANTS.DEFAULT_MADAD_RATE);
   const [madadYears, setMadadYears] = useAutoPersist<number>('mortgage-madad-years', 3);
@@ -55,8 +56,8 @@ const MortgageCalculator = () => {
       name: he.mortgageCalculator.trackName,
       type: 'fixedUnlinked',
       principal: 0,
-      annualInterestRate: 0,
-      years: 20,
+      annualInterestRate: 5.5,
+      years: 25,
     };
     setTracks([...tracks, newTrack]);
   };
@@ -70,6 +71,12 @@ const MortgageCalculator = () => {
   };
 
   const handleCalculate = async () => {
+    const hasValidTrack = tracks.some(t => t.principal > 0);
+    if (!hasValidTrack) {
+      toast({ title: 'שגיאה', description: 'יש להזין סכום קרן חיובי באחד המסלולים לפחות', variant: 'destructive' });
+      return;
+    }
+
     setIsCalculating(true);
     await new Promise(resolve => setTimeout(resolve, 400));
 
@@ -105,9 +112,9 @@ const MortgageCalculator = () => {
   const dtiRatio = results && monthlyIncome > 0 ? results.totalMonthlyPayment / monthlyIncome : null;
   const dtiPercent = dtiRatio !== null ? dtiRatio * 100 : 0;
 
-  // Madad simulation
-  const madadResult = isOffPlan && totalPrincipal > 0
-    ? simulateMadadImpact({ linkedAmount: totalPrincipal, annualMadadRate: madadRate, years: madadYears })
+  // Madad simulation — uses property price (not mortgage principal)
+  const madadResult = isOffPlan && propertyPrice > 0
+    ? simulateMadadImpact({ linkedAmount: propertyPrice, annualMadadRate: madadRate, years: madadYears })
     : null;
 
   // Traffic light status helpers
@@ -168,35 +175,46 @@ const MortgageCalculator = () => {
       )}
 
       {/* Monthly Income */}
-      <Card className="border-0 shadow-lg">
+      <Card className="border shadow-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-3">
             <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
               <Wallet className="w-5 h-5 text-primary" />
             </div>
-            כמה אתה מרוויח בחודש? (לבדיקת יחס החזר/הכנסה)
+            נתוני הרוכש
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <Label>הכנסה חודשית נטו ({he.common.currency})</Label>
-          <Input
-            type="number"
-            value={monthlyIncome || ''}
-            onChange={(e) => setMonthlyIncome(Number(e.target.value))}
-            placeholder="למשל 20000"
-            className="max-w-xs sm:max-w-none"
-          />
-          {monthlyIncome > 0 && (
-            <p className="text-sm text-muted-foreground mt-2">
-              תשלום מקסימלי מותר (40%): <span className="font-semibold text-foreground">{formatCurrency(monthlyIncome * MARKET_CONSTANTS.MAX_DTI)}</span>
-            </p>
-          )}
+        <CardContent className="grid md:grid-cols-2 gap-4">
+          <div>
+            <Label>הכנסה חודשית נטו ({he.common.currency})</Label>
+            <Input
+              type="number"
+              value={monthlyIncome || ''}
+              onChange={(e) => setMonthlyIncome(Number(e.target.value))}
+              placeholder="למשל 20000"
+            />
+            {monthlyIncome > 0 && (
+              <p className="text-sm text-muted-foreground mt-1">
+                תשלום מקסימלי מותר (40%): <span className="font-semibold text-foreground">{formatCurrency(monthlyIncome * MARKET_CONSTANTS.MAX_DTI)}</span>
+              </p>
+            )}
+          </div>
+          <div>
+            <Label>מחיר הנכס ({he.common.currency})</Label>
+            <Input
+              type="number"
+              value={propertyPrice || ''}
+              onChange={(e) => setPropertyPrice(Number(e.target.value))}
+              placeholder="למשל 1600000"
+            />
+            <p className="text-xs text-muted-foreground mt-1">נדרש לסימולציית מדד תשומות</p>
+          </div>
         </CardContent>
       </Card>
 
       {/* Track Cards */}
       {tracks.map((track, index) => (
-        <Card key={track.id} className="border-0 shadow-lg">
+        <Card key={track.id} className="border shadow-sm">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -246,7 +264,7 @@ const MortgageCalculator = () => {
       ))}
 
       {/* Madad Simulator */}
-      <Card className="border-0 shadow-lg">
+      <Card className="border shadow-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-3 text-lg">
             <div className="w-10 h-10 bg-secondary/10 rounded-xl flex items-center justify-center">
@@ -373,9 +391,9 @@ const MortgageCalculator = () => {
               <AccordionContent>
                 <div className="space-y-6">
                   {/* Principal vs Interest Donut */}
-                  <Card className="border-0 shadow-xl">
+                  <Card className="border shadow-sm">
                     <CardHeader>
-                      <CardTitle className="text-2xl">התפלגות קרן מול ריבית</CardTitle>
+                      <CardTitle className="text-lg">התפלגות קרן מול ריבית</CardTitle>
                       <CardDescription>כמה מסך התשלום הולך לקרן וכמה לריבית</CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -410,9 +428,9 @@ const MortgageCalculator = () => {
 
                   {/* Monthly Payment Distribution by Track */}
                   {tracks.length > 1 && (
-                    <Card className="border-0 shadow-xl">
+                    <Card className="border shadow-sm">
                       <CardHeader>
-                        <CardTitle className="text-2xl">התפלגות תשלום חודשי לפי מסלולים</CardTitle>
+                        <CardTitle className="text-lg">התפלגות תשלום חודשי לפי מסלולים</CardTitle>
                       </CardHeader>
                       <CardContent>
                         <Tabs defaultValue="chart" className="w-full">
@@ -476,9 +494,9 @@ const MortgageCalculator = () => {
 
                   {/* Amortization Chart */}
                   {amortization.length > 0 && (
-                    <Card className="border-0 shadow-xl">
+                    <Card className="border shadow-sm">
                       <CardHeader>
-                        <CardTitle className="text-2xl">גרף אמורטיזציה – קרן מול ריבית לאורך השנים</CardTitle>
+                        <CardTitle className="text-lg">גרף אמורטיזציה – קרן מול ריבית לאורך השנים</CardTitle>
                         <CardDescription>כמה מהתשלום השנתי שלך הולך לקרן וכמה לריבית</CardDescription>
                       </CardHeader>
                       <CardContent>
@@ -504,9 +522,9 @@ const MortgageCalculator = () => {
             <AccordionItem value="amortization">
               <AccordionTrigger className="text-xl font-semibold">לוח סילוקין</AccordionTrigger>
               <AccordionContent>
-                <Card className="border-0 shadow-xl">
+                <Card className="border shadow-sm">
                   <CardHeader>
-                    <CardTitle className="text-3xl">{he.mortgageCalculator.resultsTitle}</CardTitle>
+                    <CardTitle className="text-lg">{he.mortgageCalculator.resultsTitle}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-6">
                     <div>
@@ -550,9 +568,9 @@ const MortgageCalculator = () => {
               <AccordionItem value="sensitivity">
                 <AccordionTrigger className="text-xl font-semibold">ניתוח רגישות</AccordionTrigger>
                 <AccordionContent>
-                  <Card className="border-0 shadow-xl">
+                  <Card className="border shadow-sm">
                     <CardHeader>
-                      <CardTitle className="text-2xl">ניתוח רגישות – מה קורה אם הריבית משתנה?</CardTitle>
+                      <CardTitle className="text-lg">ניתוח רגישות – מה קורה אם הריבית משתנה?</CardTitle>
                       <CardDescription>השפעת שינויי ריבית על ההחזר החודשי שלך</CardDescription>
                     </CardHeader>
                     <CardContent>
