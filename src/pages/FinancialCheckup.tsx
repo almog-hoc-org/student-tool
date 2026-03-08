@@ -470,18 +470,6 @@ const FinancialCheckup = () => {
         </motion.div>
       )}
 
-      {/* Empty State */}
-      {!results && totalIncome === 0 && totalExpenses === 0 && (
-        <Card className="border-dashed border-2 bg-accent/20">
-          <CardContent className="text-center py-12">
-            <div className="w-24 h-24 bg-muted/30 rounded-full mx-auto flex items-center justify-center mb-4">
-              <Calculator className="w-12 h-12 text-muted-foreground" />
-            </div>
-            <h3 className="text-lg font-semibold mb-2">מוכנים לבדוק את המצב הפיננסי?</h3>
-            <p className="text-muted-foreground">מלאו את הפרטים למעלה ולחצו על "חשב"</p>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };

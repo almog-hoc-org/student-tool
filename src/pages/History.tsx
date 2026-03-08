@@ -109,18 +109,13 @@ export default function History() {
 
   return (
     <div className="space-y-6 pb-8">
-      <Card className="border-0 shadow-lg">
-        <CardHeader className="bg-gradient-to-r from-primary/5 via-background to-secondary/5">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-3xl font-bold flex items-center gap-3">
-                <HistoryIcon className="w-8 h-8" />
-                היסטוריית חישובים
-              </CardTitle>
-              <CardDescription className="text-base mt-2">
-                כל החישובים שלך — במקום אחד, לצפייה, השוואה ושיתוף
-              </CardDescription>
-            </div>
+      <div className="flex items-center justify-between">
+        <PageHero
+          icon={<HistoryIcon className="h-5 w-5 text-primary" />}
+          title="היסטוריית חישובים"
+          description="כל החישובים שלך — במקום אחד, לצפייה, השוואה ושיתוף"
+        />
+        <div className="shrink-0">
             {history.length > 0 && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
