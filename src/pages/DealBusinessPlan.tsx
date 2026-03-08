@@ -11,7 +11,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { calculateDealBusinessPlan } from '@/lib/calculations/deal-business-plan';
 import { calculatePurchaseTax, BuyerType } from '@/lib/calculations/purchase-tax';
 import { calculateRentalIRR, calculateFlipIRR } from '@/lib/calculations/irr';
-import { DealBusinessPlanInput, DealBusinessPlanOutput, DealType } from '@/types/deal-business-plan';
+import { DealBusinessPlanInput, DealBusinessPlanOutput, DealType, DealOwnUseInputs } from '@/types/deal-business-plan';
 import { he } from '@/lib/translations/he';
 import { formatCurrency, formatPercent } from '@/lib/validation/validators';
 import { StatsCard } from '@/components/StatsCard';
@@ -19,7 +19,7 @@ import { SmartInsight, generateDealInsights } from '@/components/SmartInsight';
 import { HiddenCostsChecklist } from '@/components/HiddenCostsChecklist';
 import { ExecutiveSummary } from '@/components/ExecutiveSummary';
 import { FuelGauge } from '@/components/FuelGauge';
-import { Building2, Wallet, TrendingUp, Calculator, Loader2, Users } from 'lucide-react';
+import { Building2, Wallet, TrendingUp, Calculator, Loader2, Users, Home } from 'lucide-react';
 import { PageHero } from '@/components/PageHero';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line } from 'recharts';
 import { saveCalculation } from '@/lib/storage/calculator-history';
@@ -58,6 +58,12 @@ const DealBusinessPlan = () => {
     flip: {
       expectedSalePrice: 0,
       saleCosts: 0,
+    },
+    ownUse: {
+      alternativeMonthlyRent: 4500,
+      monthlyPropertyTax: 250,
+      monthlyHoaFees: 400,
+      monthlyMaintenance: 300,
     },
   });
 
@@ -119,7 +125,9 @@ const DealBusinessPlan = () => {
     const title = `עסקה ${he.dealBusinessPlan.dealTypeOptions[dealType]} - ${formatCurrency(input.basic.purchasePrice)}`;
     const result = dealType === 'rental'
       ? `תשואה: ${formatPercent(output.cocYield || 0)}`
-      : `רווח: ${formatCurrency(output.grossProfit || 0)}`;
+      : dealType === 'flip'
+      ? `רווח: ${formatCurrency(output.grossProfit || 0)}`
+      : `חיסכון חודשי: ${formatCurrency(output.monthlySavings || 0)}`;
 
     saveCalculation({ type: 'deal', title, result, input });
     toast({ title: "החישוב הושלם בהצלחה", description: "התוצאות נשמרו בהיסטוריה" });
@@ -170,18 +178,35 @@ const DealBusinessPlan = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
           <StatsCard title={he.dealBusinessPlan.totalDealCost} value={formatCurrency(results.totalDealCost + (taxResult?.totalTax || 0))} icon={Building2} iconColor="navy" />
           <StatsCard title={he.dealBusinessPlan.equityInvested} value={formatCurrency(input.financing.equityInvested)} icon={Wallet} iconColor="orange" />
-          <StatsCard
-            title={dealType === 'rental' ? he.dealBusinessPlan.cocYield : he.dealBusinessPlan.annualizedRoi}
-            value={dealType === 'rental' ? formatPercent(results.cocYield || 0) : formatPercent(results.annualizedRoi || 0)}
-            icon={TrendingUp}
-            iconColor="green"
-            status={dealType === 'rental'
-              ? ((results.cocYield || 0) >= 0.07 ? 'positive' : (results.cocYield || 0) >= 0.03 ? 'neutral' : 'negative')
-              : ((results.annualizedRoi || 0) >= 0.10 ? 'positive' : (results.annualizedRoi || 0) >= 0.05 ? 'neutral' : 'negative')
-            }
-          />
-          {irrResult !== null && (
-            <StatsCard title="IRR (תשואה פנימית)" value={formatPercent(irrResult)} icon={Calculator} iconColor="green" status={irrResult >= 0.10 ? 'positive' : irrResult >= 0.05 ? 'neutral' : 'negative'} />
+          {dealType === 'ownUse' ? (
+            <>
+              <StatsCard
+                title="חיסכון חודשי"
+                value={formatCurrency(results.monthlySavings || 0)}
+                icon={Home}
+                iconColor="green"
+                status={(results.monthlySavings || 0) > 0 ? 'positive' : 'negative'}
+              />
+              {results.breakEvenYears != null && (
+                <StatsCard title="נקודת איזון" value={`${results.breakEvenYears.toFixed(1)} שנים`} icon={Calculator} iconColor="blue" />
+              )}
+            </>
+          ) : (
+            <>
+              <StatsCard
+                title={dealType === 'rental' ? he.dealBusinessPlan.cocYield : he.dealBusinessPlan.annualizedRoi}
+                value={dealType === 'rental' ? formatPercent(results.cocYield || 0) : formatPercent(results.annualizedRoi || 0)}
+                icon={TrendingUp}
+                iconColor="green"
+                status={dealType === 'rental'
+                  ? ((results.cocYield || 0) >= 0.07 ? 'positive' : (results.cocYield || 0) >= 0.03 ? 'neutral' : 'negative')
+                  : ((results.annualizedRoi || 0) >= 0.10 ? 'positive' : (results.annualizedRoi || 0) >= 0.05 ? 'neutral' : 'negative')
+                }
+              />
+              {irrResult !== null && (
+                <StatsCard title="IRR (תשואה פנימית)" value={formatPercent(irrResult)} icon={Calculator} iconColor="green" status={irrResult >= 0.10 ? 'positive' : irrResult >= 0.05 ? 'neutral' : 'negative'} />
+              )}
+            </>
           )}
         </div>
       )}
@@ -413,6 +438,39 @@ const DealBusinessPlan = () => {
         </Card>
       )}
 
+      {/* Own Use Inputs */}
+      {dealType === 'ownUse' && (
+        <Card className="border shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                <Home className="w-5 h-5 text-primary" />
+              </div>
+              מגורים עצמיים — השוואה לשכירות
+            </CardTitle>
+            <CardDescription>הזן את העלויות החודשיות הצפויות והשכירות החלופית</CardDescription>
+          </CardHeader>
+          <CardContent className="grid md:grid-cols-2 gap-4 pt-6">
+            <div>
+              <Label>שכירות חלופית חודשית ({he.common.currency})</Label>
+              <Input type="number" placeholder="למשל 4500" value={input.ownUse?.alternativeMonthlyRent || ''} onChange={(e) => setInput(prev => ({ ...prev, ownUse: { ...prev.ownUse!, alternativeMonthlyRent: Number(e.target.value) } }))} />
+            </div>
+            <div>
+              <Label>ארנונה חודשית ({he.common.currency})</Label>
+              <Input type="number" placeholder="למשל 250" value={input.ownUse?.monthlyPropertyTax || ''} onChange={(e) => setInput(prev => ({ ...prev, ownUse: { ...prev.ownUse!, monthlyPropertyTax: Number(e.target.value) } }))} />
+            </div>
+            <div>
+              <Label>ועד בית חודשי ({he.common.currency})</Label>
+              <Input type="number" placeholder="למשל 400" value={input.ownUse?.monthlyHoaFees || ''} onChange={(e) => setInput(prev => ({ ...prev, ownUse: { ...prev.ownUse!, monthlyHoaFees: Number(e.target.value) } }))} />
+            </div>
+            <div>
+              <Label>תחזוקה חודשית ({he.common.currency})</Label>
+              <Input type="number" placeholder="למשל 300" value={input.ownUse?.monthlyMaintenance || ''} onChange={(e) => setInput(prev => ({ ...prev, ownUse: { ...prev.ownUse!, monthlyMaintenance: Number(e.target.value) } }))} />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="flex justify-center sticky bottom-20 md:bottom-8 z-10">
         <Button onClick={handleCalculate} size="lg" disabled={isCalculating} className="px-12 py-6 text-lg rounded-full">
           {isCalculating ? (<><Loader2 className="ml-2 h-5 w-5 animate-spin" />מחשב...</>) : (<><Calculator className="ml-2 h-5 w-5" />{he.common.calculate}</>)}
@@ -429,18 +487,61 @@ const DealBusinessPlan = () => {
           transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
         >
           {/* Executive Summary */}
-          <ExecutiveSummary
-            type={dealType === 'rental' ? 'deal-rental' : 'deal-flip'}
-            data={{
-              cocYield: results.cocYield,
-              irr: irrResult,
-              netCashFlow: results.netCashflowAnnual !== undefined ? results.netCashflowAnnual / 12 : undefined,
-              grossProfit: results.grossProfit,
-              roi: results.roi,
-              annualizedRoi: results.annualizedRoi,
-              classification: he.dealBusinessPlan.classificationLabels[results.classification as keyof typeof he.dealBusinessPlan.classificationLabels],
-            }}
-          />
+          {dealType !== 'ownUse' && (
+            <ExecutiveSummary
+              type={dealType === 'rental' ? 'deal-rental' : 'deal-flip'}
+              data={{
+                cocYield: results.cocYield,
+                irr: irrResult,
+                netCashFlow: results.netCashflowAnnual !== undefined ? results.netCashflowAnnual / 12 : undefined,
+                grossProfit: results.grossProfit,
+                roi: results.roi,
+                annualizedRoi: results.annualizedRoi,
+                classification: he.dealBusinessPlan.classificationLabels[results.classification as keyof typeof he.dealBusinessPlan.classificationLabels],
+              }}
+            />
+          )}
+
+          {/* Own Use Summary */}
+          {dealType === 'ownUse' && results.monthlyOwnershipCost != null && (
+            <Card className="border shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-lg">השוואת בעלות מול שכירות</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 rounded-xl bg-accent/50 text-center">
+                    <p className="text-sm text-muted-foreground mb-1">עלות חודשית בעלות</p>
+                    <p className="text-2xl font-bold">{formatCurrency(results.monthlyOwnershipCost)}</p>
+                    <p className="text-xs text-muted-foreground mt-1">משכנתא + ארנונה + ועד + תחזוקה</p>
+                  </div>
+                  <div className="p-4 rounded-xl bg-secondary/10 text-center">
+                    <p className="text-sm text-muted-foreground mb-1">שכירות חלופית</p>
+                    <p className="text-2xl font-bold">{formatCurrency(results.alternativeMonthlyRent || 0)}</p>
+                    <p className="text-xs text-muted-foreground mt-1">עלות חודשית לשוכר</p>
+                  </div>
+                </div>
+                <div className={`p-4 rounded-xl text-center ${(results.monthlySavings || 0) > 0 ? 'bg-primary/5' : 'bg-destructive/5'}`}>
+                  <p className="text-sm text-muted-foreground mb-1">
+                    {(results.monthlySavings || 0) > 0 ? 'חיסכון חודשי ברכישה' : 'עלות נוספת חודשית ברכישה'}
+                  </p>
+                  <p className={`text-3xl font-bold ${(results.monthlySavings || 0) > 0 ? 'text-primary' : 'text-destructive'}`}>
+                    {formatCurrency(Math.abs(results.monthlySavings || 0))}
+                  </p>
+                  {results.breakEvenYears != null && (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      נקודת איזון: <span className="font-bold">{results.breakEvenYears.toFixed(1)} שנים</span> — אחרי תקופה זו הרכישה משתלמת
+                    </p>
+                  )}
+                  {results.breakEvenYears == null && (results.monthlySavings || 0) <= 0 && (
+                    <p className="text-sm text-destructive mt-2">
+                      הרכישה יקרה יותר מדי חודש — אין נקודת איזון
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Smart Insights */}
           <SmartInsight

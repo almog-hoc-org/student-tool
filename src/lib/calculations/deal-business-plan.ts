@@ -6,7 +6,7 @@ import {
 export function calculateDealBusinessPlan(
   input: DealBusinessPlanInput
 ): DealBusinessPlanOutput {
-  const { basic, financing, rental, flip } = input;
+  const { basic, financing, rental, flip, ownUse } = input;
 
   const totalDealCost =
     basic.purchasePrice + basic.sideCosts + basic.renovationCost;
@@ -76,6 +76,42 @@ export function calculateDealBusinessPlan(
       grossProfit,
       roi,
       annualizedRoi,
+      classification,
+    };
+  }
+
+  if (basic.dealType === 'ownUse' && ownUse) {
+    const monthlyOwnershipCost =
+      financing.mortgageMonthlyPayment +
+      ownUse.monthlyPropertyTax +
+      ownUse.monthlyHoaFees +
+      ownUse.monthlyMaintenance;
+
+    const alternativeMonthlyRent = ownUse.alternativeMonthlyRent;
+    const monthlySavings = alternativeMonthlyRent - monthlyOwnershipCost;
+
+    // Break-even: total extra cost of buying (equity + side costs + renovation)
+    // divided by monthly savings. If savings <= 0, no break-even.
+    const upfrontExtraCost = financing.equityInvested + basic.sideCosts + basic.renovationCost;
+    const breakEvenYears =
+      monthlySavings > 0
+        ? upfrontExtraCost / (monthlySavings * 12)
+        : monthlySavings === 0
+        ? Infinity
+        : -1; // negative means buying is more expensive monthly
+
+    let classification: DealBusinessPlanOutput['classification'] = 'Weak';
+    if (monthlySavings > 0 && breakEvenYears <= 5) classification = 'Excellent';
+    else if (monthlySavings > 0 && breakEvenYears <= 10) classification = 'Good';
+    else if (monthlySavings > 0) classification = 'Average';
+    else classification = 'Weak';
+
+    output = {
+      ...output,
+      monthlyOwnershipCost,
+      alternativeMonthlyRent,
+      monthlySavings,
+      breakEvenYears: breakEvenYears === Infinity || breakEvenYears < 0 ? undefined : breakEvenYears,
       classification,
     };
   }
