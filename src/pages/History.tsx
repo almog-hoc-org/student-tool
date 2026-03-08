@@ -123,36 +123,36 @@ export default function History() {
 
   return (
     <div className="space-y-6 pb-8">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <PageHero
           icon={<HistoryIcon className="h-5 w-5 text-primary" />}
           title="היסטוריית חישובים"
           description="כל החישובים שלך — במקום אחד, לצפייה, השוואה ושיתוף"
         />
-        <div className="shrink-0">
-            {history.length > 0 && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm">
-                    <Trash2 className="ml-2 h-4 w-4" />
-                    נקה הכל
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>האם אתה בטוח?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      פעולה זו תמחק את כל ההיסטוריה ולא ניתן לבטלה.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>ביטול</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleClearAll}>מחק הכל</AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
-        </div>
+        {history.length > 0 && (
+          <div className="shrink-0 self-end sm:self-auto">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm">
+                  <Trash2 className="ml-2 h-4 w-4" />
+                  נקה הכל
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>האם אתה בטוח?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    פעולה זו תמחק את כל ההיסטוריה ולא ניתן לבטלה.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>ביטול</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleClearAll}>מחק הכל</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        )}
       </div>
 
       {/* Stats Cards */}
@@ -195,14 +195,14 @@ export default function History() {
       {selectedForComparison.length > 0 && (
         <Card className="border-primary/50 bg-primary/5">
           <CardContent className="p-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="flex items-center gap-3">
-                <ArrowLeftRight className="h-5 w-5 text-primary" />
-                <span className="font-medium">
+                <ArrowLeftRight className="h-5 w-5 text-primary shrink-0" />
+                <span className="font-medium text-sm sm:text-base">
                   נבחרו {selectedForComparison.length} חישובים להשוואה
                 </span>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 self-end sm:self-auto">
                 <Button 
                   variant="outline" 
                   size="sm"
