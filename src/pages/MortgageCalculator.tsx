@@ -56,8 +56,8 @@ const MortgageCalculator = () => {
       name: he.mortgageCalculator.trackName,
       type: 'fixedUnlinked',
       principal: 0,
-      annualInterestRate: 0,
-      years: 20,
+      annualInterestRate: 5.5,
+      years: 25,
     };
     setTracks([...tracks, newTrack]);
   };
@@ -106,9 +106,9 @@ const MortgageCalculator = () => {
   const dtiRatio = results && monthlyIncome > 0 ? results.totalMonthlyPayment / monthlyIncome : null;
   const dtiPercent = dtiRatio !== null ? dtiRatio * 100 : 0;
 
-  // Madad simulation
-  const madadResult = isOffPlan && totalPrincipal > 0
-    ? simulateMadadImpact({ linkedAmount: totalPrincipal, annualMadadRate: madadRate, years: madadYears })
+  // Madad simulation — uses property price (not mortgage principal)
+  const madadResult = isOffPlan && propertyPrice > 0
+    ? simulateMadadImpact({ linkedAmount: propertyPrice, annualMadadRate: madadRate, years: madadYears })
     : null;
 
   // Traffic light status helpers
