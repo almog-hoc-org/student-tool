@@ -13,7 +13,8 @@ import {
   BookOpen,
   BarChart3,
   Bookmark,
-  Receipt
+  Receipt,
+  GraduationCap
 } from 'lucide-react';
 
 interface PrimaryCardProps {
@@ -140,6 +141,25 @@ export default function Index() {
           הדרך לדירה – כל הכלים שצריך כדי לקנות דירה בביטחון
         </p>
       </div>
+
+      {/* Program Banner — "הדרך לדירה" */}
+      <Link to="/program" className="block">
+        <Card className="border-[hsl(var(--gold)/0.3)] bg-[hsl(var(--gold)/0.04)] active:bg-[hsl(var(--gold)/0.08)] transition-colors duration-150">
+          <CardContent className="p-4 flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-gradient-gold-cta flex items-center justify-center flex-shrink-0">
+              <GraduationCap className="w-6 h-6 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-0.5">
+                <h3 className="text-base font-semibold">הדרך לדירה</h3>
+                <span className="text-[10px] bg-[hsl(var(--gold))] text-white px-1.5 py-0.5 rounded-full font-bold">חדש</span>
+              </div>
+              <p className="text-sm text-muted-foreground">התוכנית המקצועית לרכישת דירה</p>
+            </div>
+            <ChevronLeft className="w-5 h-5 text-[hsl(var(--gold))] flex-shrink-0" />
+          </CardContent>
+        </Card>
+      </Link>
 
       {/* Primary Tools */}
       <div className="space-y-3">

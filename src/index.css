@@ -138,6 +138,114 @@
 }
 
 @layer components {
+  /* Premium glass card with gradient border — used by sales page */
+  .glass-card-premium {
+    @apply backdrop-blur-xl rounded-2xl relative;
+    background: hsl(0 0% 100% / 0.85);
+    border: 1px solid transparent;
+    background-clip: padding-box;
+    box-shadow:
+      0 8px 32px -4px hsl(230 65% 52% / 0.10),
+      0 2px 8px hsl(0 0% 0% / 0.04),
+      inset 0 1px 0 hsl(0 0% 100% / 0.6);
+  }
+  .glass-card-premium::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, hsl(38 90% 55% / 0.5), hsl(230 65% 52% / 0.3), hsl(38 90% 55% / 0.2));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+  .dark .glass-card-premium {
+    background: hsl(230 25% 13% / 0.85);
+    box-shadow:
+      0 8px 32px -4px hsl(0 0% 0% / 0.4),
+      0 2px 8px hsl(0 0% 0% / 0.2),
+      inset 0 1px 0 hsl(230 20% 30% / 0.3);
+  }
+
+  /* Premium gradient backgrounds */
+  .bg-gradient-premium {
+    background: linear-gradient(135deg, hsl(230 30% 94%) 0%, hsl(240 25% 96%) 40%, hsl(225 20% 97%) 100%);
+  }
+  .dark .bg-gradient-premium {
+    background: linear-gradient(135deg, hsl(230 30% 10%) 0%, hsl(240 25% 12%) 40%, hsl(230 30% 8%) 100%);
+  }
+
+  /* Dark dramatic gradient for hero/CTA sections */
+  .bg-gradient-dark-dramatic {
+    background: linear-gradient(160deg, hsl(230 40% 8%) 0%, hsl(230 35% 12%) 40%, hsl(240 30% 6%) 100%);
+  }
+  .dark .bg-gradient-dark-dramatic {
+    background: linear-gradient(160deg, hsl(230 40% 4%) 0%, hsl(230 35% 7%) 40%, hsl(240 30% 3%) 100%);
+  }
+
+  /* Gold gradient for CTA buttons */
+  .bg-gradient-gold-cta {
+    background: linear-gradient(135deg, hsl(38 90% 52%) 0%, hsl(32 85% 48%) 50%, hsl(38 90% 55%) 100%);
+  }
+
+  /* Gold gradient text */
+  .text-gradient-gold {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(38 90% 55%), hsl(32 80% 50%), hsl(42 95% 58%));
+  }
+  .dark .text-gradient-gold {
+    background-image: linear-gradient(135deg, hsl(38 85% 62%), hsl(32 80% 55%), hsl(42 90% 65%));
+  }
+
+  /* Shimmer effect */
+  .shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+  .shimmer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      105deg,
+      transparent 40%,
+      hsl(0 0% 100% / 0.25) 50%,
+      transparent 60%
+    );
+    transform: translateX(-100%);
+    animation: shimmer-sweep 3s ease-in-out infinite;
+  }
+
+  /* Glow utilities */
+  .glow-primary {
+    box-shadow: 0 0 20px hsl(230 65% 52% / 0.2), 0 0 40px hsl(230 65% 52% / 0.1);
+  }
+  .dark .glow-primary {
+    box-shadow: 0 0 20px hsl(230 70% 62% / 0.25), 0 0 40px hsl(230 70% 62% / 0.12);
+  }
+  .glow-gold {
+    box-shadow: 0 0 20px hsl(38 90% 55% / 0.25), 0 0 40px hsl(38 90% 55% / 0.1);
+  }
+  .dark .glow-gold {
+    box-shadow: 0 0 20px hsl(38 85% 60% / 0.3), 0 0 40px hsl(38 85% 60% / 0.12);
+  }
+
+  /* Mesh gradient background */
+  .bg-mesh {
+    background-image:
+      radial-gradient(at 20% 30%, hsl(230 65% 52% / 0.08) 0%, transparent 50%),
+      radial-gradient(at 80% 20%, hsl(38 90% 55% / 0.06) 0%, transparent 50%),
+      radial-gradient(at 50% 80%, hsl(260 60% 58% / 0.05) 0%, transparent 50%);
+  }
+  .dark .bg-mesh {
+    background-image:
+      radial-gradient(at 20% 30%, hsl(230 70% 62% / 0.1) 0%, transparent 50%),
+      radial-gradient(at 80% 20%, hsl(38 85% 60% / 0.08) 0%, transparent 50%),
+      radial-gradient(at 50% 80%, hsl(260 65% 65% / 0.06) 0%, transparent 50%);
+  }
+
   /* Traffic Light utilities */
   .traffic-green {
     color: hsl(var(--chart-1));
@@ -160,6 +268,27 @@
     background-color: hsl(var(--chart-3) / 0.08);
     border-color: hsl(var(--chart-3) / 0.25);
   }
+}
+
+/* Keyframe animations */
+@keyframes shimmer-sweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+@keyframes bounce-subtle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(6px); }
 }
 
 @layer base {
