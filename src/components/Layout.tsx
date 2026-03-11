@@ -61,7 +61,7 @@ const utilityNav: NavItem[] = [
 
 
 function getPageTitle(pathname: string): string {
-  const all: NavItem[] = [...allNavItems, ...utilityNav, programNav, { name: 'דף הבית', shortName: 'בית', href: '/', icon: Home }, { name: 'סיכום', shortName: 'סיכום', href: '/summary', icon: FileText }];
+  const all: NavItem[] = [...allNavItems, ...utilityNav, { name: 'דף הבית', shortName: 'בית', href: '/', icon: Home }, { name: 'סיכום', shortName: 'סיכום', href: '/summary', icon: FileText }];
   return all.find(n => n.href === pathname)?.name || '';
 }
 
