@@ -151,15 +151,6 @@ export function Layout({ children }: { children: ReactNode }) {
             </SheetTrigger>
             <SheetContent side="bottom" className="rounded-t-2xl pb-safe">
               <div className="grid grid-cols-3 gap-3 p-4">
-                {/* Program highlight — gold accent */}
-                <Link
-                  to={programNav.href}
-                  onClick={() => setMoreOpen(false)}
-                  className="flex flex-col items-center gap-2 p-3 rounded-xl active:scale-95 transition-colors duration-150 bg-[hsl(var(--gold)/0.1)] text-[hsl(var(--gold))]"
-                >
-                  <GraduationCap className="w-6 h-6" />
-                  <span className="text-xs font-medium text-center">{programNav.name}</span>
-                </Link>
                 {[...allNavItems.filter(item => !bottomTabItems.includes(item)), ...utilityNav].map((item) => (
                   <Link
                     key={item.href}
