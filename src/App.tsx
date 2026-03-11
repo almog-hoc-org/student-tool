@@ -23,7 +23,7 @@ import Glossary from "./pages/Glossary";
 import PurchaseTaxCalculator from "./pages/PurchaseTaxCalculator";
 import Summary from "./pages/Summary";
 import NotFound from "./pages/NotFound";
-import ProgramSalesPage from "./pages/ProgramSalesPage";
+
 
 const queryClient = new QueryClient();
 
@@ -55,7 +55,7 @@ const App = () => (
                     <Route path="/history" element={<History />} />
                     <Route path="/glossary" element={<Glossary />} />
                     <Route path="/purchase-tax" element={<PurchaseTaxCalculator />} />
-                    <Route path="/program" element={<ProgramSalesPage />} />
+                    
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </div>
