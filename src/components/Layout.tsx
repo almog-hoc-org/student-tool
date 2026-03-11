@@ -58,7 +58,7 @@ const utilityNav: NavItem[] = [
   { name: 'מילון מונחים', shortName: 'מילון', href: '/glossary', icon: BookOpen },
 ];
 
-const programNav: NavItem = { name: 'הדרך לדירה', shortName: 'תוכנית', href: '/program', icon: GraduationCap };
+
 
 function getPageTitle(pathname: string): string {
   const all: NavItem[] = [...allNavItems, ...utilityNav, programNav, { name: 'דף הבית', shortName: 'בית', href: '/', icon: Home }, { name: 'סיכום', shortName: 'סיכום', href: '/summary', icon: FileText }];
