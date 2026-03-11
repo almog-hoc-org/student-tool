@@ -15,7 +15,7 @@ import {
   Receipt,
   ArrowRight,
   FileText,
-  GraduationCap
+  
 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { UserMenu } from './UserMenu';

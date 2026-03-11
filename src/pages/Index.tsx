@@ -14,7 +14,7 @@ import {
   BarChart3,
   Bookmark,
   Receipt,
-  GraduationCap
+  
 } from 'lucide-react';
 
 interface PrimaryCardProps {
