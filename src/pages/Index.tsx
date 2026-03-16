@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Calculator,
@@ -14,9 +15,34 @@ import {
   BarChart3,
   Bookmark,
   Receipt,
-  GraduationCap,
   Zap
 } from 'lucide-react';
+
+const stagger = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.07, delayChildren: 0.1 },
+  },
+};
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 16 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.45, ease: [0.25, 0.1, 0.25, 1] as [number, number, number, number] },
+  },
+};
+
+const scaleIn = {
+  hidden: { opacity: 0, scale: 0.95 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] as [number, number, number, number] },
+  },
+};
 
 interface PrimaryCardProps {
   title: string;
@@ -24,27 +50,37 @@ interface PrimaryCardProps {
   icon: React.ReactNode;
   link: string;
   iconBg: string;
+  index: number;
 }
 
-function PrimaryCard({ title, description, icon, link, iconBg }: PrimaryCardProps) {
+function PrimaryCard({ title, description, icon, link, iconBg, index }: PrimaryCardProps) {
   return (
-    <Link to={link} className="block">
-      <Card className="active:bg-muted/50 transition-colors duration-150 h-full">
-        <CardContent className="p-4 sm:p-5">
-          <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 ${iconBg}`}>
-            {icon}
-          </div>
-          <h3 className="text-base font-semibold mb-1">{title}</h3>
-          <p className="text-sm text-muted-foreground leading-snug mb-3">
-            {description}
-          </p>
-          <div className="flex items-center gap-1 text-primary text-sm font-medium">
-            <span>בוא נתחיל</span>
-            <ChevronLeft className="w-4 h-4" />
-          </div>
-        </CardContent>
-      </Card>
-    </Link>
+    <motion.div
+      variants={fadeUp}
+      whileHover={{ y: -4, transition: { duration: 0.2 } }}
+      whileTap={{ scale: 0.98 }}
+    >
+      <Link to={link} className="block">
+        <Card className="hover:shadow-md transition-shadow duration-300 h-full">
+          <CardContent className="p-4 sm:p-5">
+            <motion.div
+              className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 ${iconBg}`}
+              whileHover={{ rotate: [0, -6, 6, 0], transition: { duration: 0.4 } }}
+            >
+              {icon}
+            </motion.div>
+            <h3 className="text-base font-semibold mb-1">{title}</h3>
+            <p className="text-sm text-muted-foreground leading-snug mb-3">
+              {description}
+            </p>
+            <div className="flex items-center gap-1 text-primary text-sm font-medium">
+              <span>בוא נתחיל</span>
+              <ChevronLeft className="w-4 h-4" />
+            </div>
+          </CardContent>
+        </Card>
+      </Link>
+    </motion.div>
   );
 }
 
@@ -57,15 +93,17 @@ interface SecondaryItemProps {
 
 function SecondaryItem({ title, icon, link, iconBg }: SecondaryItemProps) {
   return (
-    <Link to={link} className="block">
-      <div className="flex items-center gap-3 p-3 rounded-xl active:bg-muted/50 transition-colors duration-150">
-        <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${iconBg}`}>
-          {icon}
+    <motion.div variants={fadeUp} whileTap={{ scale: 0.98 }}>
+      <Link to={link} className="block">
+        <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 active:bg-muted/50 transition-colors duration-150">
+          <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${iconBg}`}>
+            {icon}
+          </div>
+          <span className="text-sm font-medium flex-1">{title}</span>
+          <ChevronLeft className="w-4 h-4 text-muted-foreground" />
         </div>
-        <span className="text-sm font-medium flex-1">{title}</span>
-        <ChevronLeft className="w-4 h-4 text-muted-foreground" />
-      </div>
-    </Link>
+      </Link>
+    </motion.div>
   );
 }
 
@@ -134,92 +172,91 @@ export default function Index() {
   ];
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
+    <motion.div
+      className="space-y-6 max-w-2xl mx-auto"
+      initial="hidden"
+      animate="visible"
+      variants={stagger}
+    >
       {/* Header */}
-      <div className="py-4">
+      <motion.div className="py-4" variants={fadeUp}>
         <h1 className="text-2xl font-bold">ארגז הכלים</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
           הדרך לדירה – כל הכלים שצריך כדי לקנות דירה בביטחון
         </p>
-      </div>
+      </motion.div>
 
       {/* Quick Check — Hero CTA */}
-      <Link to="/quick-check" className="block">
-        <Card className="border-primary/20 bg-primary/[0.03] active:bg-primary/[0.07] transition-colors duration-150">
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center flex-shrink-0">
-              <Zap className="w-6 h-6 text-primary-foreground" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-base font-semibold mb-0.5">מצאת דירה? בדוק עכשיו</h3>
-              <p className="text-sm text-muted-foreground">הכנס מחיר וקבל מיד — מס, עלויות והחזר חודשי</p>
-            </div>
-            <ChevronLeft className="w-5 h-5 text-primary flex-shrink-0" />
-          </CardContent>
-        </Card>
-      </Link>
-
-      {/* Program Banner — "הדרך לדירה" */}
-      <Link to="/program" className="block">
-        <Card className="border-[hsl(var(--gold)/0.3)] bg-[hsl(var(--gold)/0.04)] active:bg-[hsl(var(--gold)/0.08)] transition-colors duration-150">
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-gold-cta flex items-center justify-center flex-shrink-0">
-              <GraduationCap className="w-6 h-6 text-white" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-0.5">
-                <h3 className="text-base font-semibold">הדרך לדירה</h3>
-                <span className="text-[10px] bg-[hsl(var(--gold))] text-white px-1.5 py-0.5 rounded-full font-bold">חדש</span>
+      <motion.div variants={scaleIn} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}>
+        <Link to="/quick-check" className="block">
+          <Card className="border-primary/20 bg-primary/[0.03] hover:bg-primary/[0.06] hover:shadow-md transition-all duration-300">
+            <CardContent className="p-4 flex items-center gap-4">
+              <motion.div
+                className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center flex-shrink-0"
+                animate={{ boxShadow: ['0 0 0px hsl(var(--primary) / 0.3)', '0 0 16px hsl(var(--primary) / 0.15)', '0 0 0px hsl(var(--primary) / 0.3)'] }}
+                transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+              >
+                <Zap className="w-6 h-6 text-primary-foreground" />
+              </motion.div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base font-semibold mb-0.5">מצאת דירה? בדוק עכשיו</h3>
+                <p className="text-sm text-muted-foreground">הכנס מחיר וקבל מיד — מס, עלויות והחזר חודשי</p>
               </div>
-              <p className="text-sm text-muted-foreground">התוכנית המקצועית לרכישת דירה</p>
-            </div>
-            <ChevronLeft className="w-5 h-5 text-[hsl(var(--gold))] flex-shrink-0" />
-          </CardContent>
-        </Card>
-      </Link>
+              <ChevronLeft className="w-5 h-5 text-primary flex-shrink-0" />
+            </CardContent>
+          </Card>
+        </Link>
+      </motion.div>
 
       {/* Primary Tools */}
-      <div className="space-y-3">
+      <motion.div className="space-y-3" variants={fadeUp}>
         <h2 className="text-base font-semibold">כלים מרכזיים</h2>
-        <div className="grid sm:grid-cols-3 gap-3">
-          {primaryTools.map((tool) => (
-            <PrimaryCard key={tool.link} {...tool} />
+        <motion.div
+          className="grid sm:grid-cols-3 gap-3"
+          variants={stagger}
+        >
+          {primaryTools.map((tool, i) => (
+            <PrimaryCard key={tool.link} {...tool} index={i} />
           ))}
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       {/* Secondary Tools - list style */}
-      <div className="space-y-1">
+      <motion.div className="space-y-1" variants={fadeUp}>
         <h2 className="text-base font-semibold mb-2">כלים נוספים</h2>
         <Card>
           <CardContent className="p-1">
-            {secondaryTools.map((tool, index) => (
-              <React.Fragment key={tool.link}>
-                <SecondaryItem {...tool} />
-                {index < secondaryTools.length - 1 && (
-                  <div className="border-b border-border mx-3" />
-                )}
-              </React.Fragment>
-            ))}
+            <motion.div variants={stagger}>
+              {secondaryTools.map((tool, index) => (
+                <React.Fragment key={tool.link}>
+                  <SecondaryItem {...tool} />
+                  {index < secondaryTools.length - 1 && (
+                    <div className="border-b border-border mx-3" />
+                  )}
+                </React.Fragment>
+              ))}
+            </motion.div>
           </CardContent>
         </Card>
-      </div>
+      </motion.div>
 
       {/* Utility Links */}
-      <div className="grid grid-cols-3 gap-3">
+      <motion.div className="grid grid-cols-3 gap-3" variants={stagger}>
         {utilityLinks.map((item) => (
-          <Link key={item.link} to={item.link}>
-            <Card className="active:bg-muted/50 transition-colors duration-150">
-              <CardContent className="p-3 flex flex-col items-center gap-2 text-center">
-                <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${item.iconBg}`}>
-                  {item.icon}
-                </div>
-                <span className="text-xs font-medium">{item.title}</span>
-              </CardContent>
-            </Card>
-          </Link>
+          <motion.div key={item.link} variants={scaleIn} whileHover={{ y: -3 }} whileTap={{ scale: 0.96 }}>
+            <Link to={item.link}>
+              <Card className="hover:shadow-md transition-shadow duration-300">
+                <CardContent className="p-3 flex flex-col items-center gap-2 text-center">
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${item.iconBg}`}>
+                    {item.icon}
+                  </div>
+                  <span className="text-xs font-medium">{item.title}</span>
+                </CardContent>
+              </Card>
+            </Link>
+          </motion.div>
         ))}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

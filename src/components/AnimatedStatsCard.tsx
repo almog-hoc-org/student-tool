@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { LucideIcon } from 'lucide-react';
 import { useRef, useEffect, useState } from 'react';
@@ -24,6 +25,7 @@ export function AnimatedStatsCard({
   value,
   icon: Icon,
   iconColor = 'blue',
+  delay = 0,
   animateNumber = false,
 }: AnimatedStatsCardProps) {
   const ref = useRef<HTMLDivElement>(null);
@@ -78,8 +80,21 @@ export function AnimatedStatsCard({
   }, [value, animateNumber, hasAnimated]);
 
   return (
-    <div ref={ref}>
-      <Card>
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{
+        duration: 0.45,
+        delay,
+        ease: [0.25, 0.1, 0.25, 1] as [number, number, number, number],
+      }}
+      whileHover={{
+        y: -3,
+        transition: { duration: 0.2 },
+      }}
+    >
+      <Card className="hover:shadow-md transition-shadow duration-300">
         <CardContent className="p-4">
           <div className="flex items-start justify-between">
             <div className="flex-1">
@@ -88,12 +103,17 @@ export function AnimatedStatsCard({
                 {displayValue}
               </p>
             </div>
-            <div className={`p-2 rounded-lg ${iconColors[iconColor]}`}>
+            <motion.div
+              className={`p-2 rounded-lg ${iconColors[iconColor]}`}
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: delay + 0.15, duration: 0.3, ease: [0.25, 0.1, 0.25, 1] as [number, number, number, number] }}
+            >
               <Icon className="h-5 w-5" />
-            </div>
+            </motion.div>
           </div>
         </CardContent>
       </Card>
-    </div>
+    </motion.div>
   );
 }

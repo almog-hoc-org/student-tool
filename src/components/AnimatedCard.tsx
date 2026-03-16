@@ -23,16 +23,18 @@ export function AnimatedCard({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ 
-        duration: 0.4, 
+        duration: 0.45, 
         delay,
-        ease: [0.4, 0, 0.2, 1]
+        ease: [0.25, 0.1, 0.25, 1] as [number, number, number, number]
       }}
       whileHover={hover ? { 
         y: -4,
-        transition: { duration: 0.2 }
+        boxShadow: '0 8px 25px -8px hsl(var(--primary) / 0.12)',
+        transition: { duration: 0.25 }
       } : undefined}
+      whileTap={hover ? { scale: 0.98 } : undefined}
     >
-      <Card className={cn(glass && 'glass-card', className)}>
+      <Card className={cn(glass && 'glass-card', 'transition-shadow duration-300', className)}>
         {children}
       </Card>
     </motion.div>

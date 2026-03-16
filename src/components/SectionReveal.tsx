@@ -7,16 +7,17 @@ interface SectionRevealProps {
   delay?: number;
   direction?: 'up' | 'left' | 'right';
   className?: string;
+  blur?: boolean;
 }
 
-export function SectionReveal({ children, delay = 0, direction = 'up', className }: SectionRevealProps) {
+export function SectionReveal({ children, delay = 0, direction = 'up', className, blur = true }: SectionRevealProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref, { once: true, margin: '-80px' });
+  const isInView = useInView(ref, { once: true, margin: '-60px' });
 
   const directionMap = {
-    up: { y: 30, x: 0 },
-    left: { y: 0, x: 40 },
-    right: { y: 0, x: -40 },
+    up: { y: 24, x: 0 },
+    left: { y: 0, x: 32 },
+    right: { y: 0, x: -32 },
   };
 
   const offset = directionMap[direction];
@@ -24,9 +25,12 @@ export function SectionReveal({ children, delay = 0, direction = 'up', className
   return (
     <motion.div
       ref={ref}
-      initial={{ opacity: 0, y: offset.y, x: offset.x }}
-      animate={isInView ? { opacity: 1, y: 0, x: 0 } : { opacity: 0, y: offset.y, x: offset.x }}
-      transition={{ duration: 0.6, delay, ease: [0.25, 0.1, 0.25, 1] }}
+      initial={{ opacity: 0, y: offset.y, x: offset.x, filter: blur ? 'blur(6px)' : 'blur(0px)' }}
+      animate={isInView
+        ? { opacity: 1, y: 0, x: 0, filter: 'blur(0px)' }
+        : { opacity: 0, y: offset.y, x: offset.x, filter: blur ? 'blur(6px)' : 'blur(0px)' }
+      }
+      transition={{ duration: 0.55, delay, ease: [0.25, 0.1, 0.25, 1] as [number, number, number, number] }}
       className={cn(className)}
     >
       {children}
