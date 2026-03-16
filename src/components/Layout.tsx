@@ -15,7 +15,6 @@ import {
   Receipt,
   ArrowRight,
   FileText,
-  GraduationCap,
   Zap,
   MapPin
 } from 'lucide-react';
