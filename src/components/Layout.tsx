@@ -62,7 +62,7 @@ const utilityNav: NavItem[] = [
   { name: 'מילון מונחים', shortName: 'מילון', href: '/glossary', icon: BookOpen },
 ];
 
-const programNav: NavItem = { name: 'הדרך לדירה', shortName: 'תוכנית', href: '/program', icon: GraduationCap };
+
 
 const summaryNav: NavItem = { name: 'סיכום', shortName: 'סיכום', href: '/summary', icon: FileText };
 const myPropertiesNav: NavItem = { name: 'הנכסים שלי', shortName: 'נכסים', href: '/my-properties', icon: MapPin };
