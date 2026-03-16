@@ -17,25 +17,34 @@ export default defineConfig(({ mode }) => ({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'icon-192.png', 'icon-512.png'],
       manifest: {
-        name: 'מחשבונים פיננסיים',
-        short_name: 'מחשבונים',
-        description: 'מערכת מחשבונים פיננסיים מתקדמת לניהול נכסים והשקעות',
-        theme_color: '#0EA5E9',
+        name: 'ארגז הכלים – הדרך לדירה',
+        short_name: 'ארגז הכלים',
+        description: 'כלים מקיפים למשקיעים בנדל״ן מגורים בישראל – צ׳קאפ פיננסי, ניתוח עסקאות, מחשבון משכנתא ועוד',
+        theme_color: '#3B5BDB',
+        background_color: '#0a0e1a',
+        display: 'standalone',
+        orientation: 'portrait',
+        start_url: '/',
+        dir: 'rtl',
+        lang: 'he',
         icons: [
           {
             src: 'icon-192.png',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any maskable'
           },
           {
             src: 'icon-512.png',
             sizes: '512x512',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any maskable'
           }
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}']
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        navigateFallbackDenylist: [/^\/~oauth/]
       }
     })
   ].filter(Boolean),
