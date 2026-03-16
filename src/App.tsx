@@ -25,7 +25,7 @@ import Glossary from "./pages/Glossary";
 import PurchaseTaxCalculator from "./pages/PurchaseTaxCalculator";
 import Summary from "./pages/Summary";
 import NotFound from "./pages/NotFound";
-import ProgramSalesPage from "./pages/ProgramSalesPage";
+
 import MyProperties from "./pages/MyProperties";
 
 
