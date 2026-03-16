@@ -68,7 +68,7 @@ const summaryNav: NavItem = { name: 'סיכום', shortName: 'סיכום', href:
 const myPropertiesNav: NavItem = { name: 'הנכסים שלי', shortName: 'נכסים', href: '/my-properties', icon: MapPin };
 
 function getPageTitle(pathname: string): string {
-  const all: NavItem[] = [...allNavItems, ...utilityNav, programNav, quickCheckNav, summaryNav, myPropertiesNav, { name: 'דף הבית', shortName: 'בית', href: '/', icon: Home }];
+  const all: NavItem[] = [...allNavItems, ...utilityNav, quickCheckNav, summaryNav, myPropertiesNav, { name: 'דף הבית', shortName: 'בית', href: '/', icon: Home }];
   return all.find(n => n.href === pathname)?.name || '';
 }
 
