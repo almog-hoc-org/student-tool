@@ -1,12 +1,14 @@
 {
-  "name": "ארגז הכלים - הדרך לדירה",
+  "name": "ארגז הכלים – הדרך לדירה",
   "short_name": "ארגז הכלים",
   "description": "כלים מקיפים למשקיעים בנדל״ן מגורים בישראל – צ׳קאפ פיננסי, ניתוח עסקאות, מחשבון משכנתא ועוד",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#0EA5E9",
+  "background_color": "#0a0e1a",
+  "theme_color": "#3B5BDB",
   "orientation": "portrait",
+  "dir": "rtl",
+  "lang": "he",
   "icons": [
     {
       "src": "/icon-192.png",
