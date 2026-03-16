@@ -15,7 +15,9 @@ import {
   Receipt,
   ArrowRight,
   FileText,
-  
+  GraduationCap,
+  Zap,
+  MapPin
 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { UserMenu } from './UserMenu';
@@ -45,11 +47,13 @@ const allNavItems: NavItem[] = [
   { name: 'התחדשות עירונית', shortName: 'התחדשות', href: '/urban-renewal', icon: Building2 },
 ];
 
+const quickCheckNav: NavItem = { name: 'בדיקה מהירה', shortName: 'בדיקה מהירה', href: '/quick-check', icon: Zap };
+
 const bottomTabItems: NavItem[] = [
+  quickCheckNav, // בדיקה מהירה — הכלי המרכזי
   allNavItems[0], // בדיקה פיננסית
   allNavItems[1], // מחשבון משכנתא
   allNavItems[2], // תוכנית עסקית
-  { name: 'סיכום', shortName: 'סיכום', href: '/summary', icon: FileText },
 ];
 
 const utilityNav: NavItem[] = [
@@ -58,10 +62,13 @@ const utilityNav: NavItem[] = [
   { name: 'מילון מונחים', shortName: 'מילון', href: '/glossary', icon: BookOpen },
 ];
 
+const programNav: NavItem = { name: 'הדרך לדירה', shortName: 'תוכנית', href: '/program', icon: GraduationCap };
 
+const summaryNav: NavItem = { name: 'סיכום', shortName: 'סיכום', href: '/summary', icon: FileText };
+const myPropertiesNav: NavItem = { name: 'הנכסים שלי', shortName: 'נכסים', href: '/my-properties', icon: MapPin };
 
 function getPageTitle(pathname: string): string {
-  const all: NavItem[] = [...allNavItems, ...utilityNav, { name: 'דף הבית', shortName: 'בית', href: '/', icon: Home }, { name: 'סיכום', shortName: 'סיכום', href: '/summary', icon: FileText }];
+  const all: NavItem[] = [...allNavItems, ...utilityNav, programNav, quickCheckNav, summaryNav, myPropertiesNav, { name: 'דף הבית', shortName: 'בית', href: '/', icon: Home }];
   return all.find(n => n.href === pathname)?.name || '';
 }
 
@@ -151,7 +158,16 @@ export function Layout({ children }: { children: ReactNode }) {
             </SheetTrigger>
             <SheetContent side="bottom" className="rounded-t-2xl pb-safe">
               <div className="grid grid-cols-3 gap-3 p-4">
-                {[...allNavItems.filter(item => !bottomTabItems.includes(item)), ...utilityNav].map((item) => (
+                {/* Program highlight — gold accent */}
+                <Link
+                  to={programNav.href}
+                  onClick={() => setMoreOpen(false)}
+                  className="flex flex-col items-center gap-2 p-3 rounded-xl active:scale-95 transition-colors duration-150 bg-[hsl(var(--gold)/0.1)] text-[hsl(var(--gold))]"
+                >
+                  <GraduationCap className="w-6 h-6" />
+                  <span className="text-xs font-medium text-center">{programNav.name}</span>
+                </Link>
+                {[myPropertiesNav, summaryNav, ...allNavItems.filter(item => !bottomTabItems.includes(item)), ...utilityNav].map((item) => (
                   <Link
                     key={item.href}
                     to={item.href}

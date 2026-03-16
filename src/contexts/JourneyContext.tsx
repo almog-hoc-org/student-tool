@@ -1,6 +1,6 @@
 import { createContext, useContext, useCallback, useEffect, useState, ReactNode } from 'react';
 
-type CalculatorType = 'financial-checkup' | 'mortgage' | 'deal-business-plan' | 'property-visit' | 'renovation';
+type CalculatorType = 'financial-checkup' | 'mortgage' | 'deal-business-plan' | 'property-visit' | 'renovation' | 'purchase-tax' | 'quick-check';
 
 type JourneyData = {
   [key in CalculatorType]?: {
@@ -9,11 +9,29 @@ type JourneyData = {
   };
 };
 
+// 5 journey stages mapped to calculator types
+const JOURNEY_STAGES = [
+  { stage: 'financial-check', label: 'בדיקה פיננסית', calculators: ['financial-checkup'] as CalculatorType[] },
+  { stage: 'mortgage', label: 'הבנת משכנתא', calculators: ['mortgage'] as CalculatorType[] },
+  { stage: 'property-search', label: 'חיפוש נכסים', calculators: ['quick-check', 'property-visit'] as CalculatorType[] },
+  { stage: 'deal-analysis', label: 'ניתוח עסקה', calculators: ['deal-business-plan', 'purchase-tax'] as CalculatorType[] },
+  { stage: 'closing', label: 'סגירה', calculators: ['renovation'] as CalculatorType[] },
+] as const;
+
+export type JourneyStage = typeof JOURNEY_STAGES[number]['stage'];
+
+interface CompletedStage {
+  stage: JourneyStage;
+  label: string;
+  completed: boolean;
+}
+
 interface JourneyContextType {
   journeyData: JourneyData;
   saveJourneyData: (type: CalculatorType, data: Record<string, any>) => void;
   getJourneyData: (type: CalculatorType) => Record<string, any> | null;
   clearJourneyData: () => void;
+  getCompletedStages: () => CompletedStage[];
   dismissedSuggestions: string[];
   dismissSuggestion: (id: string) => void;
 }
@@ -35,6 +53,7 @@ const JourneyContext = createContext<JourneyContextType>({
   saveJourneyData: () => {},
   getJourneyData: () => null,
   clearJourneyData: () => {},
+  getCompletedStages: () => [],
   dismissedSuggestions: [],
   dismissSuggestion: () => {},
 });
@@ -84,6 +103,14 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
     setJourneyData({});
   }, []);
 
+  const getCompletedStages = useCallback((): CompletedStage[] => {
+    return JOURNEY_STAGES.map(({ stage, label, calculators }) => ({
+      stage,
+      label,
+      completed: calculators.some(calc => journeyData[calc]?.data != null),
+    }));
+  }, [journeyData]);
+
   const dismissSuggestion = useCallback((id: string) => {
     setDismissedSuggestions((prev) =>
       prev.includes(id) ? prev : [...prev, id]
@@ -97,6 +124,7 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
         saveJourneyData,
         getJourneyData,
         clearJourneyData,
+        getCompletedStages,
         dismissedSuggestions,
         dismissSuggestion,
       }}

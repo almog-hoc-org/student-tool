@@ -20,6 +20,7 @@ import { PageHero } from '@/components/PageHero';
 import { Building2, Home, MapPin, Award, Calculator, Loader2 } from 'lucide-react';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, Tooltip } from 'recharts';
 import { saveCalculation } from '@/lib/storage/calculator-history';
+import { useJourney } from '@/contexts/JourneyContext';
 import { toast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 
@@ -62,6 +63,7 @@ const PropertyVisit = () => {
 
   const [results, setResults] = useState<PropertyVisitSummary | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
+  const { saveJourneyData } = useJourney();
 
   const handleCalculate = async () => {
     setIsCalculating(true);
@@ -77,7 +79,14 @@ const PropertyVisit = () => {
       result: `ציון כולל: ${summary.overallPropertyScore}/100`,
       input: { basicInfo, condition, environment, legal },
     });
-    
+
+    saveJourneyData('property-visit', {
+      overallScore: summary.overallPropertyScore,
+      conditionScore: summary.conditionScoreWeighted,
+      environmentScore: summary.environmentScoreWeighted,
+      address: basicInfo.address,
+    });
+
     toast({
       title: "ההערכה הושלמה בהצלחה",
       description: "התוצאות נשמרו בהיסטוריה",

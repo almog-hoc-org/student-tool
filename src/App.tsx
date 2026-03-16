@@ -7,9 +7,11 @@ import { Layout } from "@/components/Layout";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { DashboardProvider } from "@/contexts/DashboardContext";
+import { JourneyProvider } from "@/contexts/JourneyContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import QuickPropertyCheck from "./pages/QuickPropertyCheck";
 import FinancialCheckup from "./pages/FinancialCheckup";
 import DealBusinessPlan from "./pages/DealBusinessPlan";
 import MortgageCalculator from "./pages/MortgageCalculator";
@@ -23,6 +25,8 @@ import Glossary from "./pages/Glossary";
 import PurchaseTaxCalculator from "./pages/PurchaseTaxCalculator";
 import Summary from "./pages/Summary";
 import NotFound from "./pages/NotFound";
+import ProgramSalesPage from "./pages/ProgramSalesPage";
+import MyProperties from "./pages/MyProperties";
 
 
 const queryClient = new QueryClient({});
@@ -31,6 +35,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <DashboardProvider>
+      <JourneyProvider>
       <TooltipProvider>
         <Toaster />
         <Sonner />
@@ -55,7 +60,9 @@ const App = () => (
                     <Route path="/history" element={<History />} />
                     <Route path="/glossary" element={<Glossary />} />
                     <Route path="/purchase-tax" element={<PurchaseTaxCalculator />} />
-                    
+                    <Route path="/quick-check" element={<QuickPropertyCheck />} />
+                    <Route path="/program" element={<ProgramSalesPage />} />
+                    <Route path="/my-properties" element={<MyProperties />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </div>
@@ -64,6 +71,7 @@ const App = () => (
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
+      </JourneyProvider>
       </DashboardProvider>
     </AuthProvider>
   </QueryClientProvider>

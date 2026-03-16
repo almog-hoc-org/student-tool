@@ -19,11 +19,12 @@ import { SmartInsight, generateDealInsights } from '@/components/SmartInsight';
 import { HiddenCostsChecklist } from '@/components/HiddenCostsChecklist';
 import { ExecutiveSummary } from '@/components/ExecutiveSummary';
 import { FuelGauge } from '@/components/FuelGauge';
-import { Building2, Wallet, TrendingUp, Calculator, Loader2, Users, Home } from 'lucide-react';
+import { Building2, Wallet, TrendingUp, Calculator, Loader2, Users, Home, Check } from 'lucide-react';
 import { PageHero } from '@/components/PageHero';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line } from 'recharts';
 import { saveCalculation } from '@/lib/storage/calculator-history';
 import { useAutoPersist } from '@/hooks/useAutoPersist';
+import { useJourney } from '@/contexts/JourneyContext';
 import { toast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 
@@ -75,6 +76,8 @@ const DealBusinessPlan = () => {
   const [results, setResults] = useState<DealBusinessPlanOutput | null>(null);
   const [irrResult, setIrrResult] = useState<number | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
+  const { saveJourneyData, getJourneyData } = useJourney();
+  const financialData = getJourneyData('financial-checkup');
 
   const taxResult = input.basic.purchasePrice > 0
     ? calculatePurchaseTax({ purchasePrice: input.basic.purchasePrice, buyerType })
@@ -130,6 +133,16 @@ const DealBusinessPlan = () => {
       : `חיסכון חודשי: ${formatCurrency(output.monthlySavings || 0)}`;
 
     saveCalculation({ type: 'deal', title, result, input });
+
+    saveJourneyData('deal-business-plan', {
+      dealType,
+      cocYield: output.cocYield,
+      irr: irrResult,
+      netCashflow: output.netCashflowAnnual,
+      grossProfit: output.grossProfit,
+      roi: output.roi,
+    });
+
     toast({ title: "החישוב הושלם בהצלחה", description: "התוצאות נשמרו בהיסטוריה" });
     setIsCalculating(false);
 
@@ -172,6 +185,16 @@ const DealBusinessPlan = () => {
         title={he.dealBusinessPlan.title}
         description={he.dealBusinessPlan.description}
       />
+
+      {/* Financial checkup context */}
+      {financialData && (
+        <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[hsl(var(--chart-1)/0.08)] border border-[hsl(var(--chart-1)/0.2)]">
+          <Check className="w-4 h-4 text-[hsl(var(--chart-1))] flex-shrink-0" />
+          <p className="text-xs text-[hsl(var(--chart-1))]">
+            מחובר לבדיקה הפיננסית שלך — הון זמין: <strong>{formatCurrency(financialData.availableEquity as number)}</strong>
+          </p>
+        </div>
+      )}
 
       {/* KPI Cards */}
       {results && (

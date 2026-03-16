@@ -12,6 +12,7 @@ import { ConfidenceGauge } from '@/components/ConfidenceGauge';
 import { FuelGauge } from '@/components/FuelGauge';
 import { ExecutiveSummary } from '@/components/ExecutiveSummary';
 import { saveCalculation } from '@/lib/storage/calculator-history';
+import { useJourney } from '@/contexts/JourneyContext';
 import { useAutoPersist } from '@/hooks/useAutoPersist';
 import { formatCurrency as sharedFormatCurrency } from '@/lib/validation/validators';
 import { createNestedUpdater } from '@/hooks/useNestedState';
@@ -80,6 +81,7 @@ const FinancialCheckup = () => {
   });
 
   const [results, setResults] = useState<FinancialCheckupOutput | null>(null);
+  const { saveJourneyData } = useJourney();
   const update = createNestedUpdater(setInput);
 
   const handleCalculate = () => {
@@ -92,7 +94,14 @@ const FinancialCheckup = () => {
       result: `תזרים פנוי: ${formatCurrency(output.freeCashFlow)} | ${READINESS_LABELS[output.readinessLabel]}`,
       input,
     });
-    
+
+    saveJourneyData('financial-checkup', {
+      availableEquity: output.availableEquity,
+      maxMortgagePayment: output.maxSafeMortgagePayment,
+      readinessScore: output.readinessScore,
+      monthlyIncome: totalIncome,
+    });
+
     setTimeout(() => {
       document.getElementById('results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);

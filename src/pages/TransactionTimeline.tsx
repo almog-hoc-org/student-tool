@@ -14,6 +14,9 @@ import { StatsCard } from '@/components/StatsCard';
 import { saveCalculation } from '@/lib/storage/calculator-history';
 import { toast } from '@/hooks/use-toast';
 import { PageHero } from '@/components/PageHero';
+import { InteractiveChecklist } from '@/components/InteractiveChecklist';
+import { checklists } from '@/lib/data/checklists';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { motion } from 'framer-motion';
 
 const TransactionTimeline = () => {
@@ -84,6 +87,25 @@ const TransactionTimeline = () => {
           />
         </motion.div>
       )}
+
+      {/* Interactive Checklists */}
+      <div className="space-y-3">
+        <h3 className="text-base font-semibold">צ'קליסטים</h3>
+        <Tabs defaultValue={checklists[0].id}>
+          <TabsList className="grid w-full grid-cols-3 h-auto">
+            {checklists.map((cl) => (
+              <TabsTrigger key={cl.id} value={cl.id} className="text-xs py-2 px-1">
+                {cl.title}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          {checklists.map((cl) => (
+            <TabsContent key={cl.id} value={cl.id}>
+              <InteractiveChecklist checklist={cl} />
+            </TabsContent>
+          ))}
+        </Tabs>
+      </div>
 
       <Card className="border shadow-sm">
         <CardHeader>

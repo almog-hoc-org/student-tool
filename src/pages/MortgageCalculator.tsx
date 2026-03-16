@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { calculateMortgage, generateAmortizationSchedule, sensitivityAnalysis, MARKET_CONSTANTS, simulateMadadImpact } from '@/lib/calculations/mortgage-calculator';
 import { MortgageTrack, MortgageCalculatorOutput, MortgageTrackType, AmortizationRow, SensitivityResult } from '@/types/mortgage-calculator';
-import { Plus, Trash2, Calculator, Wallet, Percent, TrendingUp, Loader2, FileDown, Save, Home as HomeIcon } from 'lucide-react';
+import { Plus, Trash2, Calculator, Wallet, Percent, TrendingUp, Loader2, FileDown, Save, Home as HomeIcon, Check, Info, ChevronLeft } from 'lucide-react';
 import { he } from '@/lib/translations/he';
 import { formatCurrency } from '@/lib/validation/validators';
 import { StatsCard } from '@/components/StatsCard';
@@ -22,6 +22,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 
 import { saveCalculation } from '@/lib/storage/calculator-history';
 import { useAutoPersist } from '@/hooks/useAutoPersist';
+import { useJourney } from '@/contexts/JourneyContext';
 import { toast } from '@/hooks/use-toast';
 
 const TRACK_COLORS = ['hsl(var(--secondary))', 'hsl(var(--primary))', 'hsl(var(--chart-1))', 'hsl(var(--chart-2))'];
@@ -49,6 +50,8 @@ const MortgageCalculator = () => {
   const [amortization, setAmortization] = useState<AmortizationRow[]>([]);
   const [sensitivity, setSensitivity] = useState<SensitivityResult[]>([]);
   const [isCalculating, setIsCalculating] = useState(false);
+  const { saveJourneyData, getJourneyData } = useJourney();
+  const financialData = getJourneyData('financial-checkup');
 
   const addTrack = () => {
     const newTrack: MortgageTrack = {
@@ -91,6 +94,12 @@ const MortgageCalculator = () => {
       title: `משכנתא ${formatCurrency(totalPrincipal)}`,
       result: `תשלום חודשי: ${formatCurrency(output.totalMonthlyPayment)}`,
       input: { tracks },
+    });
+
+    saveJourneyData('mortgage', {
+      totalMonthlyPayment: output.totalMonthlyPayment,
+      weightedRate: output.weightedAverageInterest,
+      totalPrincipal,
     });
 
     toast({ title: "החישוב הושלם בהצלחה", description: "התוצאות נשמרו בהיסטוריה" });
@@ -141,6 +150,16 @@ const MortgageCalculator = () => {
         description={he.mortgageCalculator.description}
         badge={`פריים ${MARKET_CONSTANTS.PRIME_RATE}% · ריבית בנק ישראל ${MARKET_CONSTANTS.BOI_RATE}%`}
       />
+
+      {/* Financial checkup context */}
+      {financialData && (
+        <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[hsl(var(--chart-1)/0.08)] border border-[hsl(var(--chart-1)/0.2)]">
+          <Check className="w-4 h-4 text-[hsl(var(--chart-1))] flex-shrink-0" />
+          <p className="text-xs text-[hsl(var(--chart-1))]">
+            לפי הבדיקה הפיננסית שלך, ההחזר המקסימלי הבטוח: <strong>{formatCurrency(financialData.maxMortgagePayment as number)}/חודש</strong>
+          </p>
+        </div>
+      )}
 
       {/* KPI Cards */}
       {results && (
