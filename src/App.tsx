@@ -61,7 +61,7 @@ const App = () => (
                     <Route path="/glossary" element={<Glossary />} />
                     <Route path="/purchase-tax" element={<PurchaseTaxCalculator />} />
                     <Route path="/quick-check" element={<QuickPropertyCheck />} />
-                    <Route path="/program" element={<ProgramSalesPage />} />
+                    
                     <Route path="/my-properties" element={<MyProperties />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
