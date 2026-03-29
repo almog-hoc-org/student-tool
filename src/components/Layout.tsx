@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Wallet, TrendingUp, Home } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
+import { StepIndicator } from './StepIndicator';
 import { cn } from '@/lib/utils';
 
 const tabs = [
@@ -19,7 +20,7 @@ export function Layout({ children }: { children: ReactNode }) {
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur-sm pt-[env(safe-area-inset-top)]">
         <div className="px-4 h-14 flex items-center justify-between max-w-5xl mx-auto">
-          <Link to="/budget" className="flex items-center gap-2.5">
+          <Link to="/" className="flex items-center gap-2.5">
             <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center">
               <Home className="w-[18px] h-[18px] text-primary-foreground" />
             </div>
@@ -50,6 +51,13 @@ export function Layout({ children }: { children: ReactNode }) {
               </Link>
             );
           })}
+        </div>
+      </div>
+
+      {/* Step Indicator */}
+      <div className="border-b border-border bg-background">
+        <div className="max-w-5xl mx-auto">
+          <StepIndicator />
         </div>
       </div>
 

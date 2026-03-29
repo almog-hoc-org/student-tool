@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,7 +21,7 @@ import {
   AmortizationRow,
   SensitivityResult,
 } from '@/types/mortgage-calculator';
-import { Plus, Trash2, Home as HomeIcon } from 'lucide-react';
+import { Plus, Trash2, Home as HomeIcon, Import, RotateCcw, ArrowLeft } from 'lucide-react';
 import { formatCurrency } from '@/lib/validation/validators';
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,
@@ -30,6 +30,10 @@ import {
 } from 'recharts';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
+import { save, load, clear } from '@/lib/storage';
+import { getBudgetResults } from '@/lib/flow';
+import { ExportButton } from '@/components/ExportButton';
+import { Link } from 'react-router-dom';
 
 const TRACK_COLORS = ['#3B82F6', '#8B5CF6', '#22C55E', '#F59E0B'];
 const PI_COLORS = ['#1E293B', '#3B82F6'];
@@ -53,15 +57,35 @@ function KPICard({ title, value, subtitle, color }: { title: string; value: stri
   );
 }
 
+const DEFAULT_TRACK: MortgageTrack = { id: '1', name: 'קבועה לא צמודה', type: 'fixedUnlinked', principal: 800000, annualInterestRate: 5.5, years: 25 };
+
 export default function MortgageCalculator() {
-  const [tracks, setTracks] = useState<MortgageTrack[]>([
-    { id: '1', name: 'קבועה לא צמודה', type: 'fixedUnlinked', principal: 800000, annualInterestRate: 5.5, years: 25 },
-  ]);
-  const [monthlyIncome, setMonthlyIncome] = useState(20000);
-  const [isOffPlan, setIsOffPlan] = useState(false);
-  const [propertyPrice, setPropertyPrice] = useState(1600000);
-  const [madadRate, setMadadRate] = useState(MARKET_CONSTANTS.DEFAULT_MADAD_RATE);
-  const [madadYears, setMadadYears] = useState(3);
+  const savedM = load<{ tracks: MortgageTrack[]; monthlyIncome: number; isOffPlan: boolean; propertyPrice: number; madadRate: number; madadYears: number }>('mortgage');
+  const [tracks, setTracks] = useState<MortgageTrack[]>(savedM?.tracks ?? [DEFAULT_TRACK]);
+  const [monthlyIncome, setMonthlyIncome] = useState(savedM?.monthlyIncome ?? 20000);
+  const [isOffPlan, setIsOffPlan] = useState(savedM?.isOffPlan ?? false);
+  const [propertyPrice, setPropertyPrice] = useState(savedM?.propertyPrice ?? 1600000);
+  const [madadRate, setMadadRate] = useState(savedM?.madadRate ?? MARKET_CONSTANTS.DEFAULT_MADAD_RATE);
+  const [madadYears, setMadadYears] = useState(savedM?.madadYears ?? 3);
+
+  // Auto-save
+  useEffect(() => {
+    save('mortgage', { tracks, monthlyIncome, isOffPlan, propertyPrice, madadRate, madadYears });
+  }, [tracks, monthlyIncome, isOffPlan, propertyPrice, madadRate, madadYears]);
+
+  const budgetData = getBudgetResults();
+
+  const handleImportBudget = () => {
+    if (!budgetData) return;
+    setTracks([{ ...DEFAULT_TRACK, principal: budgetData.maxMortgage }]);
+    setMonthlyIncome(budgetData.monthlyIncome);
+  };
+
+  const handleReset = () => {
+    setTracks([DEFAULT_TRACK]); setMonthlyIncome(20000); setIsOffPlan(false);
+    setPropertyPrice(1600000); setMadadRate(MARKET_CONSTANTS.DEFAULT_MADAD_RATE); setMadadYears(3);
+    clear('mortgage'); clear('mortgage_results');
+  };
 
   // Real-time calculation
   const results: MortgageCalculatorOutput | null = useMemo(() => {
@@ -83,6 +107,11 @@ export default function MortgageCalculator() {
   const totalPrincipal = tracks.reduce((sum, t) => sum + t.principal, 0);
   const dtiRatio = results && monthlyIncome > 0 ? results.totalMonthlyPayment / monthlyIncome : null;
   const dtiPercent = dtiRatio !== null ? dtiRatio * 100 : 0;
+
+  // Save results for flow
+  useEffect(() => {
+    if (results) save('mortgage_results', results);
+  }, [results]);
 
   const madadResult = isOffPlan && propertyPrice > 0
     ? simulateMadadImpact({ linkedAmount: propertyPrice, annualMadadRate: madadRate, years: madadYears })
@@ -108,10 +137,21 @@ export default function MortgageCalculator() {
       <div className="md:grid md:grid-cols-5 md:gap-8">
         {/* Input Section */}
         <div className="md:col-span-2 space-y-4 md:sticky md:top-28 md:self-start">
-          <h1 className="text-2xl font-bold">מחשבון משכנתא</h1>
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold">מחשבון משכנתא</h1>
+            <Button variant="ghost" size="sm" onClick={handleReset} className="text-muted-foreground h-8 gap-1">
+              <RotateCcw className="w-3.5 h-3.5" /> אפס
+            </Button>
+          </div>
           <p className="text-sm text-muted-foreground">
             בנה תמהיל, השווה מסלולים וראה כמה תשלם.
           </p>
+
+          {budgetData && (
+            <Button variant="outline" size="sm" onClick={handleImportBudget} className="w-full gap-1.5 border-primary/30 text-primary">
+              <Import className="w-4 h-4" /> ייבא נתונים ממחשבון התקציב
+            </Button>
+          )}
           <div className="text-xs bg-muted/50 p-2.5 rounded-lg">
             פריים {MARKET_CONSTANTS.PRIME_RATE}% · ריבית בנק ישראל {MARKET_CONSTANTS.BOI_RATE}%
           </div>
@@ -387,6 +427,34 @@ export default function MortgageCalculator() {
                   </CardContent>
                 </Card>
               )}
+              {/* CTA + Export */}
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Link to="/business-plan" className="flex-1">
+                  <Button variant="default" className="w-full gap-1.5">
+                    תוכנית עסקית <ArrowLeft className="w-4 h-4" />
+                  </Button>
+                </Link>
+                <ExportButton
+                  title="דוח משכנתא"
+                  executiveSummary={[
+                    `תשלום חודשי: ${formatCurrency(results.totalMonthlyPayment)}`,
+                    `ריבית משוקללת: ${results.weightedAverageInterest.toFixed(2)}%`,
+                    `סך ריבית: ${formatCurrency(results.totalInterestPaid)}`,
+                    dtiRatio !== null ? `DTI: ${dtiPercent.toFixed(1)}%` : '',
+                  ].filter(Boolean)}
+                  sections={[
+                    { title: 'סיכום', items: [
+                      { label: 'תשלום חודשי', value: formatCurrency(results.totalMonthlyPayment) },
+                      { label: 'ריבית משוקללת', value: `${results.weightedAverageInterest.toFixed(2)}%` },
+                      { label: 'סך קרן', value: formatCurrency(totalPrincipal) },
+                      { label: 'סך ריבית', value: formatCurrency(results.totalInterestPaid) },
+                    ]},
+                    { title: 'מסלולים', items: tracks.map(t => (
+                      { label: t.name, value: `${formatCurrency(t.principal)} · ${t.annualInterestRate}% · ${t.years} שנים` }
+                    ))},
+                  ]}
+                />
+              </div>
             </motion.div>
           ) : (
             <div className="flex flex-col items-center justify-center py-20 text-center">

@@ -1,16 +1,20 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
+import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Wallet, Home, CreditCard, Receipt, PiggyBank } from 'lucide-react';
+import { Wallet, Home, CreditCard, Receipt, PiggyBank, ArrowLeft, RotateCcw } from 'lucide-react';
 import { calculateBudget, BudgetOutput } from '@/lib/calculations/budget-calculator';
 import { BuyerType } from '@/lib/calculations/purchase-tax';
 import { formatCurrency } from '@/lib/validation/validators';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { save, load, clear } from '@/lib/storage';
+import { ExportButton } from '@/components/ExportButton';
+import { Link } from 'react-router-dom';
 
 const COLORS = {
   equity: '#3B82F6',
@@ -95,23 +99,36 @@ function DtiIndicator({ percent }: { percent: number }) {
   );
 }
 
+const DEFAULTS = { equity: 400000, monthlyIncome: 20000, monthlyObligations: 0, buyerType: 'singleApartment' as BuyerType, mortgageYears: 25 };
+
 export default function BudgetCalculator() {
-  const [equity, setEquity] = useState(400000);
-  const [monthlyIncome, setMonthlyIncome] = useState(20000);
-  const [monthlyObligations, setMonthlyObligations] = useState(0);
-  const [buyerType, setBuyerType] = useState<BuyerType>('singleApartment');
-  const [mortgageYears, setMortgageYears] = useState(25);
+  const saved = load<typeof DEFAULTS>('budget');
+  const [equity, setEquity] = useState(saved?.equity ?? DEFAULTS.equity);
+  const [monthlyIncome, setMonthlyIncome] = useState(saved?.monthlyIncome ?? DEFAULTS.monthlyIncome);
+  const [monthlyObligations, setMonthlyObligations] = useState(saved?.monthlyObligations ?? DEFAULTS.monthlyObligations);
+  const [buyerType, setBuyerType] = useState<BuyerType>(saved?.buyerType ?? DEFAULTS.buyerType);
+  const [mortgageYears, setMortgageYears] = useState(saved?.mortgageYears ?? DEFAULTS.mortgageYears);
+
+  // Auto-save inputs
+  useEffect(() => {
+    save('budget', { equity, monthlyIncome, monthlyObligations, buyerType, mortgageYears });
+  }, [equity, monthlyIncome, monthlyObligations, buyerType, mortgageYears]);
 
   const result: BudgetOutput | null = useMemo(() => {
     if (equity <= 0 && monthlyIncome <= 0) return null;
-    return calculateBudget({
-      equity,
-      monthlyIncome,
-      monthlyObligations,
-      buyerType,
-      mortgageYears,
-    });
+    return calculateBudget({ equity, monthlyIncome, monthlyObligations, buyerType, mortgageYears });
   }, [equity, monthlyIncome, monthlyObligations, buyerType, mortgageYears]);
+
+  // Save results for flow
+  useEffect(() => {
+    if (result) save('budget_results', result);
+  }, [result]);
+
+  const handleReset = () => {
+    setEquity(DEFAULTS.equity); setMonthlyIncome(DEFAULTS.monthlyIncome);
+    setMonthlyObligations(DEFAULTS.monthlyObligations); setBuyerType(DEFAULTS.buyerType);
+    setMortgageYears(DEFAULTS.mortgageYears); clear('budget'); clear('budget_results');
+  };
 
   const pieData = result ? [
     { name: 'הון עצמי נטו', value: result.equityBreakdown.netEquity, color: COLORS.equity },
@@ -124,7 +141,12 @@ export default function BudgetCalculator() {
       <div className="md:grid md:grid-cols-5 md:gap-8">
         {/* Input Section */}
         <div className="md:col-span-2 space-y-4 md:sticky md:top-28 md:self-start">
-          <h1 className="text-2xl font-bold">מחשבון תקציב</h1>
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold">מחשבון תקציב</h1>
+            <Button variant="ghost" size="sm" onClick={handleReset} className="text-muted-foreground h-8 gap-1">
+              <RotateCcw className="w-3.5 h-3.5" /> אפס
+            </Button>
+          </div>
           <p className="text-sm text-muted-foreground">
             כמה דירה אתה יכול לקנות? הזן את הנתונים וקבל תשובה מיידית.
           </p>
@@ -293,6 +315,45 @@ export default function BudgetCalculator() {
                     </CardContent>
                   </Card>
                 )}
+                {/* Actions */}
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Link to="/mortgage" className="flex-1">
+                    <Button variant="default" className="w-full gap-1.5">
+                      בנה משכנתא <ArrowLeft className="w-4 h-4" />
+                    </Button>
+                  </Link>
+                  <Link to="/business-plan" className="flex-1">
+                    <Button variant="outline" className="w-full gap-1.5">
+                      תוכנית עסקית <ArrowLeft className="w-4 h-4" />
+                    </Button>
+                  </Link>
+                </div>
+                <div className="flex justify-end">
+                  <ExportButton
+                    title="דוח ניתוח תקציב"
+                    executiveSummary={[
+                      `שווי דירה מקסימלי: ${formatCurrency(result.maxPropertyValue)}`,
+                      `סכום משכנתא: ${formatCurrency(result.maxMortgage)}`,
+                      `החזר חודשי: ${formatCurrency(result.monthlyPayment)}`,
+                      `DTI: ${result.dtiPercent.toFixed(1)}%`,
+                    ]}
+                    sections={[
+                      { title: 'תוצאות עיקריות', items: [
+                        { label: 'שווי דירה מקסימלי', value: formatCurrency(result.maxPropertyValue) },
+                        { label: 'סכום משכנתא', value: formatCurrency(result.maxMortgage) },
+                        { label: 'החזר חודשי', value: formatCurrency(result.monthlyPayment) },
+                        { label: 'מס רכישה', value: formatCurrency(result.purchaseTax) },
+                        { label: 'עלויות נלוות', value: formatCurrency(result.sideCosts) },
+                      ]},
+                      { title: 'נתוני קלט', items: [
+                        { label: 'הון עצמי', value: formatCurrency(equity) },
+                        { label: 'הכנסה חודשית', value: formatCurrency(monthlyIncome) },
+                        { label: 'התחייבויות', value: formatCurrency(monthlyObligations) },
+                        { label: 'תקופת משכנתא', value: `${mortgageYears} שנים` },
+                      ]},
+                    ]}
+                  />
+                </div>
               </motion.div>
             ) : (
               <motion.div

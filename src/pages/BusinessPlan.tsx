@@ -1,15 +1,19 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
-import { BarChart3 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { BarChart3, Import, RotateCcw } from 'lucide-react';
 import { calculateBusinessPlan, BusinessPlanOutput, ScenarioResult } from '@/lib/calculations/business-plan';
 import { formatCurrency } from '@/lib/validation/validators';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { save, load, clear } from '@/lib/storage';
+import { getBudgetResults } from '@/lib/flow';
+import { ExportButton } from '@/components/ExportButton';
 
 const SCENARIO_COLORS = {
   pessimistic: { bg: 'bg-red-50 dark:bg-red-950/30', border: 'border-red-200 dark:border-red-800', text: 'text-red-600 dark:text-red-400', chart: '#EF4444' },
@@ -57,24 +61,66 @@ function ScenarioCard({ scenario, style }: { scenario: ScenarioResult; style: ty
   );
 }
 
-export default function BusinessPlan() {
-  // Inputs
-  const [purchasePrice, setPurchasePrice] = useState(1200000);
-  const [sideCosts, setSideCosts] = useState(40000);
-  const [renovationCost, setRenovationCost] = useState(0);
-  const [equityInvested, setEquityInvested] = useState(400000);
-  const [mortgageAmount, setMortgageAmount] = useState(800000);
-  const [mortgageMonthlyPayment, setMortgageMonthlyPayment] = useState(4500);
-  const [mortgageInterestRate, setMortgageInterestRate] = useState(5);
-  const [mortgageYears, setMortgageYears] = useState(25);
-  const [expectedMonthlyRent, setExpectedMonthlyRent] = useState(4000);
-  const [annualOperatingCosts, setAnnualOperatingCosts] = useState(8000);
-  const [holdingPeriodYears, setHoldingPeriodYears] = useState(10);
+const BP_DEFAULTS = {
+  purchasePrice: 1200000, sideCosts: 40000, renovationCost: 0, equityInvested: 400000,
+  mortgageAmount: 800000, mortgageMonthlyPayment: 4500, mortgageInterestRate: 5, mortgageYears: 25,
+  expectedMonthlyRent: 4000, annualOperatingCosts: 8000, holdingPeriodYears: 10,
+  baseAppreciation: 3, manualMode: false, customRates: { pessimistic: 1, average: 3, optimistic: 5 },
+};
 
-  // Appreciation slider
-  const [baseAppreciation, setBaseAppreciation] = useState(3);
-  const [manualMode, setManualMode] = useState(false);
-  const [customRates, setCustomRates] = useState({ pessimistic: 1, average: 3, optimistic: 5 });
+export default function BusinessPlan() {
+  const saved = load<typeof BP_DEFAULTS>('business_plan');
+  const [purchasePrice, setPurchasePrice] = useState(saved?.purchasePrice ?? BP_DEFAULTS.purchasePrice);
+  const [sideCosts, setSideCosts] = useState(saved?.sideCosts ?? BP_DEFAULTS.sideCosts);
+  const [renovationCost, setRenovationCost] = useState(saved?.renovationCost ?? BP_DEFAULTS.renovationCost);
+  const [equityInvested, setEquityInvested] = useState(saved?.equityInvested ?? BP_DEFAULTS.equityInvested);
+  const [mortgageAmount, setMortgageAmount] = useState(saved?.mortgageAmount ?? BP_DEFAULTS.mortgageAmount);
+  const [mortgageMonthlyPayment, setMortgageMonthlyPayment] = useState(saved?.mortgageMonthlyPayment ?? BP_DEFAULTS.mortgageMonthlyPayment);
+  const [mortgageInterestRate, setMortgageInterestRate] = useState(saved?.mortgageInterestRate ?? BP_DEFAULTS.mortgageInterestRate);
+  const [mortgageYears, setMortgageYears] = useState(saved?.mortgageYears ?? BP_DEFAULTS.mortgageYears);
+  const [expectedMonthlyRent, setExpectedMonthlyRent] = useState(saved?.expectedMonthlyRent ?? BP_DEFAULTS.expectedMonthlyRent);
+  const [annualOperatingCosts, setAnnualOperatingCosts] = useState(saved?.annualOperatingCosts ?? BP_DEFAULTS.annualOperatingCosts);
+  const [holdingPeriodYears, setHoldingPeriodYears] = useState(saved?.holdingPeriodYears ?? BP_DEFAULTS.holdingPeriodYears);
+  const [baseAppreciation, setBaseAppreciation] = useState(saved?.baseAppreciation ?? BP_DEFAULTS.baseAppreciation);
+  const [manualMode, setManualMode] = useState(saved?.manualMode ?? BP_DEFAULTS.manualMode);
+  const [customRates, setCustomRates] = useState(saved?.customRates ?? BP_DEFAULTS.customRates);
+
+  // Auto-save
+  useEffect(() => {
+    save('business_plan', {
+      purchasePrice, sideCosts, renovationCost, equityInvested, mortgageAmount,
+      mortgageMonthlyPayment, mortgageInterestRate, mortgageYears, expectedMonthlyRent,
+      annualOperatingCosts, holdingPeriodYears, baseAppreciation, manualMode, customRates,
+    });
+  }, [purchasePrice, sideCosts, renovationCost, equityInvested, mortgageAmount,
+    mortgageMonthlyPayment, mortgageInterestRate, mortgageYears, expectedMonthlyRent,
+    annualOperatingCosts, holdingPeriodYears, baseAppreciation, manualMode, customRates]);
+
+  const budgetData = getBudgetResults();
+
+  const handleImportBudget = () => {
+    if (!budgetData) return;
+    setPurchasePrice(budgetData.maxPropertyValue);
+    setEquityInvested(budgetData.equity);
+    setMortgageAmount(budgetData.maxMortgage);
+    setMortgageMonthlyPayment(budgetData.monthlyPayment);
+    setSideCosts(budgetData.purchaseTax + budgetData.sideCosts);
+  };
+
+  const handleReset = () => {
+    Object.entries(BP_DEFAULTS).forEach(([k, v]) => {
+      const setters: Record<string, Function> = {
+        purchasePrice: setPurchasePrice, sideCosts: setSideCosts, renovationCost: setRenovationCost,
+        equityInvested: setEquityInvested, mortgageAmount: setMortgageAmount,
+        mortgageMonthlyPayment: setMortgageMonthlyPayment, mortgageInterestRate: setMortgageInterestRate,
+        mortgageYears: setMortgageYears, expectedMonthlyRent: setExpectedMonthlyRent,
+        annualOperatingCosts: setAnnualOperatingCosts, holdingPeriodYears: setHoldingPeriodYears,
+        baseAppreciation: setBaseAppreciation, manualMode: setManualMode, customRates: setCustomRates,
+      };
+      setters[k]?.(v);
+    });
+    clear('business_plan');
+  };
 
   const result: BusinessPlanOutput | null = useMemo(() => {
     if (purchasePrice <= 0) return null;
@@ -109,10 +155,21 @@ export default function BusinessPlan() {
       <div className="md:grid md:grid-cols-5 md:gap-8">
         {/* Input Section */}
         <div className="md:col-span-2 space-y-4 md:sticky md:top-28 md:self-start">
-          <h1 className="text-2xl font-bold">תוכנית עסקית</h1>
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold">תוכנית עסקית</h1>
+            <Button variant="ghost" size="sm" onClick={handleReset} className="text-muted-foreground h-8 gap-1">
+              <RotateCcw className="w-3.5 h-3.5" /> אפס
+            </Button>
+          </div>
           <p className="text-sm text-muted-foreground">
             הזן את פרטי העסקה וראה 3 תרחישים לפי אחוז עלייה שנתי.
           </p>
+
+          {budgetData && (
+            <Button variant="outline" size="sm" onClick={handleImportBudget} className="w-full gap-1.5 border-primary/30 text-primary">
+              <Import className="w-4 h-4" /> ייבא נתונים ממחשבון התקציב
+            </Button>
+          )}
 
           {/* Deal Details */}
           <div className="space-y-3">
@@ -303,6 +360,35 @@ export default function BusinessPlan() {
                     </CardContent>
                   </Card>
                 )}
+                {/* PDF Export */}
+                <div className="flex justify-end">
+                  <ExportButton
+                    title="תוכנית עסקית"
+                    executiveSummary={[
+                      `עלות עסקה כוללת: ${formatCurrency(result.totalDealCost)}`,
+                      `תזרים חודשי נטו: ${formatCurrency(result.monthlyCashflow)}`,
+                      `IRR (ממוצע): ${result.scenarios[1].irr !== null ? `${(result.scenarios[1].irr * 100).toFixed(1)}%` : 'N/A'}`,
+                    ]}
+                    sections={[
+                      { title: 'נתוני עסקה', items: [
+                        { label: 'מחיר רכישה', value: formatCurrency(purchasePrice) },
+                        { label: 'הון עצמי', value: formatCurrency(equityInvested) },
+                        { label: 'סכום משכנתא', value: formatCurrency(mortgageAmount) },
+                        { label: 'שכ״ד חודשי', value: formatCurrency(expectedMonthlyRent) },
+                        { label: 'תקופת החזקה', value: `${holdingPeriodYears} שנים` },
+                      ]},
+                      ...result.scenarios.map(s => ({
+                        title: `תרחיש ${s.label} (${s.annualAppreciation}%)`,
+                        items: [
+                          { label: 'שווי נכס בסוף תקופה', value: formatCurrency(s.propertyValueAtEnd) },
+                          { label: 'רווח כולל', value: formatCurrency(s.totalProfit) },
+                          { label: 'תשואת COC', value: `${(s.cocYield * 100).toFixed(1)}%` },
+                          { label: 'IRR', value: s.irr !== null ? `${(s.irr * 100).toFixed(1)}%` : 'N/A' },
+                        ],
+                      })),
+                    ]}
+                  />
+                </div>
               </motion.div>
             ) : (
               <motion.div
