@@ -33,6 +33,7 @@ import { motion } from 'framer-motion';
 import { save, load, clear } from '@/lib/storage';
 import { getBudgetResults } from '@/lib/flow';
 import { ExportButton } from '@/components/ExportButton';
+import { InfoTooltip } from '@/components/InfoTooltip';
 import { Link } from 'react-router-dom';
 
 const TRACK_COLORS = ['#3B82F6', '#8B5CF6', '#22C55E', '#F59E0B'];
@@ -82,6 +83,7 @@ export default function MortgageCalculator() {
   };
 
   const handleReset = () => {
+    if (!window.confirm('בטוח? כל הנתונים יימחקו')) return;
     setTracks([DEFAULT_TRACK]); setMonthlyIncome(20000); setIsOffPlan(false);
     setPropertyPrice(1600000); setMadadRate(MARKET_CONSTANTS.DEFAULT_MADAD_RATE); setMadadYears(3);
     clear('mortgage'); clear('mortgage_results');
@@ -108,9 +110,10 @@ export default function MortgageCalculator() {
   const dtiRatio = results && monthlyIncome > 0 ? results.totalMonthlyPayment / monthlyIncome : null;
   const dtiPercent = dtiRatio !== null ? dtiRatio * 100 : 0;
 
-  // Save results for flow
+  // Save results for flow (clear if null)
   useEffect(() => {
     if (results) save('mortgage_results', results);
+    else clear('mortgage_results');
   }, [results]);
 
   const madadResult = isOffPlan && propertyPrice > 0
@@ -193,15 +196,15 @@ export default function MortgageCalculator() {
                   </div>
                   <div>
                     <Label className="text-[11px]">סכום (₪)</Label>
-                    <Input type="number" className="h-9" value={track.principal ?? ''} onChange={(e) => updateTrack(track.id, { principal: Number(e.target.value) })} />
+                    <Input type="number" min="0" className="h-9" value={track.principal ?? ''} onChange={(e) => updateTrack(track.id, { principal: Number(e.target.value) })} />
                   </div>
                   <div>
                     <Label className="text-[11px]">ריבית (%)</Label>
-                    <Input type="number" step="0.1" className="h-9" value={track.annualInterestRate ?? ''} onChange={(e) => updateTrack(track.id, { annualInterestRate: Number(e.target.value) })} />
+                    <Input type="number" min="0" step="0.1" className="h-9" value={track.annualInterestRate ?? ''} onChange={(e) => updateTrack(track.id, { annualInterestRate: Number(e.target.value) })} />
                   </div>
                   <div>
                     <Label className="text-[11px]">שנים</Label>
-                    <Input type="number" className="h-9" value={track.years ?? ''} onChange={(e) => updateTrack(track.id, { years: Number(e.target.value) })} />
+                    <Input type="number" min="1" className="h-9" value={track.years ?? ''} onChange={(e) => updateTrack(track.id, { years: Number(e.target.value) })} />
                   </div>
                 </div>
               </CardContent>
@@ -217,21 +220,21 @@ export default function MortgageCalculator() {
             <CardContent className="p-3 space-y-3">
               <div className="flex items-center gap-2">
                 <Switch checked={isOffPlan} onCheckedChange={setIsOffPlan} />
-                <Label className="text-xs">רכישה מקבלן (מדד תשומות)</Label>
+                <Label className="text-xs flex items-center gap-1">רכישה מקבלן (מדד תשומות) <InfoTooltip text="כשקונים מקבלן, המחיר עולה בהתאם למדד עלויות הבנייה. חוק יוני 2025: 20% הראשון פטור, השאר צמוד ב-50%" /></Label>
               </div>
               {isOffPlan && (
                 <div className="grid grid-cols-3 gap-2">
                   <div>
                     <Label className="text-[10px]">מחיר נכס</Label>
-                    <Input type="number" className="h-8 text-sm" value={propertyPrice ?? ''} onChange={(e) => setPropertyPrice(Number(e.target.value))} />
+                    <Input type="number" min="0" className="h-8 text-sm" value={propertyPrice ?? ''} onChange={(e) => setPropertyPrice(Number(e.target.value))} />
                   </div>
                   <div>
                     <Label className="text-[10px]">מדד שנתי %</Label>
-                    <Input type="number" step="0.1" className="h-8 text-sm" value={madadRate} onChange={(e) => setMadadRate(Number(e.target.value))} />
+                    <Input type="number" min="0" step="0.1" className="h-8 text-sm" value={madadRate} onChange={(e) => setMadadRate(Number(e.target.value))} />
                   </div>
                   <div>
-                    <Label className="text-[10px]">שנות בנייה</Label>
-                    <Input type="number" className="h-8 text-sm" value={madadYears} onChange={(e) => setMadadYears(Number(e.target.value))} />
+                    <Label className="text-[10px]">תקופת בנייה צפויה</Label>
+                    <Input type="number" min="1" className="h-8 text-sm" value={madadYears} onChange={(e) => setMadadYears(Number(e.target.value))} />
                   </div>
                   {madadResult && (
                     <div className="col-span-3 text-center p-2 bg-muted/50 rounded-lg">
@@ -277,7 +280,7 @@ export default function MortgageCalculator() {
                 <Card className="border-0 shadow-sm">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between text-sm mb-2">
-                      <span className="text-muted-foreground">יחס החזר/הכנסה</span>
+                      <span className="text-muted-foreground flex items-center gap-1">יחס החזר/הכנסה <InfoTooltip text="הבנק דורש שמקסימום 40% מההכנסה ילך להחזרי הלוואות" /></span>
                       <span className={cn('font-semibold', dtiPercent < 30 ? 'text-green-600' : dtiPercent < 40 ? 'text-amber-600' : 'text-red-600')}>
                         {dtiPercent.toFixed(1)}%
                       </span>
@@ -323,6 +326,7 @@ export default function MortgageCalculator() {
                 <Card className="border-0 shadow-sm">
                   <CardContent className="p-4">
                     <p className="text-sm font-semibold mb-2">גרף אמורטיזציה</p>
+                    <div id="mortgage-chart">
                     <ResponsiveContainer width="100%" height={280}>
                       <AreaChart data={amortization}>
                         <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
@@ -334,6 +338,7 @@ export default function MortgageCalculator() {
                         <Area type="monotone" dataKey="interestPayment" name="ריבית" stackId="1" stroke="#3B82F6" fill="#3B82F6" fillOpacity={0.5} />
                       </AreaChart>
                     </ResponsiveContainer>
+                    </div>
                   </CardContent>
                 </Card>
               )}
@@ -436,6 +441,7 @@ export default function MortgageCalculator() {
                 </Link>
                 <ExportButton
                   title="דוח משכנתא"
+                  chartElementId="mortgage-chart"
                   executiveSummary={[
                     `תשלום חודשי: ${formatCurrency(results.totalMonthlyPayment)}`,
                     `ריבית משוקללת: ${results.weightedAverageInterest.toFixed(2)}%`,

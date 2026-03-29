@@ -70,18 +70,18 @@ export function calculateSideCosts(input: SideCostsInput): SideCostsOutput {
     });
   }
 
-  // ביטוח מבנה + חיים (שנה ראשונה)
+  // ביטוח מבנה + חיים (שנה ראשונה) — 0.1% מהנכס או מינימום ₪2,500
   items.push({
     name: 'ביטוח מבנה + חיים (שנה ראשונה)',
-    amount: 2500,
+    amount: Math.max(2500, Math.round(input.purchasePrice * 0.001)),
     description: 'נדרש לצורך משכנתא',
   });
 
-  // אגרות רישום
+  // אגרות רישום טאבו — ~0.5%
   items.push({
     name: 'אגרות רישום (טאבו)',
-    amount: Math.round(input.purchasePrice * 0.002),
-    description: '~0.2% ממחיר הנכס',
+    amount: Math.round(input.purchasePrice * 0.005),
+    description: '~0.5% ממחיר הנכס',
   });
 
   // ריהוט ראשוני

@@ -115,7 +115,9 @@ export function calculateMortgage(
 export function generateAmortizationSchedule(
   tracks: MortgageTrack[]
 ): AmortizationRow[] {
+  if (tracks.length === 0) return [];
   const maxMonths = Math.max(...tracks.map(t => t.years * 12));
+  if (maxMonths <= 0) return [];
   const rows: AmortizationRow[] = [];
 
   // Initialize balances
@@ -131,8 +133,8 @@ export function generateAmortizationSchedule(
     tracks.forEach((track, i) => {
       const n = track.years * 12;
       if (month > n) {
-        totalRemainingBalance += balances[i];
-        return; // track finished
+        balances[i] = 0;
+        return; // track finished — balance is 0
       }
 
       const r = track.annualInterestRate / 100 / 12;

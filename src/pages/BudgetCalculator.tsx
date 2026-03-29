@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { save, load, clear } from '@/lib/storage';
 import { ExportButton } from '@/components/ExportButton';
+import { InfoTooltip } from '@/components/InfoTooltip';
 import { Link } from 'react-router-dom';
 
 const COLORS = {
@@ -35,12 +36,13 @@ function AnimatedNumber({ value, prefix = '₪' }: { value: number; prefix?: str
   );
 }
 
-function KPICard({ title, value, icon: Icon, color, large }: {
+function KPICard({ title, value, icon: Icon, color, large, tooltip }: {
   title: string;
   value: string;
   icon: React.ComponentType<{ className?: string }>;
   color: string;
   large?: boolean;
+  tooltip?: string;
 }) {
   return (
     <Card className={cn(
@@ -52,7 +54,10 @@ function KPICard({ title, value, icon: Icon, color, large }: {
           <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center', color)}>
             <Icon className="w-4 h-4 text-white" />
           </div>
-          <span className="text-xs text-muted-foreground font-medium">{title}</span>
+          <span className="text-xs text-muted-foreground font-medium flex items-center gap-1">
+            {title}
+            {tooltip && <InfoTooltip text={tooltip} />}
+          </span>
         </div>
         <p className={cn(
           'font-bold tracking-tight',
@@ -76,7 +81,7 @@ function DtiIndicator({ percent }: { percent: number }) {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between text-sm">
-        <span className="text-muted-foreground">יחס החזר/הכנסה (DTI)</span>
+        <span className="text-muted-foreground flex items-center gap-1">יחס החזר/הכנסה (DTI) <InfoTooltip text="הבנק דורש שמקסימום 40% מההכנסה החודשית ילך להחזרי הלוואות — כולל המשכנתא החדשה" /></span>
         <span className={cn('font-semibold', status.textColor)}>
           {percent.toFixed(1)}% — {status.label}
         </span>
@@ -125,10 +130,14 @@ export default function BudgetCalculator() {
   }, [result]);
 
   const handleReset = () => {
+    if (!window.confirm('בטוח? כל הנתונים יימחקו')) return;
     setEquity(DEFAULTS.equity); setMonthlyIncome(DEFAULTS.monthlyIncome);
     setMonthlyObligations(DEFAULTS.monthlyObligations); setBuyerType(DEFAULTS.buyerType);
     setMortgageYears(DEFAULTS.mortgageYears); clear('budget'); clear('budget_results');
   };
+
+  const maxAllowedPayment = monthlyIncome * 0.4;
+  const obligationsExceedDTI = monthlyObligations >= maxAllowedPayment && monthlyIncome > 0;
 
   const pieData = result ? [
     { name: 'הון עצמי נטו', value: result.equityBreakdown.netEquity, color: COLORS.equity },
@@ -155,7 +164,7 @@ export default function BudgetCalculator() {
           <div className="space-y-2">
             <Label className="text-sm font-medium">הון עצמי זמין</Label>
             <Input
-              type="number"
+              type="number" min="0"
               value={equity ?? ''}
               onChange={(e) => setEquity(Number(e.target.value))}
               placeholder="400,000"
@@ -179,7 +188,7 @@ export default function BudgetCalculator() {
           <div className="space-y-1.5">
             <Label className="text-sm font-medium">הכנסה חודשית נטו (משק בית)</Label>
             <Input
-              type="number"
+              type="number" min="0"
               value={monthlyIncome ?? ''}
               onChange={(e) => setMonthlyIncome(Number(e.target.value))}
               placeholder="20,000"
@@ -190,12 +199,15 @@ export default function BudgetCalculator() {
           <div className="space-y-1.5">
             <Label className="text-sm font-medium">התחייבויות חודשיות קיימות</Label>
             <Input
-              type="number"
+              type="number" min="0"
               value={monthlyObligations ?? ''}
               onChange={(e) => setMonthlyObligations(Number(e.target.value))}
               placeholder="0"
             />
             <p className="text-[11px] text-muted-foreground">הלוואות, אשראי, ליסינג וכו׳</p>
+            {obligationsExceedDTI && (
+              <p className="text-[11px] text-red-500 font-medium">ההתחייבויות חורגות מ-40% מההכנסה — לא ניתן לקבל משכנתא</p>
+            )}
           </div>
 
           {/* Buyer Type */}
@@ -211,6 +223,7 @@ export default function BudgetCalculator() {
                 <SelectItem value="foreignResident">תושב חוץ</SelectItem>
               </SelectContent>
             </Select>
+            <p className="text-[11px] text-muted-foreground">משפיע על מס רכישה, אחוז מימון ועלויות נלוות</p>
           </div>
 
           {/* Mortgage Years */}
@@ -278,6 +291,7 @@ export default function BudgetCalculator() {
                     value={formatCurrency(result.sideCosts)}
                     icon={PiggyBank}
                     color="bg-amber-500"
+                    tooltip="עורך דין, שמאי, רישום טאבו, ביטוח, מתווך"
                   />
                 </div>
 
@@ -293,6 +307,7 @@ export default function BudgetCalculator() {
                   <Card className="border-0 shadow-sm">
                     <CardContent className="p-4">
                       <p className="text-sm font-semibold mb-3">פירוט הון עצמי</p>
+                      <div id="budget-chart">
                       <ResponsiveContainer width="100%" height={250}>
                         <PieChart>
                           <Pie
@@ -312,6 +327,7 @@ export default function BudgetCalculator() {
                           <Legend />
                         </PieChart>
                       </ResponsiveContainer>
+                      </div>
                     </CardContent>
                   </Card>
                 )}
@@ -331,6 +347,7 @@ export default function BudgetCalculator() {
                 <div className="flex justify-end">
                   <ExportButton
                     title="דוח ניתוח תקציב"
+                    chartElementId="budget-chart"
                     executiveSummary={[
                       `שווי דירה מקסימלי: ${formatCurrency(result.maxPropertyValue)}`,
                       `סכום משכנתא: ${formatCurrency(result.maxMortgage)}`,

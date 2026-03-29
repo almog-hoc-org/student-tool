@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { save, load, clear } from '@/lib/storage';
 import { getBudgetResults } from '@/lib/flow';
 import { ExportButton } from '@/components/ExportButton';
+import { InfoTooltip } from '@/components/InfoTooltip';
 
 const SCENARIO_COLORS = {
   pessimistic: { bg: 'bg-red-50 dark:bg-red-950/30', border: 'border-red-200 dark:border-red-800', text: 'text-red-600 dark:text-red-400', chart: '#EF4444' },
@@ -45,11 +46,11 @@ function ScenarioCard({ scenario, style }: { scenario: ScenarioResult; style: ty
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <p className="text-[11px] text-muted-foreground">תשואת COC</p>
+              <p className="text-[11px] text-muted-foreground flex items-center gap-1">תשואת COC <InfoTooltip text="כמה אתה מרוויח בשנה ביחס להון שהשקעת — שכירות נטו חלקי הון עצמי" /></p>
               <p className="text-base font-semibold">{(scenario.cocYield * 100).toFixed(1)}%</p>
             </div>
             <div>
-              <p className="text-[11px] text-muted-foreground">IRR</p>
+              <p className="text-[11px] text-muted-foreground flex items-center gap-1">IRR <InfoTooltip text="שיעור תשואה פנימי: התשואה האמיתית כולל עליית ערך, שכירות ועלויות — המדד המקצועי להשוואת השקעות" /></p>
               <p className="text-base font-semibold">
                 {scenario.irr !== null ? `${(scenario.irr * 100).toFixed(1)}%` : 'N/A'}
               </p>
@@ -105,9 +106,15 @@ export default function BusinessPlan() {
     setMortgageAmount(budgetData.maxMortgage);
     setMortgageMonthlyPayment(budgetData.monthlyPayment);
     setSideCosts(budgetData.purchaseTax + budgetData.sideCosts);
+    // Import interest rate from mortgage results if available
+    const mortgageData = load<any>('mortgage_results');
+    if (mortgageData?.weightedAverageInterest) {
+      setMortgageInterestRate(mortgageData.weightedAverageInterest);
+    }
   };
 
   const handleReset = () => {
+    if (!window.confirm('בטוח? כל הנתונים יימחקו')) return;
     Object.entries(BP_DEFAULTS).forEach(([k, v]) => {
       const setters: Record<string, Function> = {
         purchasePrice: setPurchasePrice, sideCosts: setSideCosts, renovationCost: setRenovationCost,
@@ -295,6 +302,9 @@ export default function BusinessPlan() {
                   </div>
                 </div>
               )}
+              {manualMode && customRates.pessimistic > customRates.optimistic && (
+                <p className="text-[11px] text-amber-500">שים לב — התרחיש המחמיר גבוה מהאופטימי</p>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -345,6 +355,7 @@ export default function BusinessPlan() {
                   <Card className="border-0 shadow-sm">
                     <CardContent className="p-4">
                       <p className="text-sm font-semibold mb-3">עליית שווי נכס לאורך השנים</p>
+                      <div id="bp-chart">
                       <ResponsiveContainer width="100%" height={280}>
                         <LineChart data={chartData}>
                           <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
@@ -357,6 +368,7 @@ export default function BusinessPlan() {
                           <Line type="monotone" dataKey="אופטימי" stroke={SCENARIO_COLORS.optimistic.chart} strokeWidth={2} dot={false} />
                         </LineChart>
                       </ResponsiveContainer>
+                      </div>
                     </CardContent>
                   </Card>
                 )}
@@ -364,6 +376,7 @@ export default function BusinessPlan() {
                 <div className="flex justify-end">
                   <ExportButton
                     title="תוכנית עסקית"
+                    chartElementId="bp-chart"
                     executiveSummary={[
                       `עלות עסקה כוללת: ${formatCurrency(result.totalDealCost)}`,
                       `תזרים חודשי נטו: ${formatCurrency(result.monthlyCashflow)}`,

@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -c \"import\\\\|export\" /Users/alm3o/student-tool/src/pages/*.tsx)",
+      "Bash(git add src/App.tsx src/components/Layout.tsx src/contexts/JourneyContext.tsx src/pages/DealBusinessPlan.tsx src/pages/FinancialCheckup.tsx src/pages/Index.tsx src/pages/MortgageCalculator.tsx src/pages/PropertyVisit.tsx src/pages/TransactionTimeline.tsx src/components/InteractiveChecklist.tsx src/lib/calculations/quick-property-check.ts src/lib/data/checklists.ts src/lib/storage/property-storage.ts src/pages/MyProperties.tsx src/pages/QuickPropertyCheck.tsx src/types/property.ts)",
+      "Bash(git push)",
+      "Bash(git pull --rebase)",
+      "Bash(git add src/App.tsx src/components/Layout.tsx src/pages/Index.tsx)",
+      "Bash(curl -s http://localhost:8080)",
+      "Bash(curl -s http://localhost:8080/budget)",
+      "Read(//dev/**)",
+      "Bash(git add src/App.tsx src/components/Layout.tsx src/pages/BudgetCalculator.tsx src/pages/BusinessPlan.tsx src/pages/MortgageCalculator.tsx src/lib/calculations/budget-calculator.ts src/lib/calculations/business-plan.ts vercel.json)",
+      "Bash(git add -u src/)",
+      "Bash(git pull --rebase origin main)",
+      "Bash(git push --force origin main)"
+    ]
+  }
+}
