@@ -5,7 +5,7 @@ import { ThemeToggle } from './ThemeToggle';
 import { cn } from '@/lib/utils';
 
 const tabs = [
-  { name: 'תקציב', href: '/budget', icon: Wallet },
+  { name: 'תקציב', href: '/', icon: Wallet },
   { name: 'תוכנית עסקית', href: '/business-plan', icon: TrendingUp },
   { name: 'משכנתא', href: '/mortgage', icon: Home },
 ];

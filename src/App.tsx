@@ -24,8 +24,7 @@ const App = () => (
             <Layout>
               <div className="animate-fade-in">
                 <Routes>
-                  <Route path="/" element={<Navigate to="/budget" replace />} />
-                  <Route path="/budget" element={<BudgetCalculator />} />
+                  <Route path="/" element={<BudgetCalculator />} />
                   <Route path="/business-plan" element={<BusinessPlan />} />
                   <Route path="/mortgage" element={<MortgageCalculator />} />
                   <Route path="*" element={<NotFound />} />
