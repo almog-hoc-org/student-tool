@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useMemo } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -7,650 +7,397 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { calculateMortgage, generateAmortizationSchedule, sensitivityAnalysis, MARKET_CONSTANTS, simulateMadadImpact } from '@/lib/calculations/mortgage-calculator';
-import { MortgageTrack, MortgageCalculatorOutput, MortgageTrackType, AmortizationRow, SensitivityResult } from '@/types/mortgage-calculator';
-import { Plus, Trash2, Calculator, Wallet, Percent, TrendingUp, Loader2, FileDown, Save, Home as HomeIcon, Check, Info, ChevronLeft } from 'lucide-react';
-import { he } from '@/lib/translations/he';
+import {
+  calculateMortgage,
+  generateAmortizationSchedule,
+  sensitivityAnalysis,
+  MARKET_CONSTANTS,
+  simulateMadadImpact,
+} from '@/lib/calculations/mortgage-calculator';
+import {
+  MortgageTrack,
+  MortgageCalculatorOutput,
+  MortgageTrackType,
+  AmortizationRow,
+  SensitivityResult,
+} from '@/types/mortgage-calculator';
+import { Plus, Trash2, Home as HomeIcon } from 'lucide-react';
 import { formatCurrency } from '@/lib/validation/validators';
-import { StatsCard } from '@/components/StatsCard';
-import { PageHero } from '@/components/PageHero';
-import { SmartInsight, generateMortgageInsights } from '@/components/SmartInsight';
-import { FuelGauge } from '@/components/FuelGauge';
-import { ExecutiveSummary } from '@/components/ExecutiveSummary';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid, BarChart, Bar } from 'recharts';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import {
+  PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,
+  AreaChart, Area, XAxis, YAxis, CartesianGrid,
+  BarChart, Bar,
+} from 'recharts';
+import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
 
-import { saveCalculation } from '@/lib/storage/calculator-history';
-import { useAutoPersist } from '@/hooks/useAutoPersist';
-import { useJourney } from '@/contexts/JourneyContext';
-import { toast } from '@/hooks/use-toast';
+const TRACK_COLORS = ['#3B82F6', '#8B5CF6', '#22C55E', '#F59E0B'];
+const PI_COLORS = ['#1E293B', '#3B82F6'];
 
-const TRACK_COLORS = ['hsl(var(--secondary))', 'hsl(var(--primary))', 'hsl(var(--chart-1))', 'hsl(var(--chart-2))'];
-const PI_COLORS = ['hsl(var(--secondary))', 'hsl(var(--primary))']; // Navy for principal, Orange for interest
+const trackTypeLabels: Record<MortgageTrackType, string> = {
+  fixedUnlinked: 'קבועה לא צמודה',
+  fixedLinked: 'קבועה צמודה',
+  prime: 'פריים',
+  variableLinked: 'משתנה צמודה',
+};
 
-const MortgageCalculator = () => {
-  const [tracks, setTracks] = useAutoPersist<MortgageTrack[]>('mortgage-tracks', [
-    {
-      id: '1',
-      name: he.mortgageCalculator.trackTypeOptions.fixedUnlinked,
-      type: 'fixedUnlinked',
-      principal: 800000,
-      annualInterestRate: 5.5,
-      years: 25,
-    },
+function KPICard({ title, value, subtitle, color }: { title: string; value: string; subtitle?: string; color?: string }) {
+  return (
+    <Card className="border-0 shadow-sm">
+      <CardContent className="p-4">
+        <p className="text-[11px] text-muted-foreground mb-1">{title}</p>
+        <p className={cn('text-2xl font-bold', color)}>{value}</p>
+        {subtitle && <p className="text-[11px] text-muted-foreground mt-0.5">{subtitle}</p>}
+      </CardContent>
+    </Card>
+  );
+}
+
+export default function MortgageCalculator() {
+  const [tracks, setTracks] = useState<MortgageTrack[]>([
+    { id: '1', name: 'קבועה לא צמודה', type: 'fixedUnlinked', principal: 800000, annualInterestRate: 5.5, years: 25 },
   ]);
+  const [monthlyIncome, setMonthlyIncome] = useState(20000);
+  const [isOffPlan, setIsOffPlan] = useState(false);
+  const [propertyPrice, setPropertyPrice] = useState(1600000);
+  const [madadRate, setMadadRate] = useState(MARKET_CONSTANTS.DEFAULT_MADAD_RATE);
+  const [madadYears, setMadadYears] = useState(3);
 
-  const [monthlyIncome, setMonthlyIncome] = useAutoPersist<number>('mortgage-income', 20000);
-  const [propertyPrice, setPropertyPrice] = useAutoPersist<number>('mortgage-property-price', 1600000);
-  const [isOffPlan, setIsOffPlan] = useAutoPersist<boolean>('mortgage-offplan', false);
-  const [madadRate, setMadadRate] = useAutoPersist<number>('mortgage-madad-rate', MARKET_CONSTANTS.DEFAULT_MADAD_RATE);
-  const [madadYears, setMadadYears] = useAutoPersist<number>('mortgage-madad-years', 3);
-
-  const [results, setResults] = useState<MortgageCalculatorOutput | null>(null);
-  const [amortization, setAmortization] = useState<AmortizationRow[]>([]);
-  const [sensitivity, setSensitivity] = useState<SensitivityResult[]>([]);
-  const [isCalculating, setIsCalculating] = useState(false);
-  const { saveJourneyData, getJourneyData } = useJourney();
-  const financialData = getJourneyData('financial-checkup');
-
-  const addTrack = () => {
-    const newTrack: MortgageTrack = {
-      id: Date.now().toString(),
-      name: he.mortgageCalculator.trackName,
-      type: 'fixedUnlinked',
-      principal: 0,
-      annualInterestRate: 5.5,
-      years: 25,
-    };
-    setTracks([...tracks, newTrack]);
-  };
-
-  const removeTrack = (id: string) => {
-    setTracks(tracks.filter((t) => t.id !== id));
-  };
-
-  const updateTrack = (id: string, updates: Partial<MortgageTrack>) => {
-    setTracks(tracks.map((t) => (t.id === id ? { ...t, ...updates } : t)));
-  };
-
-  const handleCalculate = async () => {
+  // Real-time calculation
+  const results: MortgageCalculatorOutput | null = useMemo(() => {
     const hasValidTrack = tracks.some(t => t.principal > 0);
-    if (!hasValidTrack) {
-      toast({ title: 'שגיאה', description: 'יש להזין סכום קרן חיובי באחד המסלולים לפחות', variant: 'destructive' });
-      return;
-    }
+    if (!hasValidTrack) return null;
+    return calculateMortgage({ tracks });
+  }, [tracks]);
 
-    setIsCalculating(true);
-    await new Promise(resolve => setTimeout(resolve, 400));
+  const amortization: AmortizationRow[] = useMemo(() => {
+    if (!results) return [];
+    return generateAmortizationSchedule(tracks);
+  }, [results, tracks]);
 
-    const output = calculateMortgage({ tracks });
-    setResults(output);
-    setAmortization(generateAmortizationSchedule(tracks));
-    setSensitivity(sensitivityAnalysis(tracks));
-
-    const totalPrincipal = tracks.reduce((sum, t) => sum + t.principal, 0);
-    saveCalculation({
-      type: 'mortgage',
-      title: `משכנתא ${formatCurrency(totalPrincipal)}`,
-      result: `תשלום חודשי: ${formatCurrency(output.totalMonthlyPayment)}`,
-      input: { tracks },
-    });
-
-    saveJourneyData('mortgage', {
-      totalMonthlyPayment: output.totalMonthlyPayment,
-      weightedRate: output.weightedAverageInterest,
-      totalPrincipal,
-    });
-
-    toast({ title: "החישוב הושלם בהצלחה", description: "התוצאות נשמרו בהיסטוריה" });
-    setIsCalculating(false);
-
-    setTimeout(() => {
-      document.getElementById('mortgage-results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100);
-  };
-
-  const trackTypeLabels: Record<MortgageTrackType, string> = {
-    fixedUnlinked: he.mortgageCalculator.trackTypeOptions.fixedUnlinked,
-    fixedLinked: he.mortgageCalculator.trackTypeOptions.fixedLinked,
-    prime: he.mortgageCalculator.trackTypeOptions.prime,
-    variableLinked: he.mortgageCalculator.trackTypeOptions.variableLinked,
-  };
+  const sensitivity: SensitivityResult[] = useMemo(() => {
+    if (!results) return [];
+    return sensitivityAnalysis(tracks);
+  }, [results, tracks]);
 
   const totalPrincipal = tracks.reduce((sum, t) => sum + t.principal, 0);
   const dtiRatio = results && monthlyIncome > 0 ? results.totalMonthlyPayment / monthlyIncome : null;
   const dtiPercent = dtiRatio !== null ? dtiRatio * 100 : 0;
 
-  // Madad simulation — uses property price (not mortgage principal)
   const madadResult = isOffPlan && propertyPrice > 0
     ? simulateMadadImpact({ linkedAmount: propertyPrice, annualMadadRate: madadRate, years: madadYears })
     : null;
 
-  // Traffic light status helpers
-  const getDtiStatus = (): 'positive' | 'neutral' | 'negative' => {
-    if (dtiRatio === null) return 'neutral';
-    if (dtiRatio < 0.30) return 'positive';
-    if (dtiRatio < 0.40) return 'neutral';
-    return 'negative';
+  const addTrack = () => {
+    setTracks([...tracks, {
+      id: Date.now().toString(),
+      name: 'מסלול חדש',
+      type: 'fixedUnlinked',
+      principal: 0,
+      annualInterestRate: 5.5,
+      years: 25,
+    }]);
   };
 
-  const getInterestStatus = (): 'positive' | 'neutral' | 'negative' => {
-    if (!results || totalPrincipal === 0) return 'neutral';
-    const ratio = results.totalInterestPaid / totalPrincipal;
-    if (ratio < 0.3) return 'positive';
-    if (ratio < 0.6) return 'neutral';
-    return 'negative';
-  };
+  const removeTrack = (id: string) => setTracks(tracks.filter((t) => t.id !== id));
+  const updateTrack = (id: string, updates: Partial<MortgageTrack>) =>
+    setTracks(tracks.map((t) => (t.id === id ? { ...t, ...updates } : t)));
 
   return (
-    <div className="space-y-6 pb-8">
-      <PageHero
-        icon={<HomeIcon className="w-6 h-6 text-primary" />}
-        title={he.mortgageCalculator.title}
-        description={he.mortgageCalculator.description}
-        badge={`פריים ${MARKET_CONSTANTS.PRIME_RATE}% · ריבית בנק ישראל ${MARKET_CONSTANTS.BOI_RATE}%`}
-      />
-
-      {/* Financial checkup context */}
-      {financialData && (
-        <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[hsl(var(--chart-1)/0.08)] border border-[hsl(var(--chart-1)/0.2)]">
-          <Check className="w-4 h-4 text-[hsl(var(--chart-1))] flex-shrink-0" />
-          <p className="text-xs text-[hsl(var(--chart-1))]">
-            לפי הבדיקה הפיננסית שלך, ההחזר המקסימלי הבטוח: <strong>{formatCurrency(financialData.maxMortgagePayment as number)}/חודש</strong>
+    <div className="space-y-6">
+      <div className="md:grid md:grid-cols-5 md:gap-8">
+        {/* Input Section */}
+        <div className="md:col-span-2 space-y-4 md:sticky md:top-28 md:self-start">
+          <h1 className="text-2xl font-bold">מחשבון משכנתא</h1>
+          <p className="text-sm text-muted-foreground">
+            בנה תמהיל, השווה מסלולים וראה כמה תשלם.
           </p>
-        </div>
-      )}
+          <div className="text-xs bg-muted/50 p-2.5 rounded-lg">
+            פריים {MARKET_CONSTANTS.PRIME_RATE}% · ריבית בנק ישראל {MARKET_CONSTANTS.BOI_RATE}%
+          </div>
 
-      {/* KPI Cards */}
-      {results && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-          <StatsCard
-            title={he.mortgageCalculator.totalMonthlyPayment}
-            value={formatCurrency(results.totalMonthlyPayment)}
-            icon={Wallet}
-            iconColor="navy"
-            status={getDtiStatus()}
-          />
-          <StatsCard
-            title={he.mortgageCalculator.weightedAverageInterest}
-            value={`${results.weightedAverageInterest.toFixed(2)}%`}
-            icon={Percent}
-            iconColor="orange"
-          />
-          <StatsCard
-            title="סך קרן"
-            value={formatCurrency(totalPrincipal)}
-            icon={TrendingUp}
-            iconColor="green"
-          />
-          <StatsCard
-            title="סך ריבית"
-            value={formatCurrency(results.totalInterestPaid)}
-            icon={Calculator}
-            iconColor="orange"
-            status={getInterestStatus()}
-          />
-        </div>
-      )}
-
-      {/* Monthly Income */}
-      <Card className="border shadow-sm">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
-              <Wallet className="w-5 h-5 text-primary" />
-            </div>
-            נתוני הרוכש
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid md:grid-cols-2 gap-4">
-          <div>
-            <Label>הכנסה חודשית נטו ({he.common.currency})</Label>
-            <Input
-              type="number"
-              value={monthlyIncome || ''}
-              onChange={(e) => setMonthlyIncome(Number(e.target.value))}
-              placeholder="למשל 20000"
-            />
+          {/* Income */}
+          <div className="space-y-1.5">
+            <Label className="text-xs">הכנסה חודשית נטו</Label>
+            <Input type="number" min="0" value={monthlyIncome ?? ''} onChange={(e) => setMonthlyIncome(Number(e.target.value))} />
             {monthlyIncome > 0 && (
-              <p className="text-sm text-muted-foreground mt-1">
-                תשלום מקסימלי מותר (40%): <span className="font-semibold text-foreground">{formatCurrency(monthlyIncome * MARKET_CONSTANTS.MAX_DTI)}</span>
+              <p className="text-[11px] text-muted-foreground">
+                תשלום מקסימלי (40%): <span className="font-semibold">{formatCurrency(monthlyIncome * MARKET_CONSTANTS.MAX_DTI)}</span>
               </p>
             )}
           </div>
-          <div>
-            <Label>מחיר הנכס ({he.common.currency})</Label>
-            <Input
-              type="number"
-              value={propertyPrice || ''}
-              onChange={(e) => setPropertyPrice(Number(e.target.value))}
-              placeholder="למשל 1600000"
-            />
-            <p className="text-xs text-muted-foreground mt-1">נדרש לסימולציית מדד תשומות</p>
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* Track Cards */}
-      {tracks.map((track, index) => (
-        <Card key={track.id} className="border shadow-sm">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
-                  <Calculator className="w-5 h-5 text-primary-foreground" />
-                </div>
-                <CardTitle>מסלול {index + 1}</CardTitle>
-              </div>
-              {tracks.length > 1 && (
-                <Button variant="ghost" size="sm" onClick={() => removeTrack(track.id)} className="text-destructive active:bg-destructive/10">
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-6">
-            <div>
-              <Label>{he.mortgageCalculator.trackName}</Label>
-              <Input value={track.name} onChange={(e) => updateTrack(track.id, { name: e.target.value })} />
-            </div>
-            <div>
-              <Label>{he.mortgageCalculator.trackType}</Label>
-              <Select value={track.type} onValueChange={(value: MortgageTrackType) => updateTrack(track.id, { type: value })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="fixedUnlinked">{he.mortgageCalculator.trackTypeOptions.fixedUnlinked}</SelectItem>
-                  <SelectItem value="fixedLinked">{he.mortgageCalculator.trackTypeOptions.fixedLinked}</SelectItem>
-                  <SelectItem value="prime">{he.mortgageCalculator.trackTypeOptions.prime}</SelectItem>
-                  <SelectItem value="variableLinked">{he.mortgageCalculator.trackTypeOptions.variableLinked}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>כמה כסף תרצה ללוות במסלול הזה? ({he.common.currency})</Label>
-              <Input type="number" value={track.principal || ''} onChange={(e) => updateTrack(track.id, { principal: Number(e.target.value) })} placeholder="למשל 500000" />
-            </div>
-            <div>
-              <Label>{he.mortgageCalculator.annualInterestRate}</Label>
-              <Input type="number" step="0.1" value={track.annualInterestRate || ''} onChange={(e) => updateTrack(track.id, { annualInterestRate: Number(e.target.value) })} placeholder="למשל 3.5" />
-            </div>
-            <div>
-              <Label>לכמה שנים? (תקופת ההלוואה)</Label>
-              <Input type="number" value={track.years} onChange={(e) => updateTrack(track.id, { years: Number(e.target.value) })} placeholder="למשל 20" />
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-
-      {/* Madad Simulator */}
-      <Card className="border shadow-sm">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-3 text-lg">
-            <div className="w-10 h-10 bg-secondary/10 rounded-xl flex items-center justify-center">
-              <TrendingUp className="w-5 h-5 text-secondary-foreground" />
-            </div>
-            מדד תשומות הבנייה (לרכישה מקבלן)
-          </CardTitle>
-          <CardDescription>רלוונטי בלבד לדירות מקבלן – רכישה "על הנייר"</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center gap-3">
-            <Switch checked={isOffPlan} onCheckedChange={setIsOffPlan} />
-            <Label>הדירה נרכשת מקבלן (צמודת מדד)</Label>
-          </div>
-          {isOffPlan && (
-            <div className="grid md:grid-cols-2 gap-4 p-4 rounded-xl bg-accent/50">
-              <div>
-                <Label>שיעור מדד שנתי משוער (%)</Label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  value={madadRate}
-                  onChange={(e) => setMadadRate(Number(e.target.value))}
-                />
-                <p className="text-xs text-muted-foreground mt-1">ברירת מחדל: {MARKET_CONSTANTS.DEFAULT_MADAD_RATE}% (ינואר 2026)</p>
-              </div>
-              <div>
-                <Label>שנות בנייה צפויות</Label>
-                <Input
-                  type="number"
-                  value={madadYears}
-                  onChange={(e) => setMadadYears(Number(e.target.value))}
-                />
-              </div>
-              {madadResult && (
-                <div className="md:col-span-2 p-4 rounded-xl bg-card border">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 text-center">
-                    <div>
-                      <p className="text-xs text-muted-foreground">סכום מקורי</p>
-                      <p className="text-lg font-bold">{formatCurrency(madadResult.originalTotal)}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">תוספת מדד</p>
-                      <p className="text-lg font-bold text-destructive">{formatCurrency(madadResult.additionalCost)}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">סכום מעודכן</p>
-                      <p className="text-lg font-bold">{formatCurrency(madadResult.adjustedTotal)}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">חשיפה אפקטיבית</p>
-                      <p className="text-lg font-bold">{(MARKET_CONSTANTS.MADAD_EXPOSURE * 100).toFixed(0)}%</p>
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-3 text-center">
-                    לפי חוק יוני 2025: 20% הראשונים פטורים ממדד, היתרה צמודה ב-50% — חשיפה אפקטיבית ~40%
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <div className="flex gap-4 justify-center sticky bottom-20 md:bottom-8 z-10">
-        <Button onClick={addTrack} variant="outline" size="lg" className="px-6 shadow-lg">
-          <Plus className="h-5 w-5 ml-2" />
-          {he.common.addTrack}
-        </Button>
-        <Button onClick={handleCalculate} size="lg" disabled={isCalculating} className="px-12 py-6 text-lg rounded-full">
-          {isCalculating ? (<><Loader2 className="ml-2 h-5 w-5 animate-spin" />מחשב...</>) : (<><Calculator className="ml-2 h-5 w-5" />{he.common.calculate}</>)}
-        </Button>
-      </div>
-
-      {results && (
-        <div
-          id="mortgage-results"
-          className="space-y-6"
-        >
-          {/* Executive Summary */}
-          <ExecutiveSummary
-            type="mortgage"
-            data={{
-              monthlyPayment: results.totalMonthlyPayment,
-              dtiRatio: dtiRatio,
-              totalInterest: results.totalInterestPaid,
-              totalPrincipal,
-              weightedRate: results.weightedAverageInterest / 100,
-            }}
-          />
-
-          <Accordion type="multiple" defaultValue={['insights']}>
-            {/* Smart Insights */}
-            <AccordionItem value="insights">
-              <AccordionTrigger className="text-xl font-semibold">תובנות חכמות</AccordionTrigger>
-              <AccordionContent>
-                <div className="space-y-6">
-                  <SmartInsight
-                    insights={generateMortgageInsights({
-                      monthlyPayment: results.totalMonthlyPayment,
-                      monthlyIncome: monthlyIncome > 0 ? monthlyIncome : undefined,
-                      totalInterest: results.totalInterestPaid,
-                      totalPrincipal,
-                    })}
-                  />
-
-                  {/* DTI Fuel Gauge */}
-                  {dtiRatio !== null && (
-                    <FuelGauge
-                      value={dtiPercent}
-                      maxValue={60}
-                      label="יחס החזר/הכנסה (DTI)"
-                      sublabel={`${dtiPercent.toFixed(1)}% — מקסימום מותר: ${(MARKET_CONSTANTS.MAX_DTI * 100).toFixed(0)}%`}
-                      thresholds={{ green: 50, yellow: 67 }}
-                    />
-                  )}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-
-            {/* Charts / Graphs */}
-            <AccordionItem value="charts">
-              <AccordionTrigger className="text-xl font-semibold">גרפים מפורטים</AccordionTrigger>
-              <AccordionContent>
-                <div className="space-y-6">
-                  {/* Principal vs Interest Donut */}
-                  <Card className="border shadow-sm">
-                    <CardHeader>
-                      <CardTitle className="text-lg">התפלגות קרן מול ריבית</CardTitle>
-                      <CardDescription>כמה מסך התשלום הולך לקרן וכמה לריבית</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <ResponsiveContainer width="100%" height={300}>
-                        <PieChart>
-                          <Pie
-                            data={[
-                              { name: 'קרן', value: totalPrincipal },
-                              { name: 'ריבית', value: results.totalInterestPaid },
-                            ]}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={80}
-                            outerRadius={120}
-                            paddingAngle={3}
-                            dataKey="value"
-                          >
-                            <Cell fill={PI_COLORS[0]} />
-                            <Cell fill={PI_COLORS[1]} />
-                          </Pie>
-                          <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                          <Legend />
-                        </PieChart>
-                      </ResponsiveContainer>
-                      <div className="text-center mt-2">
-                        <p className="text-sm text-muted-foreground">
-                          סך תשלום: <span className="font-bold text-foreground">{formatCurrency(totalPrincipal + results.totalInterestPaid)}</span>
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Monthly Payment Distribution by Track */}
+          {/* Tracks */}
+          {tracks.map((track, index) => (
+            <Card key={track.id} className="border shadow-sm">
+              <CardContent className="p-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold">מסלול {index + 1}</span>
                   {tracks.length > 1 && (
-                    <Card className="border shadow-sm">
-                      <CardHeader>
-                        <CardTitle className="text-lg">התפלגות תשלום חודשי לפי מסלולים</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <Tabs defaultValue="chart" className="w-full">
-                          <TabsList className="grid w-full grid-cols-2 mb-6">
-                            <TabsTrigger value="chart">גרף</TabsTrigger>
-                            <TabsTrigger value="table">טבלה</TabsTrigger>
-                          </TabsList>
-                          <TabsContent value="chart">
-                            <ResponsiveContainer width="100%" height={300}>
-                              <PieChart>
-                                <Pie data={tracks.map((track) => ({ name: track.name, value: results.tracks.find(t => t.trackId === track.id)?.monthlyPayment || 0 }))} cx="50%" cy="50%" innerRadius={80} outerRadius={120} paddingAngle={5} dataKey="value">
-                                  {tracks.map((_, index) => (<Cell key={`cell-${index}`} fill={TRACK_COLORS[index % TRACK_COLORS.length]} />))}
-                                </Pie>
-                                <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                                <Legend />
-                              </PieChart>
-                            </ResponsiveContainer>
-                          </TabsContent>
-                          <TabsContent value="table">
-                            <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead>מסלול</TableHead>
-                                  <TableHead className="text-left">תשלום חודשי</TableHead>
-                                  <TableHead className="text-left">% מסך התשלום</TableHead>
-                                  <TableHead className="text-left">סה"כ ריבית</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {results.tracks.map((track, index) => {
-                                  const trackInfo = tracks.find(t => t.id === track.trackId)!;
-                                  return (
-                                    <TableRow key={track.trackId}>
-                                      <TableCell className="font-medium">{trackInfo.name}</TableCell>
-                                      <TableCell>{formatCurrency(track.monthlyPayment)}</TableCell>
-                                      <TableCell>
-                                        <div className="flex items-center gap-2">
-                                          <div className="flex-1 bg-muted rounded-full h-2 max-w-[100px]">
-                                            <div className="h-2 rounded-full" style={{ width: `${(track.monthlyPayment / results.totalMonthlyPayment) * 100}%`, backgroundColor: TRACK_COLORS[index % TRACK_COLORS.length] }} />
-                                          </div>
-                                          <span className="text-sm">{((track.monthlyPayment / results.totalMonthlyPayment) * 100).toFixed(1)}%</span>
-                                        </div>
-                                      </TableCell>
-                                      <TableCell>{formatCurrency(track.totalInterestPaid)}</TableCell>
-                                    </TableRow>
-                                  );
-                                })}
-                                <TableRow className="font-bold bg-primary/5">
-                                  <TableCell>סה"כ</TableCell>
-                                  <TableCell>{formatCurrency(results.totalMonthlyPayment)}</TableCell>
-                                  <TableCell>100%</TableCell>
-                                  <TableCell>{formatCurrency(results.totalInterestPaid)}</TableCell>
-                                </TableRow>
-                              </TableBody>
-                            </Table>
-                          </TabsContent>
-                        </Tabs>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {/* Amortization Chart */}
-                  {amortization.length > 0 && (
-                    <Card className="border shadow-sm">
-                      <CardHeader>
-                        <CardTitle className="text-lg">גרף אמורטיזציה – קרן מול ריבית לאורך השנים</CardTitle>
-                        <CardDescription>כמה מהתשלום השנתי שלך הולך לקרן וכמה לריבית</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <ResponsiveContainer width="100%" height={350}>
-                          <AreaChart data={amortization}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="year" label={{ value: 'שנה', position: 'insideBottom', offset: -5 }} />
-                            <YAxis tickFormatter={(v) => `₪${(v / 1000).toFixed(0)}k`} />
-                            <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                            <Legend />
-                            <Area type="monotone" dataKey="principalPayment" name="תשלום קרן" stackId="1" stroke="hsl(var(--secondary))" fill="hsl(var(--secondary))" fillOpacity={0.6} />
-                            <Area type="monotone" dataKey="interestPayment" name="תשלום ריבית" stackId="1" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.4} />
-                          </AreaChart>
-                        </ResponsiveContainer>
-                      </CardContent>
-                    </Card>
+                    <Button variant="ghost" size="sm" onClick={() => removeTrack(track.id)} className="h-7 w-7 p-0 text-destructive">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
                   )}
                 </div>
-              </AccordionContent>
-            </AccordionItem>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="col-span-2">
+                    <Label className="text-[11px]">סוג מסלול</Label>
+                    <Select value={track.type} onValueChange={(v: MortgageTrackType) => updateTrack(track.id, { type: v, name: trackTypeLabels[v] })}>
+                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(trackTypeLabels).map(([k, v]) => (
+                          <SelectItem key={k} value={k}>{v}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-[11px]">סכום (₪)</Label>
+                    <Input type="number" className="h-9" value={track.principal ?? ''} onChange={(e) => updateTrack(track.id, { principal: Number(e.target.value) })} />
+                  </div>
+                  <div>
+                    <Label className="text-[11px]">ריבית (%)</Label>
+                    <Input type="number" step="0.1" className="h-9" value={track.annualInterestRate ?? ''} onChange={(e) => updateTrack(track.id, { annualInterestRate: Number(e.target.value) })} />
+                  </div>
+                  <div>
+                    <Label className="text-[11px]">שנים</Label>
+                    <Input type="number" className="h-9" value={track.years ?? ''} onChange={(e) => updateTrack(track.id, { years: Number(e.target.value) })} />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
 
-            {/* Amortization Table / Track Details */}
-            <AccordionItem value="amortization">
-              <AccordionTrigger className="text-xl font-semibold">לוח סילוקין</AccordionTrigger>
-              <AccordionContent>
-                <Card className="border shadow-sm">
-                  <CardHeader>
-                    <CardTitle className="text-lg">{he.mortgageCalculator.resultsTitle}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div>
-                      <h3 className="text-xl font-semibold mb-4">{he.mortgageCalculator.trackResultsTitle}</h3>
-                      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {results.tracks.map((trackResult, index) => {
-                          const track = tracks.find((t) => t.id === trackResult.trackId)!;
-                          return (
-                            <Card key={trackResult.trackId} className="border">
-                              <CardHeader className="pb-3">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                                    <Calculator className="w-4 h-4 text-primary-foreground" />
-                                  </div>
-                                  <CardTitle className="text-base">{track.name}</CardTitle>
-                                </div>
-                                <CardDescription>{trackTypeLabels[track.type]}</CardDescription>
-                              </CardHeader>
-                              <CardContent className="space-y-3">
-                                <div className="p-3 bg-primary/5 rounded-lg">
-                                  <p className="text-xs text-muted-foreground mb-1">{he.mortgageCalculator.monthlyPayment}</p>
-                                  <p className="text-xl font-bold text-primary">{formatCurrency(trackResult.monthlyPayment)}</p>
-                                </div>
-                                <div className="p-3 bg-muted/50 rounded-lg">
-                                  <p className="text-xs text-muted-foreground mb-1">{he.mortgageCalculator.totalInterestPaid}</p>
-                                  <p className="text-lg font-semibold">{formatCurrency(trackResult.totalInterestPaid)}</p>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          );
-                        })}
-                      </div>
+          <Button onClick={addTrack} variant="outline" size="sm" className="w-full">
+            <Plus className="h-4 w-4 ml-1" /> הוסף מסלול
+          </Button>
+
+          {/* Madad */}
+          <Card className="border shadow-sm">
+            <CardContent className="p-3 space-y-3">
+              <div className="flex items-center gap-2">
+                <Switch checked={isOffPlan} onCheckedChange={setIsOffPlan} />
+                <Label className="text-xs">רכישה מקבלן (מדד תשומות)</Label>
+              </div>
+              {isOffPlan && (
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <Label className="text-[10px]">מחיר נכס</Label>
+                    <Input type="number" className="h-8 text-sm" value={propertyPrice ?? ''} onChange={(e) => setPropertyPrice(Number(e.target.value))} />
+                  </div>
+                  <div>
+                    <Label className="text-[10px]">מדד שנתי %</Label>
+                    <Input type="number" step="0.1" className="h-8 text-sm" value={madadRate} onChange={(e) => setMadadRate(Number(e.target.value))} />
+                  </div>
+                  <div>
+                    <Label className="text-[10px]">שנות בנייה</Label>
+                    <Input type="number" className="h-8 text-sm" value={madadYears} onChange={(e) => setMadadYears(Number(e.target.value))} />
+                  </div>
+                  {madadResult && (
+                    <div className="col-span-3 text-center p-2 bg-muted/50 rounded-lg">
+                      <span className="text-xs text-muted-foreground">תוספת מדד: </span>
+                      <span className="text-sm font-bold text-destructive">{formatCurrency(madadResult.additionalCost)}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Results Section */}
+        <div className="md:col-span-3 mt-6 md:mt-0 space-y-4">
+          {results ? (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+              {/* KPIs */}
+              <div className="grid grid-cols-2 gap-3">
+                <KPICard
+                  title="תשלום חודשי"
+                  value={formatCurrency(results.totalMonthlyPayment)}
+                  subtitle={dtiRatio !== null ? `DTI: ${dtiPercent.toFixed(1)}%` : undefined}
+                  color={dtiRatio && dtiRatio > 0.4 ? 'text-red-600' : undefined}
+                />
+                <KPICard
+                  title="ריבית משוקללת"
+                  value={`${results.weightedAverageInterest.toFixed(2)}%`}
+                />
+                <KPICard
+                  title="סך קרן"
+                  value={formatCurrency(totalPrincipal)}
+                />
+                <KPICard
+                  title="סך ריבית"
+                  value={formatCurrency(results.totalInterestPaid)}
+                  subtitle={totalPrincipal > 0 ? `${((results.totalInterestPaid / totalPrincipal) * 100).toFixed(0)}% מהקרן` : undefined}
+                />
+              </div>
+
+              {/* DTI Bar */}
+              {dtiRatio !== null && (
+                <Card className="border-0 shadow-sm">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between text-sm mb-2">
+                      <span className="text-muted-foreground">יחס החזר/הכנסה</span>
+                      <span className={cn('font-semibold', dtiPercent < 30 ? 'text-green-600' : dtiPercent < 40 ? 'text-amber-600' : 'text-red-600')}>
+                        {dtiPercent.toFixed(1)}%
+                      </span>
+                    </div>
+                    <div className="h-2.5 bg-muted rounded-full overflow-hidden">
+                      <motion.div
+                        className={cn('h-full rounded-full', dtiPercent < 30 ? 'bg-green-500' : dtiPercent < 40 ? 'bg-amber-500' : 'bg-red-500')}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.min(dtiPercent / 50 * 100, 100)}%` }}
+                        transition={{ duration: 0.5 }}
+                      />
                     </div>
                   </CardContent>
                 </Card>
-              </AccordionContent>
-            </AccordionItem>
+              )}
 
-            {/* Sensitivity Analysis */}
-            {sensitivity.length > 0 && (
-              <AccordionItem value="sensitivity">
-                <AccordionTrigger className="text-xl font-semibold">ניתוח רגישות</AccordionTrigger>
-                <AccordionContent>
-                  <Card className="border shadow-sm">
-                    <CardHeader>
-                      <CardTitle className="text-lg">ניתוח רגישות – מה קורה אם הריבית משתנה?</CardTitle>
-                      <CardDescription>השפעת שינויי ריבית על ההחזר החודשי שלך</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <Tabs defaultValue="chart" className="w-full">
-                        <TabsList className="grid w-full grid-cols-2 mb-6">
-                          <TabsTrigger value="chart">גרף</TabsTrigger>
-                          <TabsTrigger value="table">טבלה</TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="chart">
-                          <ResponsiveContainer width="100%" height={300}>
-                            <BarChart data={sensitivity.map(s => ({
-                              name: s.deltaPercent === 0 ? 'נוכחי' : `${s.deltaPercent > 0 ? '+' : ''}${s.deltaPercent}%`,
-                              payment: Math.round(s.totalMonthlyPayment),
-                            }))}>
-                              <CartesianGrid strokeDasharray="3 3" />
-                              <XAxis dataKey="name" />
-                              <YAxis tickFormatter={(v) => `₪${(v / 1000).toFixed(1)}k`} />
-                              <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                              <Bar dataKey="payment" name="החזר חודשי" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
-                            </BarChart>
-                          </ResponsiveContainer>
-                        </TabsContent>
-                        <TabsContent value="table">
+              {/* Principal vs Interest Donut */}
+              <Card className="border-0 shadow-sm">
+                <CardContent className="p-4">
+                  <p className="text-sm font-semibold mb-2">קרן מול ריבית</p>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'קרן', value: totalPrincipal },
+                          { name: 'ריבית', value: results.totalInterestPaid },
+                        ]}
+                        cx="50%" cy="50%" innerRadius={65} outerRadius={100}
+                        paddingAngle={3} dataKey="value"
+                      >
+                        <Cell fill={PI_COLORS[0]} />
+                        <Cell fill={PI_COLORS[1]} />
+                      </Pie>
+                      <Tooltip formatter={(v) => formatCurrency(Number(v))} />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              {/* Amortization Chart */}
+              {amortization.length > 0 && (
+                <Card className="border-0 shadow-sm">
+                  <CardContent className="p-4">
+                    <p className="text-sm font-semibold mb-2">גרף אמורטיזציה</p>
+                    <ResponsiveContainer width="100%" height={280}>
+                      <AreaChart data={amortization}>
+                        <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                        <XAxis dataKey="year" />
+                        <YAxis tickFormatter={(v) => `₪${(v / 1000).toFixed(0)}k`} />
+                        <Tooltip formatter={(v) => formatCurrency(Number(v))} />
+                        <Legend />
+                        <Area type="monotone" dataKey="principalPayment" name="קרן" stackId="1" stroke="#1E293B" fill="#1E293B" fillOpacity={0.7} />
+                        <Area type="monotone" dataKey="interestPayment" name="ריבית" stackId="1" stroke="#3B82F6" fill="#3B82F6" fillOpacity={0.5} />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Sensitivity Analysis */}
+              {sensitivity.length > 0 && (
+                <Card className="border-0 shadow-sm">
+                  <CardContent className="p-4">
+                    <p className="text-sm font-semibold mb-2">ניתוח רגישות — שינויי ריבית</p>
+                    <Tabs defaultValue="chart">
+                      <TabsList className="grid w-full grid-cols-2 mb-4">
+                        <TabsTrigger value="chart">גרף</TabsTrigger>
+                        <TabsTrigger value="table">טבלה</TabsTrigger>
+                      </TabsList>
+                      <TabsContent value="chart">
+                        <ResponsiveContainer width="100%" height={250}>
+                          <BarChart data={sensitivity.map(s => ({
+                            name: s.deltaPercent === 0 ? 'נוכחי' : `${s.deltaPercent > 0 ? '+' : ''}${s.deltaPercent}%`,
+                            payment: Math.round(s.totalMonthlyPayment),
+                          }))}>
+                            <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                            <XAxis dataKey="name" />
+                            <YAxis tickFormatter={(v) => `₪${(v / 1000).toFixed(1)}k`} />
+                            <Tooltip formatter={(v) => formatCurrency(Number(v))} />
+                            <Bar dataKey="payment" name="החזר חודשי" fill="#3B82F6" radius={[6, 6, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </TabsContent>
+                      <TabsContent value="table">
+                        <div className="overflow-x-auto">
                           <Table>
                             <TableHeader>
                               <TableRow>
-                                <TableHead>שינוי ריבית</TableHead>
+                                <TableHead>שינוי</TableHead>
                                 <TableHead className="text-left">החזר חודשי</TableHead>
-                                <TableHead className="text-left">הפרש מהנוכחי</TableHead>
-                                <TableHead className="text-left">סך ריבית</TableHead>
+                                <TableHead className="text-left">הפרש</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
                               {sensitivity.map((s) => {
-                                const currentPayment = sensitivity.find(x => x.deltaPercent === 0)?.totalMonthlyPayment || 0;
-                                const diff = s.totalMonthlyPayment - currentPayment;
+                                const base = sensitivity.find(x => x.deltaPercent === 0)?.totalMonthlyPayment || 0;
+                                const diff = s.totalMonthlyPayment - base;
                                 return (
                                   <TableRow key={s.deltaPercent} className={s.deltaPercent === 0 ? 'bg-primary/5 font-bold' : ''}>
                                     <TableCell>{s.deltaPercent === 0 ? 'נוכחי' : `${s.deltaPercent > 0 ? '+' : ''}${s.deltaPercent}%`}</TableCell>
                                     <TableCell>{formatCurrency(s.totalMonthlyPayment)}</TableCell>
-                                    <TableCell className={diff > 0 ? 'text-destructive' : diff < 0 ? 'text-[hsl(var(--chart-1))]' : ''}>
+                                    <TableCell className={diff > 0 ? 'text-red-600' : diff < 0 ? 'text-green-600' : ''}>
                                       {diff === 0 ? '—' : `${diff > 0 ? '+' : ''}${formatCurrency(diff)}`}
                                     </TableCell>
-                                    <TableCell>{formatCurrency(s.totalInterestPaid)}</TableCell>
                                   </TableRow>
                                 );
                               })}
                             </TableBody>
                           </Table>
-                        </TabsContent>
-                      </Tabs>
-                    </CardContent>
-                  </Card>
-                </AccordionContent>
-              </AccordionItem>
-            )}
-          </Accordion>
+                        </div>
+                      </TabsContent>
+                    </Tabs>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Track Details */}
+              {tracks.length > 1 && results.tracks.length > 1 && (
+                <Card className="border-0 shadow-sm">
+                  <CardContent className="p-4">
+                    <p className="text-sm font-semibold mb-2">פירוט מסלולים</p>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>מסלול</TableHead>
+                            <TableHead className="text-left">החזר</TableHead>
+                            <TableHead className="text-left">ריבית כוללת</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {results.tracks.map((tr) => {
+                            const track = tracks.find(t => t.id === tr.trackId);
+                            if (!track) return null;
+                            return (
+                              <TableRow key={tr.trackId}>
+                                <TableCell className="font-medium">{track.name}</TableCell>
+                                <TableCell>{formatCurrency(tr.monthlyPayment)}</TableCell>
+                                <TableCell>{formatCurrency(tr.totalInterestPaid)}</TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </motion.div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mb-4">
+                <HomeIcon className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <p className="text-muted-foreground text-sm">הזן סכום קרן במסלול כדי לראות תוצאות</p>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
-};
-
-export default MortgageCalculator;
+}

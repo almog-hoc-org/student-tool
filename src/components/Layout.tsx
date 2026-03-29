@@ -1,181 +1,87 @@
-import { ReactNode, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import {
-  Home,
-  Calculator,
-  Hammer,
-  ClipboardCheck,
-  Calendar,
-  Building2,
-  TrendingUp,
-  LayoutDashboard,
-  BookOpen,
-  MoreHorizontal,
-  Bookmark,
-  Receipt,
-  ArrowRight,
-  FileText,
-  Zap,
-  MapPin
-} from 'lucide-react';
+import { ReactNode } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { Wallet, TrendingUp, Home } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
-import { UserMenu } from './UserMenu';
-import { Button } from '@/components/ui/button';
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-} from "@/components/ui/sheet";
 import { cn } from '@/lib/utils';
 
-interface NavItem {
-  name: string;
-  shortName: string;
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-}
-
-const allNavItems: NavItem[] = [
-  { name: 'בדיקה פיננסית', shortName: 'בדיקה', href: '/financial-checkup', icon: Calculator },
-  { name: 'מחשבון משכנתא', shortName: 'משכנתא', href: '/mortgage-calculator', icon: Home },
-  { name: 'תוכנית עסקית', shortName: 'תוכנית', href: '/deal-business-plan', icon: TrendingUp },
-  { name: 'מס רכישה', shortName: 'מס', href: '/purchase-tax', icon: Receipt },
-  { name: 'כדאיות שיפוץ', shortName: 'שיפוץ', href: '/renovation-feasibility', icon: Hammer },
-  { name: 'ביקור בנכס', shortName: 'ביקור', href: '/property-visit', icon: ClipboardCheck },
-  { name: 'ציר זמן', shortName: 'ציר זמן', href: '/transaction-timeline', icon: Calendar },
-  { name: 'התחדשות עירונית', shortName: 'התחדשות', href: '/urban-renewal', icon: Building2 },
+const tabs = [
+  { name: 'תקציב', href: '/budget', icon: Wallet },
+  { name: 'תוכנית עסקית', href: '/business-plan', icon: TrendingUp },
+  { name: 'משכנתא', href: '/mortgage', icon: Home },
 ];
-
-const quickCheckNav: NavItem = { name: 'בדיקה מהירה', shortName: 'בדיקה מהירה', href: '/quick-check', icon: Zap };
-
-const bottomTabItems: NavItem[] = [
-  quickCheckNav, // בדיקה מהירה — הכלי המרכזי
-  allNavItems[0], // בדיקה פיננסית
-  allNavItems[1], // מחשבון משכנתא
-  allNavItems[2], // תוכנית עסקית
-];
-
-const utilityNav: NavItem[] = [
-  { name: 'סטטיסטיקות', shortName: 'סטטיסטיקות', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'תרחישים שמורים', shortName: 'שמורים', href: '/history', icon: Bookmark },
-  { name: 'מילון מונחים', shortName: 'מילון', href: '/glossary', icon: BookOpen },
-];
-
-
-
-const summaryNav: NavItem = { name: 'סיכום', shortName: 'סיכום', href: '/summary', icon: FileText };
-const myPropertiesNav: NavItem = { name: 'הנכסים שלי', shortName: 'נכסים', href: '/my-properties', icon: MapPin };
-
-function getPageTitle(pathname: string): string {
-  const all: NavItem[] = [...allNavItems, ...utilityNav, quickCheckNav, summaryNav, myPropertiesNav, { name: 'דף הבית', shortName: 'בית', href: '/', icon: Home }];
-  return all.find(n => n.href === pathname)?.name || '';
-}
 
 export function Layout({ children }: { children: ReactNode }) {
   const location = useLocation();
-  const navigate = useNavigate();
   const currentPath = location.pathname;
-  const pageTitle = getPageTitle(currentPath);
-  const isHomePage = currentPath === '/';
-  const [moreOpen, setMoreOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header - compact app-style */}
-      <header className="sticky top-0 z-50 border-b border-border bg-background pt-[env(safe-area-inset-top)]">
-        <div className="px-4 h-12 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            {/* Back button on inner pages */}
-            {!isHomePage && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate(-1)}
-                className="w-9 h-9"
-              >
-                <ArrowRight className="w-5 h-5" />
-              </Button>
-            )}
-
-            {/* Logo */}
-            <Link to="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <Home className="w-4 h-4 text-primary-foreground" />
-              </div>
-              {isHomePage && (
-                <span className="font-bold text-sm">ארגז הכלים</span>
-              )}
-            </Link>
-
-            {/* Page title on inner pages */}
-            {!isHomePage && pageTitle && (
-              <span className="font-semibold text-sm truncate">{pageTitle}</span>
-            )}
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            <ThemeToggle />
-            <UserMenu />
-          </div>
+      {/* Header */}
+      <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur-sm pt-[env(safe-area-inset-top)]">
+        <div className="px-4 h-14 flex items-center justify-between max-w-5xl mx-auto">
+          <Link to="/budget" className="flex items-center gap-2.5">
+            <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center">
+              <Home className="w-[18px] h-[18px] text-primary-foreground" />
+            </div>
+            <span className="font-bold text-base">ארגז הכלים</span>
+          </Link>
+          <ThemeToggle />
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="pb-32 px-4 py-3 sm:px-6 sm:py-4">
-        {children}
-      </main>
-
-      {/* Bottom Tab Bar - always visible */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border pb-[env(safe-area-inset-bottom)]">
-        <div className="flex items-center justify-around h-16 px-1">
-          {bottomTabItems.map((item) => {
-            const isActive = currentPath === item.href;
+      {/* Desktop top tabs */}
+      <div className="hidden md:block border-b border-border bg-background">
+        <div className="max-w-5xl mx-auto flex">
+          {tabs.map((tab) => {
+            const isActive = currentPath === tab.href;
             return (
               <Link
-                key={item.href}
-                to={item.href}
+                key={tab.href}
+                to={tab.href}
                 className={cn(
-                  'flex flex-col items-center justify-center gap-0.5 flex-1 py-1.5 rounded-lg active:scale-95 transition-colors duration-150',
+                  'flex items-center gap-2 px-6 py-3 text-sm font-medium border-b-2 transition-colors',
+                  isActive
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                )}
+              >
+                <tab.icon className="w-4 h-4" />
+                {tab.name}
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <main className="pb-20 md:pb-8 px-4 py-4 sm:px-6">
+        <div className="max-w-5xl mx-auto">
+          {children}
+        </div>
+      </main>
+
+      {/* Mobile Bottom Tab Bar */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-t border-border pb-[env(safe-area-inset-bottom)]">
+        <div className="flex items-center justify-around h-16 px-2">
+          {tabs.map((tab) => {
+            const isActive = currentPath === tab.href;
+            return (
+              <Link
+                key={tab.href}
+                to={tab.href}
+                className={cn(
+                  'flex flex-col items-center justify-center gap-1 flex-1 py-2 rounded-xl transition-colors',
                   isActive
                     ? 'text-primary'
                     : 'text-muted-foreground'
                 )}
               >
-                <item.icon className={cn('w-5 h-5', isActive && 'scale-110')} />
-                <span className="text-[10px] font-medium">{item.shortName}</span>
-                {isActive && <div className="w-1 h-1 rounded-full bg-primary" />}
+                <tab.icon className={cn('w-5 h-5', isActive && 'scale-110')} />
+                <span className="text-[11px] font-semibold">{tab.name}</span>
+                {isActive && <div className="w-1.5 h-1.5 rounded-full bg-primary" />}
               </Link>
             );
           })}
-          {/* More button */}
-          <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
-            <SheetTrigger asChild>
-              <button className="flex flex-col items-center justify-center gap-0.5 flex-1 py-1.5 text-muted-foreground active:scale-95 transition-colors duration-150">
-                <MoreHorizontal className="w-5 h-5" />
-                <span className="text-[10px] font-medium">עוד</span>
-              </button>
-            </SheetTrigger>
-            <SheetContent side="bottom" className="rounded-t-2xl pb-safe">
-              <div className="grid grid-cols-3 gap-3 p-4">
-                {[myPropertiesNav, summaryNav, ...allNavItems.filter(item => !bottomTabItems.includes(item)), ...utilityNav].map((item) => (
-                  <Link
-                    key={item.href}
-                    to={item.href}
-                    onClick={() => setMoreOpen(false)}
-                    className={cn(
-                      'flex flex-col items-center gap-2 p-3 rounded-xl active:scale-95 transition-colors duration-150',
-                      currentPath === item.href
-                        ? 'bg-primary/10 text-primary'
-                        : 'bg-muted/50 text-muted-foreground active:bg-muted'
-                    )}
-                  >
-                    <item.icon className="w-6 h-6" />
-                    <span className="text-xs font-medium text-center">{item.name}</span>
-                  </Link>
-                ))}
-              </div>
-            </SheetContent>
-          </Sheet>
         </div>
       </div>
     </div>
