@@ -31,6 +31,7 @@ import {
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { save, load, clear } from '@/lib/storage';
+import { useAuth } from '@/contexts/AuthContext';
 import { getBudgetResults } from '@/lib/flow';
 import { ExportButton } from '@/components/ExportButton';
 import { InfoTooltip } from '@/components/InfoTooltip';
@@ -61,6 +62,8 @@ function KPICard({ title, value, subtitle, color }: { title: string; value: stri
 const DEFAULT_TRACK: MortgageTrack = { id: '1', name: 'קבועה לא צמודה', type: 'fixedUnlinked', principal: 800000, annualInterestRate: 5.5, years: 25 };
 
 export default function MortgageCalculator() {
+  const { user } = useAuth();
+  const uid = user?.id;
   const savedM = load<{ tracks: MortgageTrack[]; monthlyIncome: number; isOffPlan: boolean; propertyPrice: number; madadRate: number; madadYears: number }>('mortgage');
   const [tracks, setTracks] = useState<MortgageTrack[]>(savedM?.tracks ?? [DEFAULT_TRACK]);
   const [monthlyIncome, setMonthlyIncome] = useState(savedM?.monthlyIncome ?? 20000);
@@ -71,8 +74,8 @@ export default function MortgageCalculator() {
 
   // Auto-save
   useEffect(() => {
-    save('mortgage', { tracks, monthlyIncome, isOffPlan, propertyPrice, madadRate, madadYears });
-  }, [tracks, monthlyIncome, isOffPlan, propertyPrice, madadRate, madadYears]);
+    save('mortgage', { tracks, monthlyIncome, isOffPlan, propertyPrice, madadRate, madadYears }, uid);
+  }, [tracks, monthlyIncome, isOffPlan, propertyPrice, madadRate, madadYears, uid]);
 
   const budgetData = getBudgetResults();
 
@@ -86,7 +89,7 @@ export default function MortgageCalculator() {
     if (!window.confirm('בטוח? כל הנתונים יימחקו')) return;
     setTracks([DEFAULT_TRACK]); setMonthlyIncome(20000); setIsOffPlan(false);
     setPropertyPrice(1600000); setMadadRate(MARKET_CONSTANTS.DEFAULT_MADAD_RATE); setMadadYears(3);
-    clear('mortgage'); clear('mortgage_results');
+    clear('mortgage', uid); clear('mortgage_results', uid);
   };
 
   // Real-time calculation
@@ -112,9 +115,9 @@ export default function MortgageCalculator() {
 
   // Save results for flow (clear if null)
   useEffect(() => {
-    if (results) save('mortgage_results', results);
-    else clear('mortgage_results');
-  }, [results]);
+    if (results) save('mortgage_results', results, uid);
+    else clear('mortgage_results', uid);
+  }, [results, uid]);
 
   const madadResult = isOffPlan && propertyPrice > 0
     ? simulateMadadImpact({ linkedAmount: propertyPrice, annualMadadRate: madadRate, years: madadYears })

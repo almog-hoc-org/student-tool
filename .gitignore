@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Test artifacts
+.playwright-mcp/
+
+# Supabase CLI temp
+supabase/.temp/

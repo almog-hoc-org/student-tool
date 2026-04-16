@@ -12,6 +12,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tool
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { save, load, clear } from '@/lib/storage';
+import { useAuth } from '@/contexts/AuthContext';
 import { getBudgetResults } from '@/lib/flow';
 import { ExportButton } from '@/components/ExportButton';
 import { InfoTooltip } from '@/components/InfoTooltip';
@@ -70,6 +71,8 @@ const BP_DEFAULTS = {
 };
 
 export default function BusinessPlan() {
+  const { user } = useAuth();
+  const uid = user?.id;
   const saved = load<typeof BP_DEFAULTS>('business_plan');
   const [purchasePrice, setPurchasePrice] = useState(saved?.purchasePrice ?? BP_DEFAULTS.purchasePrice);
   const [sideCosts, setSideCosts] = useState(saved?.sideCosts ?? BP_DEFAULTS.sideCosts);
@@ -92,10 +95,10 @@ export default function BusinessPlan() {
       purchasePrice, sideCosts, renovationCost, equityInvested, mortgageAmount,
       mortgageMonthlyPayment, mortgageInterestRate, mortgageYears, expectedMonthlyRent,
       annualOperatingCosts, holdingPeriodYears, baseAppreciation, manualMode, customRates,
-    });
+    }, uid);
   }, [purchasePrice, sideCosts, renovationCost, equityInvested, mortgageAmount,
     mortgageMonthlyPayment, mortgageInterestRate, mortgageYears, expectedMonthlyRent,
-    annualOperatingCosts, holdingPeriodYears, baseAppreciation, manualMode, customRates]);
+    annualOperatingCosts, holdingPeriodYears, baseAppreciation, manualMode, customRates, uid]);
 
   const budgetData = getBudgetResults();
 
@@ -126,7 +129,7 @@ export default function BusinessPlan() {
       };
       setters[k]?.(v);
     });
-    clear('business_plan');
+    clear('business_plan', uid);
   };
 
   const result: BusinessPlanOutput | null = useMemo(() => {

@@ -13,6 +13,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recha
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { save, load, clear } from '@/lib/storage';
+import { useAuth } from '@/contexts/AuthContext';
 import { ExportButton } from '@/components/ExportButton';
 import { InfoTooltip } from '@/components/InfoTooltip';
 import { Link } from 'react-router-dom';
@@ -107,6 +108,8 @@ function DtiIndicator({ percent }: { percent: number }) {
 const DEFAULTS = { equity: 400000, monthlyIncome: 20000, monthlyObligations: 0, buyerType: 'singleApartment' as BuyerType, mortgageYears: 25 };
 
 export default function BudgetCalculator() {
+  const { user } = useAuth();
+  const uid = user?.id;
   const saved = load<typeof DEFAULTS>('budget');
   const [equity, setEquity] = useState(saved?.equity ?? DEFAULTS.equity);
   const [monthlyIncome, setMonthlyIncome] = useState(saved?.monthlyIncome ?? DEFAULTS.monthlyIncome);
@@ -116,8 +119,8 @@ export default function BudgetCalculator() {
 
   // Auto-save inputs
   useEffect(() => {
-    save('budget', { equity, monthlyIncome, monthlyObligations, buyerType, mortgageYears });
-  }, [equity, monthlyIncome, monthlyObligations, buyerType, mortgageYears]);
+    save('budget', { equity, monthlyIncome, monthlyObligations, buyerType, mortgageYears }, uid);
+  }, [equity, monthlyIncome, monthlyObligations, buyerType, mortgageYears, uid]);
 
   const result: BudgetOutput | null = useMemo(() => {
     if (equity <= 0 && monthlyIncome <= 0) return null;
@@ -126,14 +129,14 @@ export default function BudgetCalculator() {
 
   // Save results for flow
   useEffect(() => {
-    if (result) save('budget_results', result);
-  }, [result]);
+    if (result) save('budget_results', result, uid);
+  }, [result, uid]);
 
   const handleReset = () => {
     if (!window.confirm('בטוח? כל הנתונים יימחקו')) return;
     setEquity(DEFAULTS.equity); setMonthlyIncome(DEFAULTS.monthlyIncome);
     setMonthlyObligations(DEFAULTS.monthlyObligations); setBuyerType(DEFAULTS.buyerType);
-    setMortgageYears(DEFAULTS.mortgageYears); clear('budget'); clear('budget_results');
+    setMortgageYears(DEFAULTS.mortgageYears); clear('budget', uid); clear('budget_results', uid);
   };
 
   const maxAllowedPayment = monthlyIncome * 0.4;
