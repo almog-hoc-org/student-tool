@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Wallet, TrendingUp, Home, Sparkles, Settings, LogOut, UserCircle } from 'lucide-react';
+import { Wallet, TrendingUp, Home, MessageCircle, Settings, LogOut, UserCircle, User } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { StepIndicator } from './StepIndicator';
 import { cn } from '@/lib/utils';
@@ -18,7 +18,8 @@ const tabs = [
   { name: 'תקציב', href: '/', icon: Wallet },
   { name: 'תוכנית עסקית', href: '/business-plan', icon: TrendingUp },
   { name: 'משכנתא', href: '/mortgage', icon: Home },
-  { name: 'יועץ AI', href: '/advisor', icon: Sparkles },
+  { name: 'צ׳אט AI', href: '/chat', icon: MessageCircle },
+  { name: 'אזור אישי', href: '/account', icon: User },
 ];
 
 export function Layout({ children }: { children: ReactNode }) {
@@ -54,6 +55,12 @@ export function Layout({ children }: { children: ReactNode }) {
                   <p className="font-medium">{profile?.display_name || 'משתמש'}</p>
                 </div>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/account" className="gap-2">
+                    <User className="w-4 h-4" />
+                    האזור שלי
+                  </Link>
+                </DropdownMenuItem>
                 {isAdmin && (
                   <DropdownMenuItem asChild>
                     <Link to="/admin" className="gap-2">
