@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { save, load, clear } from '@/lib/storage';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTrackToolUse } from '@/hooks/useActivityLog';
 import { getBudgetResults } from '@/lib/flow';
 import { ExportButton } from '@/components/ExportButton';
 import { InfoTooltip } from '@/components/InfoTooltip';
@@ -73,6 +74,7 @@ const BP_DEFAULTS = {
 export default function BusinessPlan() {
   const { user } = useAuth();
   const uid = user?.id;
+  useTrackToolUse('business_plan');
   const saved = load<typeof BP_DEFAULTS>('business_plan');
   const [purchasePrice, setPurchasePrice] = useState(saved?.purchasePrice ?? BP_DEFAULTS.purchasePrice);
   const [sideCosts, setSideCosts] = useState(saved?.sideCosts ?? BP_DEFAULTS.sideCosts);

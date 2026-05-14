@@ -24,6 +24,7 @@ import {
   type SupportTicket,
   type SupportTicketMessage,
 } from '@/lib/support';
+import { logActivity } from '@/lib/activity';
 
 const defaultTool: SupportTool = 'other';
 const defaultIssueType: SupportIssueType = 'bug';
@@ -69,6 +70,7 @@ export default function Support() {
         priority,
         contextPath: window.location.pathname,
       });
+      logActivity({ userId: user.id, type: 'support_opened', resourceId: created.id });
       setTickets(prev => [created, ...prev]);
       setSubject('');
       setDescription('');

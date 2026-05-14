@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Check, X, Shield, Search } from 'lucide-react';
+import { ArrowLeft, Check, X, Shield, Search, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { Database } from '@/integrations/supabase/types';
@@ -21,7 +21,12 @@ interface UserRow {
   roles: AppRole[];
   created_at: string;
   last_sign_in: string | null;
+  last_active_at: string | null;
+  at_risk_flag: boolean;
+  at_risk_reason: string | null;
 }
+
+type SortMode = 'newest' | 'inactive' | 'at_risk' | 'pending';
 
 const statusLabels: Record<UserStatus, string> = {
   pending: 'ממתין',
@@ -35,9 +40,25 @@ const statusColors: Record<UserStatus, string> = {
   rejected: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
 };
 
+function daysSince(iso: string | null): number | null {
+  if (!iso) return null;
+  return Math.floor((Date.now() - new Date(iso).getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function relativeLabel(iso: string | null): string {
+  if (!iso) return 'אף פעם';
+  const days = daysSince(iso) ?? 0;
+  if (days === 0) return 'היום';
+  if (days === 1) return 'אתמול';
+  if (days < 7) return `לפני ${days} ימים`;
+  if (days < 30) return `לפני ${Math.floor(days / 7)} שבועות`;
+  return `לפני ${Math.floor(days / 30)} חודשים`;
+}
+
 export default function AdminUsers() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [search, setSearch] = useState('');
+  const [sort, setSort] = useState<SortMode>('newest');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { loadUsers(); }, []);
@@ -47,9 +68,8 @@ export default function AdminUsers() {
     const { data, error } = await supabase.rpc('admin_list_users');
     if (error) {
       toast.error('שגיאה בטעינת משתמשים');
-      console.error(error);
     } else {
-      setUsers(data ?? []);
+      setUsers((data ?? []) as UserRow[]);
     }
     setLoading(false);
   }
@@ -59,12 +79,8 @@ export default function AdminUsers() {
       _user_id: userId,
       _status: status,
     });
-    if (error) {
-      toast.error('שגיאה בעדכון סטטוס');
-    } else {
-      toast.success('סטטוס עודכן');
-      loadUsers();
-    }
+    if (error) toast.error('שגיאה בעדכון סטטוס');
+    else { toast.success('סטטוס עודכן'); loadUsers(); }
   }
 
   async function toggleAdmin(userId: string) {
@@ -72,29 +88,71 @@ export default function AdminUsers() {
       _user_id: userId,
       _role: 'admin' as AppRole,
     });
-    if (error) {
-      toast.error('שגיאה בעדכון הרשאות');
-    } else {
-      toast.success('הרשאות עודכנו');
-      loadUsers();
-    }
+    if (error) toast.error('שגיאה בעדכון הרשאות');
+    else { toast.success('הרשאות עודכנו'); loadUsers(); }
   }
 
-  const filtered = users.filter(u =>
-    (u.display_name ?? '').includes(search) ||
-    u.email.includes(search)
-  );
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
+    const list = users.filter(u => {
+      if (!q) return true;
+      return (u.display_name ?? '').toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
+    });
+
+    switch (sort) {
+      case 'newest':
+        return [...list].sort((a, b) => b.created_at.localeCompare(a.created_at));
+      case 'inactive':
+        return [...list].sort((a, b) => {
+          const aDays = daysSince(a.last_active_at) ?? Infinity;
+          const bDays = daysSince(b.last_active_at) ?? Infinity;
+          return bDays - aDays;
+        });
+      case 'at_risk':
+        return list.filter(u => u.at_risk_flag);
+      case 'pending':
+        return list.filter(u => u.status === 'pending');
+      default:
+        return list;
+    }
+  }, [users, search, sort]);
+
+  const counts = useMemo(() => ({
+    pending: users.filter(u => u.status === 'pending').length,
+    atRisk: users.filter(u => u.at_risk_flag).length,
+    total: users.length,
+  }), [users]);
 
   return (
     <div className="space-y-4" dir="rtl">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">ניהול משתמשים</h1>
+        <div>
+          <h1 className="text-2xl font-bold">ניהול משתמשים</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {counts.total} סה״כ · {counts.pending} ממתינים · {counts.atRisk} בסיכון
+          </p>
+        </div>
         <Link to="/admin">
           <Button variant="ghost" size="sm" className="gap-1">
             <ArrowLeft className="w-4 h-4" />
             חזרה
           </Button>
         </Link>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <FilterChip active={sort === 'newest'} onClick={() => setSort('newest')}>
+          חדשים
+        </FilterChip>
+        <FilterChip active={sort === 'pending'} onClick={() => setSort('pending')}>
+          ממתינים ({counts.pending})
+        </FilterChip>
+        <FilterChip active={sort === 'inactive'} onClick={() => setSort('inactive')}>
+          לא פעילים
+        </FilterChip>
+        <FilterChip active={sort === 'at_risk'} onClick={() => setSort('at_risk')}>
+          בסיכון ({counts.atRisk})
+        </FilterChip>
       </div>
 
       <div className="relative">
@@ -116,7 +174,7 @@ export default function AdminUsers() {
           filtered.map(user => (
             <Card key={user.user_id}>
               <CardContent className="p-4 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3 min-w-0">
+                <Link to={`/admin/users/${user.user_id}`} className="flex items-center gap-3 min-w-0 flex-1 hover:opacity-80">
                   {user.avatar_url ? (
                     <img src={user.avatar_url} alt="" className="w-10 h-10 rounded-full shrink-0" />
                   ) : (
@@ -125,9 +183,16 @@ export default function AdminUsers() {
                     </div>
                   )}
                   <div className="min-w-0">
-                    <p className="font-medium truncate">{user.display_name || 'ללא שם'}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium truncate">{user.display_name || 'ללא שם'}</p>
+                      {user.at_risk_flag && (
+                        <span title={user.at_risk_reason ?? 'בסיכון'}>
+                          <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-muted-foreground truncate" dir="ltr">{user.email}</p>
-                    <div className="flex gap-1 mt-1">
+                    <div className="flex flex-wrap gap-1 mt-1">
                       <Badge variant="secondary" className={statusColors[user.status]}>
                         {statusLabels[user.status]}
                       </Badge>
@@ -136,9 +201,12 @@ export default function AdminUsers() {
                           מנהל
                         </Badge>
                       )}
+                      <Badge variant="outline" className="text-xs font-normal">
+                        פעיל: {relativeLabel(user.last_active_at)}
+                      </Badge>
                     </div>
                   </div>
-                </div>
+                </Link>
                 <div className="flex gap-1 shrink-0">
                   {user.status !== 'approved' && (
                     <Button size="sm" variant="ghost" onClick={() => updateStatus(user.user_id, 'approved')} title="אשר">
@@ -160,5 +228,18 @@ export default function AdminUsers() {
         )}
       </div>
     </div>
+  );
+}
+
+interface ChipProps { active: boolean; onClick: () => void; children: React.ReactNode; }
+function FilterChip({ active, onClick, children }: ChipProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`px-3 py-1.5 rounded-full text-sm transition ${active ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'}`}
+    >
+      {children}
+    </button>
   );
 }

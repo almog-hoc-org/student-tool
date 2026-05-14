@@ -54,6 +54,9 @@ export type Database = {
           status: Database["public"]["Enums"]["user_status"]
           updated_at: string
           user_id: string
+          last_active_at: string | null
+          at_risk_flag: boolean
+          at_risk_reason: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -63,6 +66,9 @@ export type Database = {
           status?: Database["public"]["Enums"]["user_status"]
           updated_at?: string
           user_id: string
+          last_active_at?: string | null
+          at_risk_flag?: boolean
+          at_risk_reason?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -72,6 +78,9 @@ export type Database = {
           status?: Database["public"]["Enums"]["user_status"]
           updated_at?: string
           user_id?: string
+          last_active_at?: string | null
+          at_risk_flag?: boolean
+          at_risk_reason?: string | null
         }
         Relationships: []
       }
@@ -329,6 +338,9 @@ export type Database = {
           roles: Database["public"]["Enums"]["app_role"][]
           created_at: string
           last_sign_in: string | null
+          last_active_at: string | null
+          at_risk_flag: boolean
+          at_risk_reason: string | null
         }[]
       }
       admin_update_user_status: {

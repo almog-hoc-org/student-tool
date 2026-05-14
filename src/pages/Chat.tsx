@@ -7,6 +7,8 @@ import { MessageCircle, Send, Sparkles, Loader2, User as UserIcon, AlertCircle }
 import { sendChatMessage, isChatAvailable, type ChatMessage } from '@/lib/local-chat';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { logActivity } from '@/lib/activity';
+import { useTrackToolUse } from '@/hooks/useActivityLog';
 
 const SUGGESTIONS = [
   'מה אני יכול לקנות עם ההון שלי?',
@@ -16,7 +18,8 @@ const SUGGESTIONS = [
 ];
 
 export default function Chat() {
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
+  useTrackToolUse('chat');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -38,9 +41,9 @@ export default function Chat() {
     try {
       const reply = await sendChatMessage(messages, text.trim());
       setMessages(m => [...m, { role: 'model', text: reply }]);
+      if (user) logActivity({ userId: user.id, type: 'chat_message' });
     } catch (err) {
       toast.error('שגיאה בשליחת ההודעה. נסה שוב.');
-      console.error(err);
       setMessages(m => m.slice(0, -1));
       setInput(text.trim());
     } finally {

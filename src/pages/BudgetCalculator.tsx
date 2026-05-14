@@ -13,6 +13,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recha
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { save, load, clear } from '@/lib/storage';
+import { useTrackToolUse } from '@/hooks/useActivityLog';
 import { useAuth } from '@/contexts/AuthContext';
 import { ExportButton } from '@/components/ExportButton';
 import { InfoTooltip } from '@/components/InfoTooltip';
@@ -110,6 +111,7 @@ const DEFAULTS = { equity: 400000, monthlyIncome: 20000, monthlyObligations: 0, 
 export default function BudgetCalculator() {
   const { user } = useAuth();
   const uid = user?.id;
+  useTrackToolUse('budget');
   const saved = load<typeof DEFAULTS>('budget');
   const [equity, setEquity] = useState(saved?.equity ?? DEFAULTS.equity);
   const [monthlyIncome, setMonthlyIncome] = useState(saved?.monthlyIncome ?? DEFAULTS.monthlyIncome);

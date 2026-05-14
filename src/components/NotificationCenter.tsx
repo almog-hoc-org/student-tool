@@ -1,61 +1,74 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bell, X, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { motion, AnimatePresence } from 'framer-motion';
-
-interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  timestamp: Date;
-  read: boolean;
-  type: 'info' | 'success' | 'warning' | 'error';
-}
-
-const STORAGE_KEY = 'calculator-notifications';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  listMyNotifications,
+  markRead,
+  markAllRead,
+  deleteNotification as deleteNotificationApi,
+  subscribeToNotifications,
+  categoryLabel,
+  type AppNotification,
+} from '@/lib/notifications';
 
 export function NotificationCenter() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const { user } = useAuth();
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const reload = useCallback(async () => {
+    if (!user) return;
+    try {
+      setNotifications(await listMyNotifications(user.id));
+    } catch {
+      /* silent: notification fetch failure must not break the app */
+    }
+  }, [user]);
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      setNotifications(parsed.map((n: any) => ({ ...n, timestamp: new Date(n.timestamp) })));
+    if (!user) {
+      setNotifications([]);
+      return;
     }
-  }, []);
+    reload();
+    const unsubscribe = subscribeToNotifications(user.id, n => {
+      setNotifications(prev => [n, ...prev]);
+    });
+    return unsubscribe;
+  }, [user, reload]);
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = notifications.filter(n => !n.read_at).length;
 
-  const markAsRead = (id: string) => {
-    const updated = notifications.map(n => 
-      n.id === id ? { ...n, read: true } : n
-    );
-    setNotifications(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  const handleMarkRead = async (id: string) => {
+    setNotifications(prev => prev.map(n => (n.id === id ? { ...n, read_at: new Date().toISOString() } : n)));
+    try { await markRead(id); } catch { /* optimistic */ }
   };
 
-  const markAllAsRead = () => {
-    const updated = notifications.map(n => ({ ...n, read: true }));
-    setNotifications(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  const handleMarkAllRead = async () => {
+    if (!user) return;
+    const now = new Date().toISOString();
+    setNotifications(prev => prev.map(n => (n.read_at ? n : { ...n, read_at: now })));
+    try { await markAllRead(user.id); } catch { /* optimistic */ }
   };
 
-  const deleteNotification = (id: string) => {
-    const updated = notifications.filter(n => n.id !== id);
-    setNotifications(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  const handleDelete = async (id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+    try { await deleteNotificationApi(id); } catch { /* optimistic */ }
   };
 
-  const typeColors = {
-    info: 'bg-primary/10 text-primary border-primary/20',
-    success: 'bg-green-500/10 text-green-500 border-green-500/20',
-    warning: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
-    error: 'bg-destructive/10 text-destructive border-destructive/20',
+  const handleClick = (n: AppNotification) => {
+    if (!n.read_at) handleMarkRead(n.id);
+    if (n.link) {
+      setIsOpen(false);
+      navigate(n.link);
+    }
   };
 
   return (
@@ -65,11 +78,12 @@ export function NotificationCenter() {
         size="icon"
         onClick={() => setIsOpen(!isOpen)}
         className="relative"
+        aria-label="התראות"
       >
         <Bell className="h-5 w-5" />
         {unreadCount > 0 && (
-          <Badge 
-            variant="destructive" 
+          <Badge
+            variant="destructive"
             className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
           >
             {unreadCount}
@@ -98,7 +112,7 @@ export function NotificationCenter() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={markAllAsRead}
+                      onClick={handleMarkAllRead}
                     >
                       <Check className="h-4 w-4 ml-2" />
                       סמן הכל כנקרא
@@ -115,36 +129,39 @@ export function NotificationCenter() {
                     </div>
                   ) : (
                     <div className="space-y-2 p-4">
-                      {notifications.map((notification) => (
+                      {notifications.map((n) => (
                         <motion.div
-                          key={notification.id}
+                          key={n.id}
                           layout
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
                           exit={{ opacity: 0, x: 20 }}
-                          className={`p-3 rounded-lg border ${typeColors[notification.type]} ${
-                            !notification.read ? 'border-2' : ''
+                          className={`p-3 rounded-lg border transition cursor-pointer ${
+                            !n.read_at ? 'bg-primary/5 border-primary/30 border-2' : 'bg-muted/30 hover:bg-muted/50'
                           }`}
+                          onClick={() => handleClick(n)}
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-sm mb-1 truncate">
-                                {notification.title}
-                              </p>
-                              <p className="text-xs text-muted-foreground mb-2">
-                                {notification.message}
-                              </p>
+                              <div className="flex items-center gap-2 mb-1">
+                                <Badge variant="outline" className="text-xs">{categoryLabel(n.category)}</Badge>
+                                <p className="font-semibold text-sm truncate">{n.title}</p>
+                              </div>
+                              {n.body && (
+                                <p className="text-xs text-muted-foreground mb-2 whitespace-pre-wrap">{n.body}</p>
+                              )}
                               <p className="text-xs text-muted-foreground">
-                                {notification.timestamp.toLocaleString('he-IL')}
+                                {new Date(n.created_at).toLocaleString('he-IL')}
                               </p>
                             </div>
-                            <div className="flex gap-1">
-                              {!notification.read && (
+                            <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+                              {!n.read_at && (
                                 <Button
                                   variant="ghost"
                                   size="icon"
                                   className="h-6 w-6"
-                                  onClick={() => markAsRead(notification.id)}
+                                  onClick={() => handleMarkRead(n.id)}
+                                  aria-label="סמן כנקרא"
                                 >
                                   <Check className="h-3 w-3" />
                                 </Button>
@@ -153,7 +170,8 @@ export function NotificationCenter() {
                                 variant="ghost"
                                 size="icon"
                                 className="h-6 w-6"
-                                onClick={() => deleteNotification(notification.id)}
+                                onClick={() => handleDelete(n.id)}
+                                aria-label="מחק"
                               >
                                 <X className="h-3 w-3" />
                               </Button>
@@ -171,22 +189,4 @@ export function NotificationCenter() {
       </AnimatePresence>
     </div>
   );
-}
-
-export function addNotification(notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  const notifications: Notification[] = stored ? JSON.parse(stored) : [];
-  
-  const newNotification: Notification = {
-    ...notification,
-    id: Date.now().toString(),
-    timestamp: new Date(),
-    read: false,
-  };
-  
-  const updated = [newNotification, ...notifications].slice(0, 50); // Keep last 50
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  
-  // Trigger custom event to update UI
-  window.dispatchEvent(new CustomEvent('notification-added'));
 }

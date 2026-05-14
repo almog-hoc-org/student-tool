@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { syncFromCloud, syncToCloud } from '@/lib/storage';
+import { logActivity } from '@/lib/activity';
 import type { Database } from '@/integrations/supabase/types';
 
 type AppRole = Database['public']['Enums']['app_role'];
@@ -87,10 +88,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loadUserData(s?.user ?? null).finally(() => setLoading(false));
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s);
       setUser(s?.user ?? null);
       loadUserData(s?.user ?? null);
+      if (event === 'SIGNED_IN' && s?.user) {
+        logActivity({ userId: s.user.id, type: 'login' });
+      }
     });
 
     return () => subscription.unsubscribe();

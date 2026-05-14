@@ -32,6 +32,7 @@ import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { save, load, clear } from '@/lib/storage';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTrackToolUse } from '@/hooks/useActivityLog';
 import { getBudgetResults } from '@/lib/flow';
 import { ExportButton } from '@/components/ExportButton';
 import { InfoTooltip } from '@/components/InfoTooltip';
@@ -64,6 +65,7 @@ const DEFAULT_TRACK: MortgageTrack = { id: '1', name: 'קבועה לא צמוד�
 export default function MortgageCalculator() {
   const { user } = useAuth();
   const uid = user?.id;
+  useTrackToolUse('mortgage');
   const savedM = load<{ tracks: MortgageTrack[]; monthlyIncome: number; isOffPlan: boolean; propertyPrice: number; madadRate: number; madadYears: number }>('mortgage');
   const [tracks, setTracks] = useState<MortgageTrack[]>(savedM?.tracks ?? [DEFAULT_TRACK]);
   const [monthlyIncome, setMonthlyIncome] = useState(savedM?.monthlyIncome ?? 20000);
