@@ -429,6 +429,50 @@ export type Database = {
         }>
         Relationships: []
       }
+      chat_messages: {
+        Row: {
+          id: string
+          user_id: string
+          thread_id: string
+          role: "user" | "assistant"
+          content: string
+          sources: Json | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          thread_id: string
+          role: "user" | "assistant"
+          content: string
+          sources?: Json | null
+          created_at?: string
+        }
+        Update: never
+        Relationships: []
+      }
+      course_chunks: {
+        Row: {
+          id: number
+          lesson_id: string
+          chunk_index: number
+          content: string
+          tokens: number | null
+          embedding: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: number
+          lesson_id: string
+          chunk_index: number
+          content: string
+          tokens?: number | null
+          embedding?: string | null
+          created_at?: string
+        }
+        Update: never
+        Relationships: []
+      }
       notifications: {
         Row: {
           id: string

@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { MessageCircle, Send, Sparkles, Loader2, User as UserIcon, AlertCircle } from 'lucide-react';
-import { sendChatMessage, isChatAvailable, type ChatMessage } from '@/lib/local-chat';
+import { Badge } from '@/components/ui/badge';
+import { MessageCircle, Send, Sparkles, Loader2, User as UserIcon, ExternalLink } from 'lucide-react';
+import { sendRagMessage, type ChatTurn, type SourceRef } from '@/lib/chat';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { logActivity } from '@/lib/activity';
@@ -20,30 +22,30 @@ const SUGGESTIONS = [
 export default function Chat() {
   const { user, profile } = useAuth();
   useTrackToolUse('chat');
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatTurn[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [threadId, setThreadId] = useState<string | undefined>();
   const scrollRef = useRef<HTMLDivElement>(null);
-
-  const available = isChatAvailable();
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages, loading]);
 
   const send = async (text: string) => {
-    if (!text.trim() || loading) return;
-    const userMsg: ChatMessage = { role: 'user', text: text.trim() };
+    if (!user || !text.trim() || loading) return;
+    const userMsg: ChatTurn = { role: 'user', content: text.trim() };
     setMessages(m => [...m, userMsg]);
     setInput('');
     setLoading(true);
 
     try {
-      const reply = await sendChatMessage(messages, text.trim());
-      setMessages(m => [...m, { role: 'model', text: reply }]);
-      if (user) logActivity({ userId: user.id, type: 'chat_message' });
+      const res = await sendRagMessage(text.trim(), threadId);
+      setThreadId(res.threadId);
+      setMessages(m => [...m, { role: 'assistant', content: res.reply, sources: res.sources }]);
+      logActivity({ userId: user.id, type: 'chat_message' });
     } catch (err) {
-      toast.error('שגיאה בשליחת ההודעה. נסה שוב.');
+      toast.error(err instanceof Error ? err.message : 'שגיאה בשליחת ההודעה');
       setMessages(m => m.slice(0, -1));
       setInput(text.trim());
     } finally {
@@ -56,43 +58,16 @@ export default function Chat() {
     send(input);
   };
 
-  if (!available) {
-    return (
-      <div dir="rtl" className="space-y-4">
-        <Card>
-          <CardContent className="p-8 text-center space-y-4">
-            <div className="mx-auto w-14 h-14 bg-amber-500/10 rounded-2xl flex items-center justify-center">
-              <AlertCircle className="w-7 h-7 text-amber-500" />
-            </div>
-            <div className="space-y-2">
-              <h3 className="font-semibold">צ'אט AI לא זמין</h3>
-              <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                כדי להפעיל את הצ'אט, צריך להגדיר מפתח Google Gemini API (חינם).
-                צור מפתח ב-
-                <a href="https://aistudio.google.com/apikey" target="_blank" className="underline text-primary">
-                  aistudio.google.com/apikey
-                </a>
-                {' '}והוסף ל-.env:
-              </p>
-              <code className="block bg-muted p-2 rounded text-xs" dir="ltr">
-                VITE_GEMINI_API_KEY=your_key_here
-              </code>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col h-[calc(100vh-240px)] md:h-[calc(100vh-260px)]" dir="rtl">
-      {/* Header */}
-      <div className="mb-3 flex items-center gap-2">
-        <MessageCircle className="w-5 h-5 text-primary" />
-        <h1 className="text-xl font-bold">יועץ AI</h1>
+      <div className="mb-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <MessageCircle className="w-5 h-5 text-primary" />
+          <h1 className="text-xl font-bold">צ׳אט הקורס</h1>
+        </div>
+        <Badge variant="outline" className="text-xs">תשובות מבוססות על תוכן הקורס</Badge>
       </div>
 
-      {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-3 pb-3">
         {messages.length === 0 ? (
           <div className="text-center py-8 space-y-4">
@@ -102,7 +77,8 @@ export default function Chat() {
             <div>
               <h3 className="font-semibold">שלום {profile?.display_name || 'לך'}!</h3>
               <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
-                שאל אותי על רכישת דירה, משכנתא, תוכנית עסקית — ואענה לך על בסיס הנתונים האישיים שלך.
+                שאל אותי כל שאלה על תוכן הקורס — אני עונה רק על בסיס החומרים שלמדנו.
+                לכל תשובה אצרף את השיעור המקור.
               </p>
             </div>
             <div className="space-y-2 max-w-md mx-auto">
@@ -114,6 +90,7 @@ export default function Chat() {
                   size="sm"
                   className="w-full text-right justify-start"
                   onClick={() => send(s)}
+                  disabled={loading}
                 >
                   {s}
                 </Button>
@@ -124,14 +101,19 @@ export default function Chat() {
           messages.map((m, i) => (
             <div key={i} className={cn('flex gap-2', m.role === 'user' ? 'flex-row-reverse' : 'flex-row')}>
               <div className={cn('w-8 h-8 rounded-full flex items-center justify-center shrink-0',
-                m.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                m.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted',
               )}>
                 {m.role === 'user' ? <UserIcon className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
               </div>
-              <div className={cn('rounded-2xl px-3 py-2 max-w-[85%] text-sm whitespace-pre-wrap',
-                m.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
-              )}>
-                {m.text}
+              <div className="space-y-2 max-w-[85%]">
+                <div className={cn('rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap',
+                  m.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted',
+                )}>
+                  {m.content}
+                </div>
+                {m.sources && m.sources.length > 0 && (
+                  <Sources sources={m.sources} />
+                )}
               </div>
             </div>
           ))
@@ -148,12 +130,11 @@ export default function Chat() {
         )}
       </div>
 
-      {/* Input */}
       <form onSubmit={handleSubmit} className="flex gap-2 pt-2 border-t">
         <Input
           value={input}
           onChange={e => setInput(e.target.value)}
-          placeholder="שאל אותי כל דבר..."
+          placeholder="שאל אותי כל דבר על הקורס..."
           disabled={loading}
           className="flex-1"
         />
@@ -165,5 +146,27 @@ export default function Chat() {
         * המידע להעשרה בלבד ואינו מהווה ייעוץ פיננסי מקצועי.
       </p>
     </div>
+  );
+}
+
+interface SourcesProps { sources: SourceRef[] }
+function Sources({ sources }: SourcesProps) {
+  const unique = Array.from(new Map(sources.map(s => [s.lesson_slug, s])).values());
+  return (
+    <Card className="bg-muted/30">
+      <CardContent className="p-2 space-y-1">
+        <p className="text-xs text-muted-foreground">מקורות:</p>
+        {unique.map(s => (
+          <Link
+            key={s.lesson_slug}
+            to={`/learn/${s.course_slug}/${s.module_slug}/${s.lesson_slug}`}
+            className="flex items-center justify-between text-xs hover:underline"
+          >
+            <span>{s.lesson_title}</span>
+            <ExternalLink className="w-3 h-3 text-muted-foreground" />
+          </Link>
+        ))}
+      </CardContent>
+    </Card>
   );
 }
