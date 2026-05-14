@@ -1,6 +1,81 @@
 # Operating Map
 
-_Last updated: 2026-05-14_
+_Last updated: 2026-05-14 (post foundation overhaul)_
+
+## Deployment runbook
+
+Before the application can connect to a backend, you need a live Supabase
+project. The legacy IDs in `.env` and `supabase/config.toml` both point to
+deleted projects (see critical note below).
+
+### 1. Bootstrap Supabase project
+
+```bash
+supabase login
+supabase projects create <name> --region eu-central-1
+supabase link --project-ref <new-ref>
+supabase db push        # applies all migrations in supabase/migrations/ in order
+```
+
+Then update `.env` and `supabase/config.toml` with the new project ref +
+anon key, and re-generate types:
+
+```bash
+npx supabase gen types typescript --linked > src/integrations/supabase/types.ts
+```
+
+### 2. Set secrets
+
+```bash
+supabase secrets set OPENAI_API_KEY="..."          # or GEMINI_API_KEY
+supabase secrets set RESEND_API_KEY="..."
+supabase secrets set EMAIL_FROM="הדרך לדירה <noreply@yourdomain>"
+supabase secrets set APP_BASE_URL="https://your-vercel-deploy.app"
+supabase secrets set NOTIFICATIONS_WEBHOOK_SECRET="$(openssl rand -hex 32)"
+```
+
+### 3. Deploy edge functions
+
+```bash
+supabase functions deploy chat-rag
+supabase functions deploy send-email
+```
+
+### 4. Wire database webhook for outbound email
+
+In Supabase Studio → Database → Webhooks → "Create a new hook":
+
+- Name: `notifications-to-email`
+- Table: `notifications`
+- Events: `INSERT`
+- Method: `POST`
+- URL: `https://<project>.functions.supabase.co/send-email?source=webhook`
+- Headers: `x-webhook-secret: <NOTIFICATIONS_WEBHOOK_SECRET>`
+
+### 5. Schedule daily at-risk computation
+
+Database → Cron jobs:
+
+```sql
+SELECT cron.schedule('compute-at-risk-daily', '0 7 * * *', $$ SELECT compute_at_risk_flags(); $$);
+```
+
+### 6. Bootstrap content
+
+```bash
+SUPABASE_URL=https://<ref>.supabase.co \
+SUPABASE_SERVICE_ROLE_KEY=<key> \
+npx tsx scripts/import-syllabus.ts ./docs/syllabus-example.json
+```
+
+Then embed lessons for RAG:
+
+```bash
+SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... OPENAI_API_KEY=... \
+npx tsx scripts/embed-content.ts
+```
+
+---
 
 > **🚨 Critical infrastructure note** (added 2026-05-14):
 > Both Supabase project IDs referenced in the repo do not resolve to live projects:

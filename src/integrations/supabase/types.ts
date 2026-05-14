@@ -482,6 +482,8 @@ export type Database = {
           category: string | null
           link: string | null
           read_at: string | null
+          email_sent_at: string | null
+          sent_by: string | null
           created_at: string
         }
         Insert: {
@@ -492,6 +494,8 @@ export type Database = {
           category?: string | null
           link?: string | null
           read_at?: string | null
+          email_sent_at?: string | null
+          sent_by?: string | null
           created_at?: string
         }
         Update: {
@@ -502,6 +506,8 @@ export type Database = {
           category?: string | null
           link?: string | null
           read_at?: string | null
+          email_sent_at?: string | null
+          sent_by?: string | null
           created_at?: string
         }
         Relationships: []
@@ -590,6 +596,56 @@ export type Database = {
           completed_lessons: number
           in_progress_lessons: number
           last_activity: string | null
+        }[]
+      }
+      admin_send_notification: {
+        Args: {
+          _user_id: string
+          _title: string
+          _body: string
+          _category?: string
+          _link?: string | null
+        }
+        Returns: string
+      }
+      admin_send_notification_to_cohort: {
+        Args: {
+          _cohort: string
+          _title: string
+          _body: string
+          _category?: string
+          _link?: string | null
+        }
+        Returns: number
+      }
+      admin_send_notification_to_at_risk: {
+        Args: {
+          _title: string
+          _body: string
+          _category?: string
+          _link?: string | null
+        }
+        Returns: number
+      }
+      compute_at_risk_flags: {
+        Args: Record<string, never>
+        Returns: { flagged_count: number; cleared_count: number }[]
+      }
+      match_course_chunks: {
+        Args: {
+          query_embedding: string
+          match_count?: number
+          min_similarity?: number
+        }
+        Returns: {
+          chunk_id: number
+          lesson_id: string
+          lesson_title: string
+          lesson_slug: string
+          module_slug: string
+          course_slug: string
+          content: string
+          similarity: number
         }[]
       }
     }
