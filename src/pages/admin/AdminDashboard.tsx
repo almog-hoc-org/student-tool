@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, KeyRound, BarChart3, ArrowLeft } from 'lucide-react';
+import { Users, KeyRound, BarChart3, ArrowLeft, LifeBuoy } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 
@@ -75,6 +75,12 @@ export default function AdminDashboard() {
           <Button variant="outline" className="gap-2">
             <KeyRound className="w-4 h-4" />
             קודי הזמנה
+          </Button>
+        </Link>
+        <Link to="/admin/support">
+          <Button variant="outline" className="gap-2">
+            <LifeBuoy className="w-4 h-4" />
+            תמיכה
           </Button>
         </Link>
       </div>

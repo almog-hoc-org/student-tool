@@ -1,5 +1,7 @@
 # Welcome to your Lovable project
 
+See `docs/operating-map.md` for the current product/architecture map and next bundle recommendation.
+
 ## Project info
 
 **URL**: https://lovable.dev/projects/310ed00f-21a6-4f6c-b5c9-dfaff9c065fc

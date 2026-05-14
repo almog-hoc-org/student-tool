@@ -44,7 +44,7 @@ export async function syncFromCloud(userId: string): Promise<void> {
 
 export async function syncToCloud(userId: string): Promise<void> {
   const { saveToCloud } = await import('./cloud-storage');
-  const keys = ['budget', 'budget_results', 'business_plan', 'mortgage', 'mortgage_results'];
+  const keys = ['budget', 'budget_results', 'business_plan', 'mortgage', 'mortgage_results', 'support_requests'];
   for (const key of keys) {
     const raw = localStorage.getItem(PREFIX + key);
     if (raw) {

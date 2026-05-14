@@ -4,8 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
-  User, Wallet, TrendingUp, Home, Sparkles, LogOut, CheckCircle2, Circle,
-  MessageCircle, ArrowLeft, Calendar,
+  User, Wallet, TrendingUp, Home, Sparkles, LogOut, CheckCircle2,
+  MessageCircle, ArrowLeft, Calendar, LifeBuoy,
 } from 'lucide-react';
 import { load } from '@/lib/storage';
 import { BudgetOutput } from '@/lib/calculations/budget-calculator';
@@ -180,6 +180,16 @@ export default function Account() {
                   <MessageCircle className="w-5 h-5 text-primary" />
                 </div>
                 <p className="font-medium text-sm">צ'אט עם יועץ AI</p>
+              </CardContent>
+            </Card>
+          </Link>
+          <Link to="/support">
+            <Card className="hover:border-primary/50 transition-colors">
+              <CardContent className="p-4 flex flex-col items-center text-center gap-2">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <LifeBuoy className="w-5 h-5 text-primary" />
+                </div>
+                <p className="font-medium text-sm">תמיכה</p>
               </CardContent>
             </Card>
           </Link>

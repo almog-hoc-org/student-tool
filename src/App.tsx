@@ -16,9 +16,11 @@ import PendingApproval from "./pages/PendingApproval";
 import AIAdvisor from "./pages/AIAdvisor";
 import Chat from "./pages/Chat";
 import Account from "./pages/Account";
+import Support from "./pages/Support";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminInviteCodes from "./pages/admin/AdminInviteCodes";
+import AdminSupport from "./pages/admin/AdminSupport";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({});
@@ -45,9 +47,11 @@ const App = () => (
                       <Route path="/advisor" element={<AIAdvisor />} />
                       <Route path="/chat" element={<Chat />} />
                       <Route path="/account" element={<Account />} />
+                      <Route path="/support" element={<Support />} />
                       <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
                       <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
                       <Route path="/admin/codes" element={<AdminRoute><AdminInviteCodes /></AdminRoute>} />
+                      <Route path="/admin/support" element={<AdminRoute><AdminSupport /></AdminRoute>} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </div>

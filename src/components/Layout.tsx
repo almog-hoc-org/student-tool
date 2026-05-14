@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Wallet, TrendingUp, Home, MessageCircle, Settings, LogOut, UserCircle, User } from 'lucide-react';
+import { Wallet, TrendingUp, Home, MessageCircle, Settings, LogOut, UserCircle, User, LifeBuoy } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { StepIndicator } from './StepIndicator';
 import { cn } from '@/lib/utils';
@@ -59,6 +59,12 @@ export function Layout({ children }: { children: ReactNode }) {
                   <Link to="/account" className="gap-2">
                     <User className="w-4 h-4" />
                     האזור שלי
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/support" className="gap-2">
+                    <LifeBuoy className="w-4 h-4" />
+                    תמיכה
                   </Link>
                 </DropdownMenuItem>
                 {isAdmin && (
