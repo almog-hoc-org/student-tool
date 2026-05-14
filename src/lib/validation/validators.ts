@@ -1,21 +1,23 @@
 import { he } from '../translations/he';
 
+type FieldValue = string | number | null | undefined;
+
 export const validators = {
   isPositiveNumber: (value: number): boolean => !isNaN(value) && value >= 0,
-  isRequired: (value: any): boolean => {
+  isRequired: (value: FieldValue): boolean => {
     if (typeof value === 'number') return !isNaN(value);
     return value !== null && value !== undefined && value !== '';
   },
-  isValidPercentage: (value: number): boolean => 
+  isValidPercentage: (value: number): boolean =>
     !isNaN(value) && value >= 0 && value <= 100,
   isNonNegative: (value: number): boolean => !isNaN(value) && value >= 0,
-  isValidNumber: (value: any): boolean => {
+  isValidNumber: (value: FieldValue): boolean => {
     return !isNaN(Number(value)) && value !== '' && value !== null && value !== undefined;
   },
 };
 
 export const validateField = (
-  value: any,
+  value: FieldValue,
   rules: {
     required?: boolean;
     positive?: boolean;

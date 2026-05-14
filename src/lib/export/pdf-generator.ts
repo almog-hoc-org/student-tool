@@ -23,10 +23,10 @@ const NAVY_G = 34;
 const NAVY_B = 56;
 
 export async function exportToPDF(options: PDFExportOptions): Promise<void>;
-export async function exportToPDF(title: string, data: Record<string, any>, chartElementId?: string): Promise<void>;
+export async function exportToPDF(title: string, data: Record<string, unknown>, chartElementId?: string): Promise<void>;
 export async function exportToPDF(
   titleOrOptions: string | PDFExportOptions,
-  data?: Record<string, any>,
+  data?: Record<string, unknown>,
   chartElementId?: string
 ) {
   const doc = new jsPDF({
@@ -168,8 +168,8 @@ export async function exportToPDF(
         }
         doc.addImage(imgData, 'PNG', margin, y, contentWidth, 90);
         y += 96;
-      } catch (err) {
-        console.error('Chart capture error:', err);
+      } catch {
+        /* chart capture failed — proceed without it */
       }
     }
   }
@@ -204,7 +204,7 @@ export async function exportToPDF(
 function legacyExport(
   doc: jsPDF,
   title: string,
-  data: Record<string, any>,
+  data: Record<string, unknown>,
   chartElementId: string | undefined,
   pageWidth: number,
   margin: number,

@@ -1,6 +1,12 @@
 import { load } from './storage';
 import { BudgetOutput } from './calculations/budget-calculator';
 import { generateInsights } from './insights-engine';
+import type {
+  BudgetSaved,
+  BusinessPlanSaved,
+  MortgageSaved,
+  MortgageResultsSaved,
+} from '@/types/saved-state';
 
 export interface ChatMessage {
   role: 'user' | 'model';
@@ -10,11 +16,11 @@ export interface ChatMessage {
 // --- Data loaders ---
 
 interface UserData {
-  budget: { equity: number; monthlyIncome: number; monthlyObligations: number; buyerType: string; mortgageYears: number } | null;
+  budget: BudgetSaved | null;
   budgetResults: BudgetOutput | null;
-  businessPlan: any;
-  mortgage: any;
-  mortgageResults: any;
+  businessPlan: BusinessPlanSaved | null;
+  mortgage: MortgageSaved | null;
+  mortgageResults: MortgageResultsSaved | null;
 }
 
 function loadUserData(): UserData {

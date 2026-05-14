@@ -221,6 +221,7 @@ function AdminTicketDetail({ ticket, onBack, onTicketChanged }: DetailProps) {
     }
   }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadAll(); }, [ticket.id]);
 
   const sendReply = async (e: React.FormEvent) => {

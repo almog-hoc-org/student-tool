@@ -1,4 +1,5 @@
 import { load } from './storage';
+import type { BudgetSaved, BudgetResultsSaved, MortgageSaved, MortgageResultsSaved } from '@/types/saved-state';
 
 export interface BudgetResults {
   maxPropertyValue: number;
@@ -18,8 +19,8 @@ export interface MortgageResults {
 }
 
 export function getBudgetResults(): BudgetResults | null {
-  const inputs = load<any>('budget');
-  const results = load<any>('budget_results');
+  const inputs = load<BudgetSaved>('budget');
+  const results = load<BudgetResultsSaved>('budget_results');
   if (!inputs || !results) return null;
   return {
     maxPropertyValue: results.maxPropertyValue,
@@ -33,13 +34,13 @@ export function getBudgetResults(): BudgetResults | null {
 }
 
 export function getMortgageResults(): MortgageResults | null {
-  const inputs = load<any>('mortgage');
-  const results = load<any>('mortgage_results');
+  const inputs = load<MortgageSaved>('mortgage');
+  const results = load<MortgageResultsSaved>('mortgage_results');
   if (!inputs || !results) return null;
   return {
     totalMonthlyPayment: results.totalMonthlyPayment,
     weightedRate: results.weightedAverageInterest,
-    totalPrincipal: inputs.tracks?.reduce((s: number, t: any) => s + (t.principal || 0), 0) || 0,
+    totalPrincipal: inputs.tracks?.reduce((s, t) => s + (t.principal || 0), 0) || 0,
     monthlyIncome: inputs.monthlyIncome,
   };
 }

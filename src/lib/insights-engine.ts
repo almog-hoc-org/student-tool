@@ -1,7 +1,7 @@
 import { load } from './storage';
 import { BudgetOutput } from './calculations/budget-calculator';
-import { BusinessPlanOutput } from './calculations/business-plan';
 import { BuyerType } from './calculations/purchase-tax';
+import type { BusinessPlanSaved } from '@/types/saved-state';
 
 export interface Insight {
   type: 'warning' | 'recommendation' | 'insight' | 'next_step';
@@ -37,7 +37,7 @@ export function generateInsights(): Insight[] {
 
   const budget = load<BudgetData>('budget');
   const budgetResults = load<BudgetOutput>('budget_results');
-  const businessPlan = load<any>('business_plan');
+  const businessPlan = load<BusinessPlanSaved>('business_plan');
   const mortgage = load<MortgageData>('mortgage');
   const mortgageResults = load<MortgageResults>('mortgage_results');
 

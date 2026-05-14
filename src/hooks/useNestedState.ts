@@ -5,7 +5,7 @@ import { useCallback } from 'react';
  * Usage: const update = useNestedUpdate(setInput);
  *        update('income', 'salary1Net', 15000);
  */
-export function createNestedUpdater<T extends Record<string, any>>(
+export function createNestedUpdater<T extends Record<string, Record<string, unknown>>>(
   setter: (fn: (prev: T) => T) => void
 ) {
   return <K extends keyof T>(

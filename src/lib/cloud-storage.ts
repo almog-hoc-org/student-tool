@@ -1,10 +1,11 @@
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 
 export async function saveToCloud(userId: string, toolKey: string, data: unknown): Promise<void> {
   await supabase
     .from('user_data')
     .upsert(
-      { user_id: userId, tool_key: toolKey, data: data as any, updated_at: new Date().toISOString() },
+      { user_id: userId, tool_key: toolKey, data: data as Json, updated_at: new Date().toISOString() },
       { onConflict: 'user_id,tool_key' }
     );
 }

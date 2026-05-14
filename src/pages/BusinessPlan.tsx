@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { save, load, clear } from '@/lib/storage';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTrackToolUse } from '@/hooks/useActivityLog';
+import type { MortgageResultsSaved } from '@/types/saved-state';
 import { getBudgetResults } from '@/lib/flow';
 import { ExportButton } from '@/components/ExportButton';
 import { InfoTooltip } from '@/components/InfoTooltip';
@@ -112,7 +113,7 @@ export default function BusinessPlan() {
     setMortgageMonthlyPayment(budgetData.monthlyPayment);
     setSideCosts(budgetData.purchaseTax + budgetData.sideCosts);
     // Import interest rate from mortgage results if available
-    const mortgageData = load<any>('mortgage_results');
+    const mortgageData = load<MortgageResultsSaved>('mortgage_results');
     if (mortgageData?.weightedAverageInterest) {
       setMortgageInterestRate(mortgageData.weightedAverageInterest);
     }
@@ -120,16 +121,25 @@ export default function BusinessPlan() {
 
   const handleReset = () => {
     if (!window.confirm('בטוח? כל הנתונים יימחקו')) return;
+    type Setter = (v: never) => void;
+    const setters: Record<string, Setter> = {
+      purchasePrice: setPurchasePrice as Setter,
+      sideCosts: setSideCosts as Setter,
+      renovationCost: setRenovationCost as Setter,
+      equityInvested: setEquityInvested as Setter,
+      mortgageAmount: setMortgageAmount as Setter,
+      mortgageMonthlyPayment: setMortgageMonthlyPayment as Setter,
+      mortgageInterestRate: setMortgageInterestRate as Setter,
+      mortgageYears: setMortgageYears as Setter,
+      expectedMonthlyRent: setExpectedMonthlyRent as Setter,
+      annualOperatingCosts: setAnnualOperatingCosts as Setter,
+      holdingPeriodYears: setHoldingPeriodYears as Setter,
+      baseAppreciation: setBaseAppreciation as Setter,
+      manualMode: setManualMode as Setter,
+      customRates: setCustomRates as Setter,
+    };
     Object.entries(BP_DEFAULTS).forEach(([k, v]) => {
-      const setters: Record<string, Function> = {
-        purchasePrice: setPurchasePrice, sideCosts: setSideCosts, renovationCost: setRenovationCost,
-        equityInvested: setEquityInvested, mortgageAmount: setMortgageAmount,
-        mortgageMonthlyPayment: setMortgageMonthlyPayment, mortgageInterestRate: setMortgageInterestRate,
-        mortgageYears: setMortgageYears, expectedMonthlyRent: setExpectedMonthlyRent,
-        annualOperatingCosts: setAnnualOperatingCosts, holdingPeriodYears: setHoldingPeriodYears,
-        baseAppreciation: setBaseAppreciation, manualMode: setManualMode, customRates: setCustomRates,
-      };
-      setters[k]?.(v);
+      setters[k]?.(v as never);
     });
     clear('business_plan', uid);
   };

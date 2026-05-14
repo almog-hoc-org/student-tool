@@ -12,7 +12,7 @@ export default function PendingApproval() {
     if (!user || isApproved) return;
     const interval = setInterval(refreshProfile, 30000);
     return () => clearInterval(interval);
-  }, [user, isApproved]);
+  }, [user, isApproved, refreshProfile]);
 
   if (loading) {
     return (
