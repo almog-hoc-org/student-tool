@@ -6,6 +6,7 @@ import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { BarChart3, Import, RotateCcw } from 'lucide-react';
+import { SaveSnapshotButton } from '@/components/SaveSnapshotButton';
 import { calculateBusinessPlan, BusinessPlanOutput, ScenarioResult } from '@/lib/calculations/business-plan';
 import { formatCurrency } from '@/lib/validation/validators';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Legend } from 'recharts';
@@ -167,9 +168,24 @@ export default function BusinessPlan() {
         <div className="md:col-span-2 space-y-4 md:sticky md:top-28 md:self-start">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold">תוכנית עסקית</h1>
-            <Button variant="ghost" size="sm" onClick={handleReset} className="text-muted-foreground h-8 gap-1">
-              <RotateCcw className="w-3.5 h-3.5" /> אפס
-            </Button>
+            <div className="flex items-center gap-1">
+              <SaveSnapshotButton
+                toolKey="business_plan"
+                disabled={!result}
+                getData={() => ({
+                  inputs: {
+                    purchasePrice, sideCosts, renovationCost, equityInvested,
+                    mortgageAmount, mortgageMonthlyPayment, mortgageInterestRate,
+                    mortgageYears, expectedMonthlyRent, annualOperatingCosts,
+                    holdingPeriodYears, baseAppreciation, manualMode, customRates,
+                  },
+                  results: result,
+                })}
+              />
+              <Button variant="ghost" size="sm" onClick={handleReset} className="text-muted-foreground h-8 gap-1">
+                <RotateCcw className="w-3.5 h-3.5" /> אפס
+              </Button>
+            </div>
           </div>
           <p className="text-sm text-muted-foreground">
             הזן את פרטי העסקה וראה 3 תרחישים לפי אחוז עלייה שנתי.

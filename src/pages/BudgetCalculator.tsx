@@ -16,6 +16,8 @@ import { save, load, clear } from '@/lib/storage';
 import { useAuth } from '@/contexts/AuthContext';
 import { ExportButton } from '@/components/ExportButton';
 import { InfoTooltip } from '@/components/InfoTooltip';
+import { SaveSnapshotButton } from '@/components/SaveSnapshotButton';
+import { HomeGreeting } from '@/components/HomeGreeting';
 import { Link } from 'react-router-dom';
 
 const COLORS = {
@@ -150,14 +152,25 @@ export default function BudgetCalculator() {
 
   return (
     <div className="space-y-6">
+      <HomeGreeting />
       <div className="md:grid md:grid-cols-5 md:gap-8">
         {/* Input Section */}
         <div className="md:col-span-2 space-y-4 md:sticky md:top-28 md:self-start">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold">מחשבון תקציב</h1>
-            <Button variant="ghost" size="sm" onClick={handleReset} className="text-muted-foreground h-8 gap-1">
-              <RotateCcw className="w-3.5 h-3.5" /> אפס
-            </Button>
+            <div className="flex items-center gap-1">
+              <SaveSnapshotButton
+                toolKey="budget"
+                disabled={!result}
+                getData={() => ({
+                  inputs: { equity, monthlyIncome, monthlyObligations, buyerType, mortgageYears },
+                  results: result,
+                })}
+              />
+              <Button variant="ghost" size="sm" onClick={handleReset} className="text-muted-foreground h-8 gap-1">
+                <RotateCcw className="w-3.5 h-3.5" /> אפס
+              </Button>
+            </div>
           </div>
           <p className="text-sm text-muted-foreground">
             כמה דירה אתה יכול לקנות? הזן את הנתונים וקבל תשובה מיידית.

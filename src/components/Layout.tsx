@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Wallet, TrendingUp, Home, MessageCircle, Settings, LogOut, UserCircle, User } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
+import { NotificationCenter } from './NotificationCenter';
 import { StepIndicator } from './StepIndicator';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -39,6 +40,7 @@ export function Layout({ children }: { children: ReactNode }) {
             <span className="font-bold text-base">ארגז הכלים</span>
           </Link>
           <div className="flex items-center gap-2">
+            <NotificationCenter />
             <ThemeToggle />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
