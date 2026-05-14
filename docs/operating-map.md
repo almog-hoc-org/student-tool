@@ -89,7 +89,65 @@ npx tsx scripts/embed-content.ts
 > code is being written assuming this will be wired up; nothing in this codebase requires
 > the legacy projects.
 
-## Product surfaces
+## Overhaul status (2026-05-14)
+
+Phase 1-6 of the foundation overhaul are merged on `phase-1-foundation`.
+Code is green: build clean, lint passes (0 errors), routes lazy-loaded.
+
+### What runs today (after Supabase is provisioned per runbook above)
+
+**Student-facing**
+- `/` budget calculator with tool-use logging
+- `/mortgage` multi-track mortgage calculator
+- `/business-plan` deal analysis
+- `/advisor` rules-based insights over saved calc state
+- `/chat` real RAG chat: vector search → LLM (OpenAI or Gemini), source citations linked to lessons
+- `/learn`, `/learn/:course`, `/learn/:course/:module/:lesson` — full lesson player with video, markdown, attachments, linked tool, complete button
+- `/support` first-class tickets with threaded student↔admin replies
+- `/account` summary with cross-course progress bars + calculator progress
+
+**Admin-facing (`/admin/*`)**
+- `/admin` KPI dashboard
+- `/admin/users` student list with last-active, at-risk filters
+- `/admin/users/:id` deep view: profile, progress, tickets, activity log, send-push composer
+- `/admin/cohorts` bulk push by cohort or to at-risk segment
+- `/admin/codes` invite codes CRUD
+- `/admin/content` course/module/lesson editor with publish toggle
+- `/admin/support` queue with filters, assignment, thread, status history
+
+**Infrastructure**
+- Supabase migrations applied in order (`20260227*`, `20260413*`, `20260514100000` support, `110000` CRM, `120000` course, `130000` RAG, `140000` email)
+- Edge functions: `chat-rag/`, `send-email/`
+- Scripts: `migrate-support-to-table.ts`, `import-syllabus.ts`, `embed-content.ts`
+- Auto activity logging: login, tool_used, chat_message, support_opened, lesson_viewed, lesson_completed
+- DB triggers: admin reply → notification; high/urgent ticket → admin notifications; approve → auto-enroll
+- Cron-ready: `compute_at_risk_flags()` for daily at-risk recompute
+
+### What still needs human action
+
+1. **Provision Supabase project** + apply migrations + update `.env` and `config.toml`
+2. **Set secrets**: RESEND_API_KEY, OPENAI_API_KEY (or GEMINI), EMAIL_FROM, APP_BASE_URL, NOTIFICATIONS_WEBHOOK_SECRET
+3. **Deploy edge functions**: `supabase functions deploy chat-rag` and `send-email`
+4. **Wire DB webhook**: notifications INSERT → send-email?source=webhook
+5. **Schedule pg_cron**: daily `compute_at_risk_flags()`
+6. **Import syllabus**: provide JSON, run `scripts/import-syllabus.ts`
+7. **Embed content**: run `scripts/embed-content.ts` after content edits
+8. **Set OG image**: place a real `public/og-image.png` (currently falls back to `icon-512.png`)
+
+### Deferred from this overhaul
+
+- **Refactor**: 3 calculator pages still 600-800 lines (BudgetCalculator,
+  MortgageCalculator, BusinessPlan). Cosmetic; doesn't block features.
+- **i18n abstraction**: all strings hardcoded Hebrew. The infrastructure
+  (`src/lib/translations/he.ts`) exists but unused.
+- **Accessibility full WCAG audit**: keyboard nav + ARIA labels are mostly
+  good but not formally verified.
+- **E2E tests**: no Playwright suite yet. Manual smoke per `TESTING.md`.
+- **Lighthouse audit + perf tuning beyond code-splitting**.
+
+---
+
+
 
 - **Budget Calculator** (`/`): entry point, stores budget inputs/results.
 - **Business Plan** (`/business-plan`): deal analysis, cashflow and return modeling.
