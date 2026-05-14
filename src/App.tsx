@@ -17,10 +17,16 @@ import AIAdvisor from "./pages/AIAdvisor";
 import Chat from "./pages/Chat";
 import Account from "./pages/Account";
 import Support from "./pages/Support";
+import Learn from "./pages/Learn";
+import CourseDetail from "./pages/CourseDetail";
+import Lesson from "./pages/Lesson";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
+import AdminUserDetail from "./pages/admin/AdminUserDetail";
 import AdminInviteCodes from "./pages/admin/AdminInviteCodes";
 import AdminSupport from "./pages/admin/AdminSupport";
+import AdminCohorts from "./pages/admin/AdminCohorts";
+import AdminContent from "./pages/admin/AdminContent";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({});
@@ -48,10 +54,16 @@ const App = () => (
                       <Route path="/chat" element={<Chat />} />
                       <Route path="/account" element={<Account />} />
                       <Route path="/support" element={<Support />} />
+                      <Route path="/learn" element={<Learn />} />
+                      <Route path="/learn/:courseSlug" element={<CourseDetail />} />
+                      <Route path="/learn/:courseSlug/:moduleSlug/:lessonSlug" element={<Lesson />} />
                       <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
                       <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
+                      <Route path="/admin/users/:userId" element={<AdminRoute><AdminUserDetail /></AdminRoute>} />
                       <Route path="/admin/codes" element={<AdminRoute><AdminInviteCodes /></AdminRoute>} />
                       <Route path="/admin/support" element={<AdminRoute><AdminSupport /></AdminRoute>} />
+                      <Route path="/admin/cohorts" element={<AdminRoute><AdminCohorts /></AdminRoute>} />
+                      <Route path="/admin/content" element={<AdminRoute><AdminContent /></AdminRoute>} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </div>

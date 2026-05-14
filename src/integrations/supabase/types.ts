@@ -267,6 +267,168 @@ export type Database = {
         Update: never
         Relationships: []
       }
+      courses: {
+        Row: {
+          id: string
+          slug: string
+          title: string
+          description: string | null
+          cover_image_url: string | null
+          is_published: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          slug: string
+          title: string
+          description?: string | null
+          cover_image_url?: string | null
+          is_published?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<{
+          slug: string
+          title: string
+          description: string | null
+          cover_image_url: string | null
+          is_published: boolean
+        }>
+        Relationships: []
+      }
+      modules: {
+        Row: {
+          id: string
+          course_id: string
+          slug: string
+          title: string
+          description: string | null
+          order_index: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          course_id: string
+          slug: string
+          title: string
+          description?: string | null
+          order_index?: number
+          created_at?: string
+        }
+        Update: Partial<{
+          slug: string
+          title: string
+          description: string | null
+          order_index: number
+        }>
+        Relationships: []
+      }
+      lessons: {
+        Row: {
+          id: string
+          module_id: string
+          slug: string
+          title: string
+          summary: string | null
+          body_md: string | null
+          video_url: string | null
+          transcript: string | null
+          attachments: Json | null
+          linked_tool: string | null
+          estimated_minutes: number | null
+          order_index: number
+          is_published: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          module_id: string
+          slug: string
+          title: string
+          summary?: string | null
+          body_md?: string | null
+          video_url?: string | null
+          transcript?: string | null
+          attachments?: Json | null
+          linked_tool?: string | null
+          estimated_minutes?: number | null
+          order_index?: number
+          is_published?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<{
+          slug: string
+          title: string
+          summary: string | null
+          body_md: string | null
+          video_url: string | null
+          transcript: string | null
+          attachments: Json | null
+          linked_tool: string | null
+          estimated_minutes: number | null
+          order_index: number
+          is_published: boolean
+        }>
+        Relationships: []
+      }
+      lesson_progress: {
+        Row: {
+          id: string
+          user_id: string
+          lesson_id: string
+          status: Database["public"]["Enums"]["lesson_status"]
+          started_at: string | null
+          completed_at: string | null
+          last_position_seconds: number
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          lesson_id: string
+          status?: Database["public"]["Enums"]["lesson_status"]
+          started_at?: string | null
+          completed_at?: string | null
+          last_position_seconds?: number
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: Partial<{
+          status: Database["public"]["Enums"]["lesson_status"]
+          started_at: string | null
+          completed_at: string | null
+          last_position_seconds: number
+          notes: string | null
+        }>
+        Relationships: []
+      }
+      enrollments: {
+        Row: {
+          id: string
+          user_id: string
+          course_id: string
+          cohort: string | null
+          enrolled_at: string
+          completed_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          course_id: string
+          cohort?: string | null
+          enrolled_at?: string
+          completed_at?: string | null
+        }
+        Update: Partial<{
+          cohort: string | null
+          completed_at: string | null
+        }>
+        Relationships: []
+      }
       notifications: {
         Row: {
           id: string
@@ -375,12 +537,24 @@ export type Database = {
         }
         Returns: undefined
       }
+      user_course_progress: {
+        Args: { _user_id: string }
+        Returns: {
+          course_id: string
+          course_title: string
+          total_lessons: number
+          completed_lessons: number
+          in_progress_lessons: number
+          last_activity: string | null
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "student"
       user_status: "pending" | "approved" | "rejected"
       support_status: "open" | "in_progress" | "awaiting_user" | "resolved" | "closed"
       support_priority: "low" | "normal" | "high" | "urgent"
+      lesson_status: "not_started" | "in_progress" | "completed"
     }
     CompositeTypes: {
       [_ in never]: never

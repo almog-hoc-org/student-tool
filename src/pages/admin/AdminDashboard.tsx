@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, KeyRound, BarChart3, ArrowLeft, LifeBuoy } from 'lucide-react';
+import { Users, KeyRound, BarChart3, ArrowLeft, LifeBuoy, BookOpen, Users2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 
@@ -64,21 +64,33 @@ export default function AdminDashboard() {
         </Link>
       </div>
 
-      <div className="flex gap-3">
+      <div className="flex gap-2 flex-wrap">
         <Link to="/admin/users">
-          <Button variant="outline" className="gap-2">
+          <Button variant="outline" size="sm" className="gap-2">
             <Users className="w-4 h-4" />
-            ניהול משתמשים
+            תלמידים
+          </Button>
+        </Link>
+        <Link to="/admin/cohorts">
+          <Button variant="outline" size="sm" className="gap-2">
+            <Users2 className="w-4 h-4" />
+            קבוצות
           </Button>
         </Link>
         <Link to="/admin/codes">
-          <Button variant="outline" className="gap-2">
+          <Button variant="outline" size="sm" className="gap-2">
             <KeyRound className="w-4 h-4" />
             קודי הזמנה
           </Button>
         </Link>
+        <Link to="/admin/content">
+          <Button variant="outline" size="sm" className="gap-2">
+            <BookOpen className="w-4 h-4" />
+            תוכן קורס
+          </Button>
+        </Link>
         <Link to="/admin/support">
-          <Button variant="outline" className="gap-2">
+          <Button variant="outline" size="sm" className="gap-2">
             <LifeBuoy className="w-4 h-4" />
             תמיכה
           </Button>

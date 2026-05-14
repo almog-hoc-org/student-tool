@@ -1,8 +1,9 @@
 import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Wallet, TrendingUp, Home, MessageCircle, Settings, LogOut, UserCircle, User, LifeBuoy } from 'lucide-react';
+import { Wallet, TrendingUp, Home, MessageCircle, Settings, LogOut, UserCircle, User, LifeBuoy, GraduationCap } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { StepIndicator } from './StepIndicator';
+import { NotificationCenter } from './NotificationCenter';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -15,11 +16,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 const tabs = [
+  { name: 'לימוד', href: '/learn', icon: GraduationCap },
   { name: 'תקציב', href: '/', icon: Wallet },
-  { name: 'תוכנית עסקית', href: '/business-plan', icon: TrendingUp },
   { name: 'משכנתא', href: '/mortgage', icon: Home },
+  { name: 'תוכנית עסקית', href: '/business-plan', icon: TrendingUp },
   { name: 'צ׳אט AI', href: '/chat', icon: MessageCircle },
-  { name: 'אזור אישי', href: '/account', icon: User },
 ];
 
 export function Layout({ children }: { children: ReactNode }) {
@@ -39,6 +40,7 @@ export function Layout({ children }: { children: ReactNode }) {
             <span className="font-bold text-base">ארגז הכלים</span>
           </Link>
           <div className="flex items-center gap-2">
+            <NotificationCenter />
             <ThemeToggle />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -59,6 +61,12 @@ export function Layout({ children }: { children: ReactNode }) {
                   <Link to="/account" className="gap-2">
                     <User className="w-4 h-4" />
                     האזור שלי
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/learn" className="gap-2">
+                    <GraduationCap className="w-4 h-4" />
+                    הלימוד שלי
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>

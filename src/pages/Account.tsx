@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -5,12 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
   User, Wallet, TrendingUp, Home, Sparkles, LogOut, CheckCircle2,
-  MessageCircle, ArrowLeft, Calendar, LifeBuoy,
+  MessageCircle, ArrowLeft, Calendar, LifeBuoy, GraduationCap,
 } from 'lucide-react';
 import { load } from '@/lib/storage';
 import { BudgetOutput } from '@/lib/calculations/budget-calculator';
 import { formatCurrency } from '@/lib/validation/validators';
 import { cn } from '@/lib/utils';
+import { listEnrolledCourses, type CourseWithProgress } from '@/lib/learn';
 
 interface ToolStatus {
   key: string;
@@ -23,6 +25,12 @@ interface ToolStatus {
 
 export default function Account() {
   const { user, profile, signOut, isAdmin } = useAuth();
+  const [courses, setCourses] = useState<CourseWithProgress[]>([]);
+
+  useEffect(() => {
+    if (!user) return;
+    listEnrolledCourses(user.id).then(setCourses).catch(() => {});
+  }, [user]);
 
   const budget = load<{ equity: number; monthlyIncome: number }>('budget');
   const budgetResults = load<BudgetOutput>('budget_results');
@@ -103,18 +111,48 @@ export default function Account() {
         </CardContent>
       </Card>
 
-      {/* Progress */}
+      {/* Learning progress */}
+      {courses.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <GraduationCap className="w-4 h-4" />
+              ההתקדמות שלי בקורסים
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {courses.map(({ course, totalLessons, completedLessons }) => {
+              const pct = totalLessons ? Math.round((completedLessons / totalLessons) * 100) : 0;
+              return (
+                <Link key={course.id} to={`/learn/${course.slug}`} className="block">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-medium">{course.title}</span>
+                      <span className="text-muted-foreground">{completedLessons}/{totalLessons} · {pct}%</span>
+                    </div>
+                    <div className="w-full bg-muted rounded-full h-2">
+                      <div className="bg-primary h-2 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Calculator progress */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <Calendar className="w-4 h-4" />
-            התקדמות במסע רכישת הדירה
+            התקדמות במחשבונים
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div>
             <div className="flex items-center justify-between text-sm mb-2">
-              <span className="text-muted-foreground">{completed} מתוך {tools.length} שלבים הושלמו</span>
+              <span className="text-muted-foreground">{completed} מתוך {tools.length} מחשבונים מולאו</span>
               <span className="font-semibold">{Math.round(progressPercent)}%</span>
             </div>
             <div className="w-full bg-muted rounded-full h-2">
