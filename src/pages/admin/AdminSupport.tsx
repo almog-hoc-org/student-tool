@@ -1,125 +1,74 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, LifeBuoy, Search, CheckCircle2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { Textarea } from '@/components/ui/textarea';
+import { ArrowLeft, LifeBuoy, Search, MessageCircle, UserPlus, Loader2, Send, History as HistoryIcon, RefreshCcw } from 'lucide-react';
 import { toast } from 'sonner';
-import type { SupportRequest } from '@/lib/support';
+import {
+  listAdminQueue,
+  listMessages,
+  postAdminMessage,
+  assignTicket,
+  updateTicketStatus,
+  listTicketHistory,
+  issueLabels,
+  toolLabels,
+  priorityLabels,
+  statusLabels,
+  type SupportIssueType,
+  type SupportTool,
+  type SupportStatus,
+  type SupportTicketAdminView,
+  type SupportTicketMessage,
+  type SupportTicketHistory,
+} from '@/lib/support';
 
-interface SupportTicketRow {
-  user_id: string;
-  data: SupportRequest[] | null;
-}
-
-interface UserRow {
-  user_id: string;
-  email: string;
-  display_name: string | null;
-}
-
-const issueLabels = {
-  bug: 'תקלה',
-  data: 'בעיה בנתונים',
-  feature: 'בקשת שיפור',
-  billing: 'חיוב/תשלום',
-  access: 'גישה/אישור',
-  other: 'אחר',
-} as const;
-
-const toolLabels = {
-  budget: 'תקציב',
-  business_plan: 'תוכנית עסקית',
-  mortgage: 'משכנתא',
-  advisor: 'AI Advisor',
-  chat: 'צ׳אט',
-  account: 'אזור אישי',
-  admin: 'ממשק ניהול',
-  other: 'אחר',
-} as const;
-
-const priorityLabels = {
-  low: 'נמוכה',
-  normal: 'רגילה',
-  high: 'גבוהה',
-} as const;
-
-const statusLabels = {
-  open: 'פתוח',
-  resolved: 'טופל',
-} as const;
+type Filter = 'all' | 'mine' | 'open' | 'urgent';
 
 export default function AdminSupport() {
-  const [tickets, setTickets] = useState<SupportRequest[]>([]);
-  const [users, setUsers] = useState<UserRow[]>([]);
-  const [search, setSearch] = useState('');
+  const { user } = useAuth();
+  const [tickets, setTickets] = useState<SupportTicketAdminView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<Filter>('open');
+  const [active, setActive] = useState<SupportTicketAdminView | null>(null);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  async function loadData() {
+  async function reload() {
     setLoading(true);
-    const [usersRes, ticketsRes] = await Promise.all([
-      supabase.rpc('admin_list_users'),
-      supabase.from('user_data').select('user_id, data').eq('tool_key', 'support_requests'),
-    ]);
-
-    if (usersRes.error) {
-      toast.error('שגיאה בטעינת משתמשים');
-      console.error(usersRes.error);
-    } else {
-      setUsers(usersRes.data ?? []);
+    try {
+      setTickets(await listAdminQueue());
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'שגיאה בטעינה');
+    } finally {
+      setLoading(false);
     }
-
-    if (ticketsRes.error) {
-      toast.error('שגיאה בטעינת פניות');
-      console.error(ticketsRes.error);
-    } else {
-      const flattened = (ticketsRes.data as SupportTicketRow[] | null ?? []).flatMap(row => Array.isArray(row.data) ? row.data : []);
-      setTickets(flattened.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)));
-    }
-
-    setLoading(false);
   }
 
-  const userMap = useMemo(() => new Map(users.map(user => [user.user_id, user])), [users]);
+  useEffect(() => { reload(); }, []);
 
-  const filtered = tickets.filter(ticket => {
-    const user = userMap.get(ticket.userId);
-    const haystack = [ticket.subject, ticket.description, ticket.tool, ticket.issueType, ticket.status, user?.email, user?.display_name]
-      .filter(Boolean)
-      .join(' ')
-      .toLowerCase();
-    return haystack.includes(search.toLowerCase());
-  });
+  const filtered = useMemo(() => {
+    const query = search.toLowerCase();
+    return tickets.filter(t => {
+      if (filter === 'mine' && t.assigned_admin_id !== user?.id) return false;
+      if (filter === 'open' && (t.status === 'resolved' || t.status === 'closed')) return false;
+      if (filter === 'urgent' && t.priority !== 'urgent' && t.priority !== 'high') return false;
+      if (!query) return true;
+      const hay = [t.subject, t.description, t.issue_type, t.tool, t.user_email, t.user_display_name].filter(Boolean).join(' ').toLowerCase();
+      return hay.includes(query);
+    });
+  }, [tickets, search, filter, user?.id]);
 
-  async function markResolved(ticketId: string) {
-    const updatedAt = new Date().toISOString();
-    const next = tickets.map(ticket => (
-      ticket.id === ticketId ? { ...ticket, status: 'resolved' as const, updatedAt } : ticket
-    ));
-    setTickets(next.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)));
-
-    const ticket = next.find(item => item.id === ticketId);
-    if (!ticket) return;
-
-    const payload = next.filter(item => item.userId === ticket.userId);
-    const { error } = await supabase.from('user_data').upsert({
-      user_id: ticket.userId,
-      tool_key: 'support_requests',
-      data: payload,
-      updated_at: updatedAt,
-    }, { onConflict: 'user_id,tool_key' });
-    if (error) {
-      toast.error('שגיאה בעדכון הפנייה');
-      console.error(error);
-    } else {
-      toast.success('הפנייה סומנה כטופלה');
-      loadData();
-    }
+  if (active) {
+    return (
+      <AdminTicketDetail
+        ticket={active}
+        onBack={() => { setActive(null); reload(); }}
+        onTicketChanged={() => reload()}
+      />
+    );
   }
 
   return (
@@ -130,14 +79,35 @@ export default function AdminSupport() {
             <LifeBuoy className="w-5 h-5" />
             תמיכה
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">קריאות שנשלחו מהאזור האישי של המשתמשים.</p>
+          <p className="text-sm text-muted-foreground mt-1">פניות שנשלחו על ידי תלמידים. לחץ על פנייה לפתיחת השיחה.</p>
         </div>
-        <Link to="/admin">
-          <Button variant="ghost" size="sm" className="gap-1">
-            <ArrowLeft className="w-4 h-4" />
-            חזרה
+        <div className="flex gap-2">
+          <Button variant="ghost" size="sm" className="gap-1" onClick={reload}>
+            <RefreshCcw className="w-4 h-4" />
+            רענן
           </Button>
-        </Link>
+          <Link to="/admin">
+            <Button variant="ghost" size="sm" className="gap-1">
+              <ArrowLeft className="w-4 h-4" />
+              חזרה
+            </Button>
+          </Link>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <FilterChip active={filter === 'open'} onClick={() => setFilter('open')}>
+          פתוחות
+        </FilterChip>
+        <FilterChip active={filter === 'mine'} onClick={() => setFilter('mine')}>
+          שלי
+        </FilterChip>
+        <FilterChip active={filter === 'urgent'} onClick={() => setFilter('urgent')}>
+          דחופות
+        </FilterChip>
+        <FilterChip active={filter === 'all'} onClick={() => setFilter('all')}>
+          הכל
+        </FilterChip>
       </div>
 
       <div className="relative">
@@ -152,7 +122,7 @@ export default function AdminSupport() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">תור פניות</CardTitle>
+          <CardTitle className="text-base">תור פניות ({filtered.length})</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {loading ? (
@@ -160,39 +130,273 @@ export default function AdminSupport() {
           ) : filtered.length === 0 ? (
             <p className="text-sm text-muted-foreground">אין פניות להצגה.</p>
           ) : (
-            filtered.map(ticket => {
-              const user = userMap.get(ticket.userId);
-              return (
-                <div key={ticket.id} className="rounded-lg border p-4 space-y-3">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <p className="font-medium">{ticket.subject}</p>
-                      <p className="text-sm text-muted-foreground">{user?.display_name || ticket.displayName} · {user?.email || ticket.email}</p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Badge variant="secondary">{statusLabels[ticket.status]}</Badge>
-                      <Badge variant="secondary">{issueLabels[ticket.issueType]}</Badge>
-                      <Badge variant="secondary">{toolLabels[ticket.tool]}</Badge>
-                      <Badge variant="secondary">{priorityLabels[ticket.priority]}</Badge>
-                    </div>
+            filtered.map(ticket => (
+              <button
+                key={ticket.id}
+                type="button"
+                onClick={() => setActive(ticket)}
+                className="w-full text-right rounded-lg border p-4 space-y-2 hover:bg-muted/50 transition"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="font-medium">{ticket.subject}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {ticket.user_display_name || 'תלמיד'} · {ticket.user_email}
+                    </p>
                   </div>
-                  <p className="text-sm whitespace-pre-wrap">{ticket.description}</p>
-                  <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
-                    <span>נוצר: {new Date(ticket.createdAt).toLocaleString('he-IL')}</span>
-                    <span dir="ltr">{ticket.contextPath}</span>
-                    {ticket.status === 'open' ? (
-                      <Button size="sm" variant="outline" className="gap-2" onClick={() => markResolved(ticket.id)}>
-                        <CheckCircle2 className="w-4 h-4" />
-                        סמן כטופל
-                      </Button>
-                    ) : null}
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant={ticket.priority === 'urgent' ? 'destructive' : 'secondary'}>
+                      {priorityLabels[ticket.priority]}
+                    </Badge>
+                    <Badge variant="secondary">{statusLabels[ticket.status]}</Badge>
+                    <Badge variant="secondary">{issueLabels[ticket.issue_type as SupportIssueType] ?? ticket.issue_type}</Badge>
+                    {ticket.tool && <Badge variant="secondary">{toolLabels[ticket.tool as SupportTool] ?? ticket.tool}</Badge>}
                   </div>
                 </div>
-              );
-            })
+                <p className="text-sm whitespace-pre-wrap line-clamp-2">{ticket.description}</p>
+                <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <MessageCircle className="w-3 h-3" />
+                    {ticket.message_count} הודעות
+                  </span>
+                  <span>{new Date(ticket.created_at).toLocaleString('he-IL')}</span>
+                  {ticket.assigned_admin_display_name && (
+                    <span>משויך: {ticket.assigned_admin_display_name}</span>
+                  )}
+                </div>
+              </button>
+            ))
           )}
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+interface ChipProps {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}
+function FilterChip({ active, onClick, children }: ChipProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`px-3 py-1.5 rounded-full text-sm transition ${active ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+interface DetailProps {
+  ticket: SupportTicketAdminView;
+  onBack: () => void;
+  onTicketChanged: () => void;
+}
+
+function AdminTicketDetail({ ticket, onBack, onTicketChanged }: DetailProps) {
+  const { user } = useAuth();
+  const [messages, setMessages] = useState<SupportTicketMessage[]>([]);
+  const [history, setHistory] = useState<SupportTicketHistory[]>([]);
+  const [reply, setReply] = useState('');
+  const [sending, setSending] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [acting, setActing] = useState(false);
+
+  async function loadAll() {
+    setLoading(true);
+    try {
+      const [msgs, hist] = await Promise.all([
+        listMessages(ticket.id),
+        listTicketHistory(ticket.id),
+      ]);
+      setMessages(msgs);
+      setHistory(hist);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'שגיאה בטעינת השיחה');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { loadAll(); }, [ticket.id]);
+
+  const sendReply = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !reply.trim()) return;
+    setSending(true);
+    try {
+      const msg = await postAdminMessage(ticket.id, user.id, reply.trim());
+      setMessages(prev => [...prev, msg]);
+      setReply('');
+      // After admin reply, ticket usually goes back to awaiting_user
+      if (ticket.status === 'open' || ticket.status === 'in_progress') {
+        await updateTicketStatus(ticket.id, 'awaiting_user');
+        onTicketChanged();
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'שגיאה בשליחה');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const assignToMe = async () => {
+    if (!user) return;
+    setActing(true);
+    try {
+      await assignTicket(ticket.id, user.id);
+      toast.success('הפנייה שויכה אליך');
+      onTicketChanged();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'שגיאה בשיוך');
+    } finally {
+      setActing(false);
+    }
+  };
+
+  const setStatus = async (status: SupportStatus) => {
+    setActing(true);
+    try {
+      await updateTicketStatus(ticket.id, status);
+      toast.success(`הסטטוס עודכן ל-${statusLabels[status]}`);
+      onTicketChanged();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'שגיאה בעדכון');
+    } finally {
+      setActing(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4" dir="rtl">
+      <div>
+        <Button variant="ghost" size="sm" className="gap-1 mb-2" onClick={onBack}>
+          <ArrowLeft className="w-4 h-4" />
+          חזרה לתור
+        </Button>
+        <h1 className="text-2xl font-bold">{ticket.subject}</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          {ticket.user_display_name || 'תלמיד'} · {ticket.user_email}
+        </p>
+        <div className="flex flex-wrap items-center gap-2 mt-2">
+          <Badge variant={ticket.priority === 'urgent' ? 'destructive' : 'secondary'}>
+            {priorityLabels[ticket.priority]}
+          </Badge>
+          <Badge variant="secondary">{statusLabels[ticket.status]}</Badge>
+          <Badge variant="secondary">{issueLabels[ticket.issue_type as SupportIssueType] ?? ticket.issue_type}</Badge>
+          {ticket.tool && <Badge variant="secondary">{toolLabels[ticket.tool as SupportTool] ?? ticket.tool}</Badge>}
+        </div>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">פעולות</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-2">
+          {ticket.assigned_admin_id !== user?.id && (
+            <Button size="sm" variant="outline" className="gap-1" disabled={acting} onClick={assignToMe}>
+              <UserPlus className="w-4 h-4" />
+              שייך אליי
+            </Button>
+          )}
+          {ticket.status !== 'in_progress' && (
+            <Button size="sm" variant="outline" disabled={acting} onClick={() => setStatus('in_progress')}>
+              סמן כבטיפול
+            </Button>
+          )}
+          {ticket.status !== 'awaiting_user' && (
+            <Button size="sm" variant="outline" disabled={acting} onClick={() => setStatus('awaiting_user')}>
+              ממתין למשתמש
+            </Button>
+          )}
+          {ticket.status !== 'resolved' && (
+            <Button size="sm" variant="outline" disabled={acting} onClick={() => setStatus('resolved')}>
+              סמן כפתור
+            </Button>
+          )}
+          {ticket.status !== 'closed' && (
+            <Button size="sm" variant="outline" disabled={acting} onClick={() => setStatus('closed')}>
+              סגור פנייה
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">הפנייה המקורית</CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm whitespace-pre-wrap">{ticket.description}</CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <MessageCircle className="w-4 h-4" />
+            השיחה
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {loading ? (
+            <p className="text-sm text-muted-foreground">טוען הודעות...</p>
+          ) : messages.length === 0 ? (
+            <p className="text-sm text-muted-foreground">אין הודעות עדיין. השב לפנייה למטה.</p>
+          ) : (
+            messages.map(msg => (
+              <div
+                key={msg.id}
+                className={`rounded-lg border p-3 ${msg.author_role === 'admin' ? 'bg-primary/5 border-primary/20' : 'bg-muted/30'}`}
+              >
+                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                  <span className="font-medium">{msg.author_role === 'admin' ? 'צוות' : ticket.user_display_name || 'תלמיד'}</span>
+                  <span>{new Date(msg.created_at).toLocaleString('he-IL')}</span>
+                </div>
+                <p className="text-sm whitespace-pre-wrap">{msg.body}</p>
+              </div>
+            ))
+          )}
+
+          {ticket.status !== 'closed' && (
+            <form onSubmit={sendReply} className="space-y-2 pt-3 border-t">
+              <Textarea
+                value={reply}
+                onChange={e => setReply(e.target.value)}
+                placeholder="כתוב תגובה לתלמיד..."
+                rows={4}
+              />
+              <div className="flex justify-end">
+                <Button type="submit" size="sm" disabled={sending || !reply.trim()} className="gap-2">
+                  {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  שלח תגובה
+                </Button>
+              </div>
+            </form>
+          )}
+        </CardContent>
+      </Card>
+
+      {history.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <HistoryIcon className="w-4 h-4" />
+              היסטוריה
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            {history.map(h => (
+              <div key={h.id} className="text-muted-foreground">
+                <span dir="ltr">{new Date(h.created_at).toLocaleString('he-IL')}</span>
+                {' — '}
+                <span>שינוי ב-{h.field}: {h.old_value ?? '∅'} → {h.new_value ?? '∅'}</span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

@@ -1,1 +1,4 @@
-project_id = "vzkhvmyhuajapondurrx"
+# NOTE: This ID is stale and points to a deleted project.
+# Update to your active project ref after running `supabase link --project-ref <ref>`.
+# The runtime client reads VITE_SUPABASE_PROJECT_ID from .env — that's the source of truth.
+project_id = "tvpwltthrbadglrmvqub"

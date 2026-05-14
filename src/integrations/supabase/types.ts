@@ -141,9 +141,181 @@ export type Database = {
         }
         Relationships: []
       }
+      support_tickets: {
+        Row: {
+          id: string
+          user_id: string
+          assigned_admin_id: string | null
+          subject: string
+          description: string
+          issue_type: string
+          tool: string | null
+          priority: Database["public"]["Enums"]["support_priority"]
+          status: Database["public"]["Enums"]["support_status"]
+          context_path: string | null
+          resolved_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          assigned_admin_id?: string | null
+          subject: string
+          description: string
+          issue_type: string
+          tool?: string | null
+          priority?: Database["public"]["Enums"]["support_priority"]
+          status?: Database["public"]["Enums"]["support_status"]
+          context_path?: string | null
+          resolved_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          assigned_admin_id?: string | null
+          subject?: string
+          description?: string
+          issue_type?: string
+          tool?: string | null
+          priority?: Database["public"]["Enums"]["support_priority"]
+          status?: Database["public"]["Enums"]["support_status"]
+          context_path?: string | null
+          resolved_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      support_ticket_messages: {
+        Row: {
+          id: string
+          ticket_id: string
+          author_id: string
+          author_role: "student" | "admin"
+          body: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          ticket_id: string
+          author_id: string
+          author_role: "student" | "admin"
+          body: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          ticket_id?: string
+          author_id?: string
+          author_role?: "student" | "admin"
+          body?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      support_ticket_history: {
+        Row: {
+          id: number
+          ticket_id: string
+          changed_by: string | null
+          field: string
+          old_value: string | null
+          new_value: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: number
+          ticket_id: string
+          changed_by?: string | null
+          field: string
+          old_value?: string | null
+          new_value?: string | null
+          created_at?: string
+        }
+        Update: never
+        Relationships: []
+      }
+      student_activity: {
+        Row: {
+          id: number
+          user_id: string
+          activity_type: string
+          resource_id: string | null
+          metadata: Json | null
+          created_at: string
+        }
+        Insert: {
+          id?: number
+          user_id: string
+          activity_type: string
+          resource_id?: string | null
+          metadata?: Json | null
+          created_at?: string
+        }
+        Update: never
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          id: string
+          user_id: string
+          title: string
+          body: string | null
+          category: string | null
+          link: string | null
+          read_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          title: string
+          body?: string | null
+          category?: string | null
+          link?: string | null
+          read_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          title?: string
+          body?: string | null
+          category?: string | null
+          link?: string | null
+          read_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
-      [_ in never]: never
+      support_tickets_admin_view: {
+        Row: {
+          id: string
+          user_id: string
+          assigned_admin_id: string | null
+          subject: string
+          description: string
+          issue_type: string
+          tool: string | null
+          priority: Database["public"]["Enums"]["support_priority"]
+          status: Database["public"]["Enums"]["support_status"]
+          context_path: string | null
+          resolved_at: string | null
+          created_at: string
+          updated_at: string
+          user_display_name: string | null
+          user_email: string | null
+          assigned_admin_display_name: string | null
+          message_count: number
+          last_message_at: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       admin_list_users: {
@@ -180,10 +352,23 @@ export type Database = {
         }
         Returns: boolean
       }
+      support_assign_ticket: {
+        Args: { _ticket_id: string; _admin_id: string }
+        Returns: undefined
+      }
+      support_update_status: {
+        Args: {
+          _ticket_id: string
+          _status: Database["public"]["Enums"]["support_status"]
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "student"
       user_status: "pending" | "approved" | "rejected"
+      support_status: "open" | "in_progress" | "awaiting_user" | "resolved" | "closed"
+      support_priority: "low" | "normal" | "high" | "urgent"
     }
     CompositeTypes: {
       [_ in never]: never

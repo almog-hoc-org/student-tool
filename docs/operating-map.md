@@ -2,6 +2,18 @@
 
 _Last updated: 2026-05-14_
 
+> **🚨 Critical infrastructure note** (added 2026-05-14):
+> Both Supabase project IDs referenced in the repo do not resolve to live projects:
+> - `tvpwltthrbadglrmvqub` (`.env`): NXDOMAIN
+> - `vzkhvmyhuajapondurrx` (`supabase/config.toml`): NXDOMAIN
+>
+> The app cannot currently authenticate or persist data against a real backend.
+> **Action required** before Phase 1.3+ can be deployed: create a new Supabase project,
+> apply all migrations in `supabase/migrations/`, regenerate the publishable JWT, and
+> update both `.env` and `supabase/config.toml` to the new ref. All foundation-overhaul
+> code is being written assuming this will be wired up; nothing in this codebase requires
+> the legacy projects.
+
 ## Product surfaces
 
 - **Budget Calculator** (`/`): entry point, stores budget inputs/results.
