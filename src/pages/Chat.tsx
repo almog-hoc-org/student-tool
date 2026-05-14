@@ -1,10 +1,27 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { MessageCircle, Send, Sparkles, Loader2, User as UserIcon, AlertCircle } from 'lucide-react';
-import { sendChatMessage, isChatAvailable, type ChatMessage } from '@/lib/local-chat';
+import {
+  MessageCircle,
+  Send,
+  Sparkles,
+  Loader2,
+  User as UserIcon,
+  AlertCircle,
+  LifeBuoy,
+  BookOpen,
+  Clock,
+} from 'lucide-react';
+import {
+  loadMessages,
+  sendAiMessage,
+  escalateToHuman,
+  getOrCreateLatestConversation,
+  type ChatDbMessage,
+  type ConversationRow,
+} from '@/lib/chat-api';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -17,34 +34,90 @@ const SUGGESTIONS = [
 
 export default function Chat() {
   const { profile } = useAuth();
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [conversation, setConversation] = useState<ConversationRow | null>(null);
+  const [messages, setMessages] = useState<ChatDbMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [escalating, setEscalating] = useState(false);
+  const [initError, setInitError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const available = isChatAvailable();
+  // Init: load (or create) latest conversation + its messages
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const conv = await getOrCreateLatestConversation();
+        if (cancelled) return;
+        setConversation(conv);
+        const msgs = await loadMessages(conv.id);
+        if (cancelled) return;
+        setMessages(msgs);
+      } catch (e) {
+        console.error(e);
+        setInitError((e as Error).message);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+    scrollRef.current?.scrollTo({
+      top: scrollRef.current.scrollHeight,
+      behavior: 'smooth',
+    });
   }, [messages, loading]);
 
-  const send = async (text: string) => {
-    if (!text.trim() || loading) return;
-    const userMsg: ChatMessage = { role: 'user', text: text.trim() };
-    setMessages(m => [...m, userMsg]);
-    setInput('');
-    setLoading(true);
+  const send = useCallback(
+    async (text: string) => {
+      if (!text.trim() || loading || !conversation) return;
+      const optimistic: ChatDbMessage = {
+        id: `tmp-${Date.now()}`,
+        conversation_id: conversation.id,
+        role: 'user',
+        content: text.trim(),
+        created_at: new Date().toISOString(),
+      };
+      setMessages((m) => [...m, optimistic]);
+      setInput('');
+      setLoading(true);
+      try {
+        const res = await sendAiMessage(text.trim(), conversation.id);
+        const fresh = await loadMessages(conversation.id);
+        setMessages(fresh);
+        if (res.conversation_id !== conversation.id) {
+          setConversation((c) => (c ? { ...c, id: res.conversation_id } : c));
+        }
+      } catch (err) {
+        toast.error('שגיאה בשליחה. נסה שוב.');
+        console.error(err);
+        setMessages((m) => m.filter((x) => x.id !== optimistic.id));
+        setInput(text.trim());
+      } finally {
+        setLoading(false);
+      }
+    },
+    [conversation, loading],
+  );
 
+  const handleEscalate = async () => {
+    if (!conversation || escalating) return;
+    setEscalating(true);
     try {
-      const reply = await sendChatMessage(messages, text.trim());
-      setMessages(m => [...m, { role: 'model', text: reply }]);
-    } catch (err) {
-      toast.error('שגיאה בשליחת ההודעה. נסה שוב.');
-      console.error(err);
-      setMessages(m => m.slice(0, -1));
-      setInput(text.trim());
+      await escalateToHuman(conversation.id, 'התלמיד ביקש מענה אנושי');
+      toast.success('נציג יחזור אליך תוך 24 שעות', {
+        description: 'ההודעה האחרונה נשלחה לצוות.',
+      });
+      const fresh = await loadMessages(conversation.id);
+      setMessages(fresh);
+      setConversation((c) => (c ? { ...c, status: 'awaiting_human' } : c));
+    } catch (e) {
+      toast.error('שגיאה בהעברה לנציג');
+      console.error(e);
     } finally {
-      setLoading(false);
+      setEscalating(false);
     }
   };
 
@@ -53,58 +126,69 @@ export default function Chat() {
     send(input);
   };
 
-  if (!available) {
+  if (initError) {
     return (
       <div dir="rtl" className="space-y-4">
         <Card>
-          <CardContent className="p-8 text-center space-y-4">
-            <div className="mx-auto w-14 h-14 bg-amber-500/10 rounded-2xl flex items-center justify-center">
-              <AlertCircle className="w-7 h-7 text-amber-500" />
-            </div>
-            <div className="space-y-2">
-              <h3 className="font-semibold">צ'אט AI לא זמין</h3>
-              <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                כדי להפעיל את הצ'אט, צריך להגדיר מפתח Google Gemini API (חינם).
-                צור מפתח ב-
-                <a href="https://aistudio.google.com/apikey" target="_blank" className="underline text-primary">
-                  aistudio.google.com/apikey
-                </a>
-                {' '}והוסף ל-.env:
-              </p>
-              <code className="block bg-muted p-2 rounded text-xs" dir="ltr">
-                VITE_GEMINI_API_KEY=your_key_here
-              </code>
-            </div>
+          <CardContent className="p-8 text-center space-y-2">
+            <AlertCircle className="w-7 h-7 text-amber-500 mx-auto" />
+            <h3 className="font-semibold">לא הצלחנו לטעון את הצ׳אט</h3>
+            <p className="text-sm text-muted-foreground">{initError}</p>
           </CardContent>
         </Card>
       </div>
     );
   }
 
+  const awaitingHuman = conversation?.status === 'awaiting_human';
+
   return (
-    <div className="flex flex-col h-[calc(100vh-240px)] md:h-[calc(100vh-260px)]" dir="rtl">
+    <div
+      className="flex flex-col h-[calc(100vh-240px)] md:h-[calc(100vh-260px)]"
+      dir="rtl"
+    >
       {/* Header */}
-      <div className="mb-3 flex items-center gap-2">
-        <MessageCircle className="w-5 h-5 text-primary" />
-        <h1 className="text-xl font-bold">יועץ AI</h1>
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <MessageCircle className="w-5 h-5 text-primary" />
+          <h1 className="text-xl font-bold">יועץ AI</h1>
+          {awaitingHuman && (
+            <span className="inline-flex items-center gap-1 text-xs bg-amber-500/10 text-amber-600 px-2 py-0.5 rounded-full">
+              <Clock className="w-3 h-3" /> ממתין לנציג
+            </span>
+          )}
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleEscalate}
+          disabled={escalating || awaitingHuman || !conversation}
+        >
+          <LifeBuoy className="w-4 h-4 ml-1" />
+          {awaitingHuman ? 'נציג יחזור אליך' : 'אני רוצה תשובה מאדם'}
+        </Button>
       </div>
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-3 pb-3">
-        {messages.length === 0 ? (
+        {messages.length === 0 && !loading ? (
           <div className="text-center py-8 space-y-4">
             <div className="mx-auto w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center">
               <Sparkles className="w-7 h-7 text-primary" />
             </div>
             <div>
-              <h3 className="font-semibold">שלום {profile?.display_name || 'לך'}!</h3>
+              <h3 className="font-semibold">
+                שלום {profile?.display_name || 'לך'}!
+              </h3>
               <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
-                שאל אותי על רכישת דירה, משכנתא, תוכנית עסקית — ואענה לך על בסיס הנתונים האישיים שלך.
+                שאל אותי על רכישת דירה, משכנתא, תוכנית עסקית — אענה לך על בסיס
+                הנתונים שלך והחומרים בקורס. אם אתה צריך מענה אנושי — לחץ על
+                ״אני רוצה תשובה מאדם״.
               </p>
             </div>
             <div className="space-y-2 max-w-md mx-auto">
               <p className="text-xs text-muted-foreground">הצעות לשאלות:</p>
-              {SUGGESTIONS.map(s => (
+              {SUGGESTIONS.map((s) => (
                 <Button
                   key={s}
                   variant="outline"
@@ -118,19 +202,8 @@ export default function Chat() {
             </div>
           </div>
         ) : (
-          messages.map((m, i) => (
-            <div key={i} className={cn('flex gap-2', m.role === 'user' ? 'flex-row-reverse' : 'flex-row')}>
-              <div className={cn('w-8 h-8 rounded-full flex items-center justify-center shrink-0',
-                m.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
-              )}>
-                {m.role === 'user' ? <UserIcon className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
-              </div>
-              <div className={cn('rounded-2xl px-3 py-2 max-w-[85%] text-sm whitespace-pre-wrap',
-                m.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
-              )}>
-                {m.text}
-              </div>
-            </div>
+          messages.map((m) => (
+            <MessageBubble key={m.id} message={m} />
           ))
         )}
         {loading && (
@@ -149,18 +222,84 @@ export default function Chat() {
       <form onSubmit={handleSubmit} className="flex gap-2 pt-2 border-t">
         <Input
           value={input}
-          onChange={e => setInput(e.target.value)}
+          onChange={(e) => setInput(e.target.value)}
           placeholder="שאל אותי כל דבר..."
-          disabled={loading}
+          disabled={loading || !conversation}
           className="flex-1"
         />
-        <Button type="submit" size="icon" disabled={loading || !input.trim()}>
+        <Button type="submit" size="icon" disabled={loading || !input.trim() || !conversation}>
           <Send className="w-4 h-4" />
         </Button>
       </form>
       <p className="text-xs text-muted-foreground text-center mt-2">
         * המידע להעשרה בלבד ואינו מהווה ייעוץ פיננסי מקצועי.
       </p>
+    </div>
+  );
+}
+
+function MessageBubble({ message }: { message: ChatDbMessage }) {
+  const isUser = message.role === 'user';
+  const isSystem = message.role === 'system';
+  const isHuman = message.role === 'human';
+
+  if (isSystem) {
+    return (
+      <div className="text-center">
+        <span className="inline-block text-xs text-muted-foreground bg-muted/60 rounded-full px-3 py-1">
+          {message.content}
+        </span>
+      </div>
+    );
+  }
+
+  const sources = ((message.metadata as { sources?: { source_file: string }[] } | null)?.sources ?? []);
+
+  return (
+    <div className={cn('flex gap-2', isUser ? 'flex-row-reverse' : 'flex-row')}>
+      <div
+        className={cn(
+          'w-8 h-8 rounded-full flex items-center justify-center shrink-0',
+          isUser
+            ? 'bg-primary text-primary-foreground'
+            : isHuman
+              ? 'bg-emerald-500 text-white'
+              : 'bg-muted',
+        )}
+      >
+        {isUser ? (
+          <UserIcon className="w-4 h-4" />
+        ) : isHuman ? (
+          <LifeBuoy className="w-4 h-4" />
+        ) : (
+          <Sparkles className="w-4 h-4" />
+        )}
+      </div>
+      <div className="max-w-[85%] space-y-1">
+        <div
+          className={cn(
+            'rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap',
+            isUser
+              ? 'bg-primary text-primary-foreground'
+              : isHuman
+                ? 'bg-emerald-500/10 text-foreground border border-emerald-500/20'
+                : 'bg-muted',
+          )}
+        >
+          {message.content}
+        </div>
+        {sources.length > 0 && (
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <BookOpen className="w-3 h-3" />
+            <span>
+              מבוסס על: {sources.map((s) => s.source_file).join(', ')}
+            </span>
+          </div>
+        )}
+        {isHuman && (
+          <div className="text-xs text-emerald-600">תשובה מנציג אנושי</div>
+        )}
+      </div>
     </div>
   );
 }

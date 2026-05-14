@@ -1,150 +1,123 @@
-import { useState, useEffect } from 'react';
-import { Bell, X, Check } from 'lucide-react';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Bell, X, Check, MessageCircle, Megaphone, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useNotifications } from '@/hooks/useNotifications';
+import { cn } from '@/lib/utils';
 
-interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  timestamp: Date;
-  read: boolean;
-  type: 'info' | 'success' | 'warning' | 'error';
-}
-
-const STORAGE_KEY = 'calculator-notifications';
+const typeStyles: Record<string, { bg: string; icon: typeof Bell }> = {
+  broadcast: { bg: 'bg-primary/5 border-primary/20', icon: Megaphone },
+  reply: { bg: 'bg-emerald-500/5 border-emerald-500/20', icon: MessageCircle },
+  sla_breach: { bg: 'bg-amber-500/10 border-amber-500/30', icon: AlertCircle },
+  system: { bg: 'bg-muted/40 border-muted', icon: Bell },
+};
 
 export function NotificationCenter() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [isOpen, setIsOpen] = useState(false);
-
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      setNotifications(parsed.map((n: any) => ({ ...n, timestamp: new Date(n.timestamp) })));
-    }
-  }, []);
-
-  const unreadCount = notifications.filter(n => !n.read).length;
-
-  const markAsRead = (id: string) => {
-    const updated = notifications.map(n => 
-      n.id === id ? { ...n, read: true } : n
-    );
-    setNotifications(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  };
-
-  const markAllAsRead = () => {
-    const updated = notifications.map(n => ({ ...n, read: true }));
-    setNotifications(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  };
-
-  const deleteNotification = (id: string) => {
-    const updated = notifications.filter(n => n.id !== id);
-    setNotifications(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  };
-
-  const typeColors = {
-    info: 'bg-primary/10 text-primary border-primary/20',
-    success: 'bg-green-500/10 text-green-500 border-green-500/20',
-    warning: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
-    error: 'bg-destructive/10 text-destructive border-destructive/20',
-  };
+  const [open, setOpen] = useState(false);
+  const { items, unreadCount, markRead, markAllRead, remove } = useNotifications();
 
   return (
     <div className="relative">
       <Button
         variant="ghost"
         size="icon"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => setOpen((v) => !v)}
         className="relative"
+        aria-label="התראות"
       >
         <Bell className="h-5 w-5" />
         {unreadCount > 0 && (
-          <Badge 
-            variant="destructive" 
-            className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+          <Badge
+            variant="destructive"
+            className="absolute -top-1 -right-1 h-5 min-w-5 px-1 flex items-center justify-center text-xs"
           >
             {unreadCount}
           </Badge>
         )}
       </Button>
 
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: -10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: -10 }}
-            className="absolute left-0 mt-2 w-96 z-50"
-          >
+      {open && (
+        <>
+          {/* click-outside catcher */}
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setOpen(false)}
+            aria-hidden
+          />
+          <div className="absolute left-0 mt-2 w-[22rem] max-w-[calc(100vw-2rem)] z-50" dir="rtl">
             <Card className="border-2 shadow-xl">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="text-lg">התראות</CardTitle>
-                    <CardDescription>
-                      {unreadCount > 0 ? `${unreadCount} התראות חדשות` : 'אין התראות חדשות'}
+                    <CardTitle className="text-base">התראות</CardTitle>
+                    <CardDescription className="text-xs">
+                      {unreadCount > 0
+                        ? `${unreadCount} חדשות`
+                        : 'הכל מעודכן'}
                     </CardDescription>
                   </div>
                   {unreadCount > 0 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={markAllAsRead}
-                    >
-                      <Check className="h-4 w-4 ml-2" />
-                      סמן הכל כנקרא
+                    <Button variant="ghost" size="sm" onClick={markAllRead}>
+                      <Check className="w-3 h-3 ml-1" /> סמן הכל
                     </Button>
                   )}
                 </div>
               </CardHeader>
               <CardContent className="p-0">
-                <ScrollArea className="h-[400px]">
-                  {notifications.length === 0 ? (
-                    <div className="text-center py-12 text-muted-foreground">
-                      <Bell className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                      <p>אין התראות</p>
+                <ScrollArea className="h-[360px]">
+                  {items.length === 0 ? (
+                    <div className="text-center py-10 text-muted-foreground">
+                      <Bell className="w-10 h-10 mx-auto mb-2 opacity-40" />
+                      <p className="text-sm">אין התראות עדיין</p>
                     </div>
                   ) : (
-                    <div className="space-y-2 p-4">
-                      {notifications.map((notification) => (
-                        <motion.div
-                          key={notification.id}
-                          layout
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: 20 }}
-                          className={`p-3 rounded-lg border ${typeColors[notification.type]} ${
-                            !notification.read ? 'border-2' : ''
-                          }`}
-                        >
-                          <div className="flex items-start justify-between gap-2">
+                    <div className="space-y-2 p-3">
+                      {items.map((n) => {
+                        const style = typeStyles[n.type] ?? typeStyles.system;
+                        const Icon = style.icon;
+                        const body = (
+                          <div
+                            className={cn(
+                              'p-2.5 rounded-lg border flex items-start gap-2',
+                              style.bg,
+                              !n.read_at && 'ring-1 ring-primary/30',
+                            )}
+                          >
+                            <Icon className="w-4 h-4 mt-0.5 shrink-0" />
                             <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-sm mb-1 truncate">
-                                {notification.title}
+                              <p className="text-sm font-semibold truncate">
+                                {n.title}
                               </p>
-                              <p className="text-xs text-muted-foreground mb-2">
-                                {notification.message}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {notification.timestamp.toLocaleString('he-IL')}
+                              {n.body && (
+                                <p className="text-xs text-muted-foreground line-clamp-2">
+                                  {n.body}
+                                </p>
+                              )}
+                              <p className="text-[10px] text-muted-foreground mt-1">
+                                {new Date(n.created_at).toLocaleString('he-IL')}
                               </p>
                             </div>
-                            <div className="flex gap-1">
-                              {!notification.read && (
+                            <div className="flex flex-col gap-0.5">
+                              {!n.read_at && (
                                 <Button
                                   variant="ghost"
                                   size="icon"
                                   className="h-6 w-6"
-                                  onClick={() => markAsRead(notification.id)}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    markRead(n.id);
+                                  }}
+                                  aria-label="סמן כנקרא"
                                 >
                                   <Check className="h-3 w-3" />
                                 </Button>
@@ -153,40 +126,41 @@ export function NotificationCenter() {
                                 variant="ghost"
                                 size="icon"
                                 className="h-6 w-6"
-                                onClick={() => deleteNotification(notification.id)}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  remove(n.id);
+                                }}
+                                aria-label="מחק"
                               >
                                 <X className="h-3 w-3" />
                               </Button>
                             </div>
                           </div>
-                        </motion.div>
-                      ))}
+                        );
+                        return n.link ? (
+                          <Link
+                            key={n.id}
+                            to={n.link}
+                            onClick={() => {
+                              if (!n.read_at) markRead(n.id);
+                              setOpen(false);
+                            }}
+                          >
+                            {body}
+                          </Link>
+                        ) : (
+                          <div key={n.id}>{body}</div>
+                        );
+                      })}
                     </div>
                   )}
                 </ScrollArea>
               </CardContent>
             </Card>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+        </>
+      )}
     </div>
   );
-}
-
-export function addNotification(notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  const notifications: Notification[] = stored ? JSON.parse(stored) : [];
-  
-  const newNotification: Notification = {
-    ...notification,
-    id: Date.now().toString(),
-    timestamp: new Date(),
-    read: false,
-  };
-  
-  const updated = [newNotification, ...notifications].slice(0, 50); // Keep last 50
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  
-  // Trigger custom event to update UI
-  window.dispatchEvent(new CustomEvent('notification-added'));
 }

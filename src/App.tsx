@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,19 +10,31 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminRoute } from "@/components/AdminRoute";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import BudgetCalculator from "./pages/BudgetCalculator";
-import BusinessPlan from "./pages/BusinessPlan";
-import MortgageCalculator from "./pages/MortgageCalculator";
 import Login from "./pages/Login";
 import PendingApproval from "./pages/PendingApproval";
-import AIAdvisor from "./pages/AIAdvisor";
-import Chat from "./pages/Chat";
-import Account from "./pages/Account";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminUsers from "./pages/admin/AdminUsers";
-import AdminInviteCodes from "./pages/admin/AdminInviteCodes";
 import NotFound from "./pages/NotFound";
 
+// Heavy / less-frequent routes — split into separate chunks.
+const BusinessPlan = lazy(() => import("./pages/BusinessPlan"));
+const MortgageCalculator = lazy(() => import("./pages/MortgageCalculator"));
+const AIAdvisor = lazy(() => import("./pages/AIAdvisor"));
+const Chat = lazy(() => import("./pages/Chat"));
+const Account = lazy(() => import("./pages/Account"));
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
+const AdminInviteCodes = lazy(() => import("./pages/admin/AdminInviteCodes"));
+const AdminInbox = lazy(() => import("./pages/admin/AdminInbox"));
+const AdminBroadcasts = lazy(() => import("./pages/admin/AdminBroadcasts"));
+
 const queryClient = new QueryClient({});
+
+function RouteFallback() {
+  return (
+    <div className="flex items-center justify-center py-20 text-sm text-muted-foreground">
+      טוען…
+    </div>
+  );
+}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -38,18 +51,22 @@ const App = () => (
               <ProtectedRoute>
                 <Layout>
                   <div className="animate-fade-in">
-                    <Routes>
-                      <Route path="/" element={<BudgetCalculator />} />
-                      <Route path="/business-plan" element={<BusinessPlan />} />
-                      <Route path="/mortgage" element={<MortgageCalculator />} />
-                      <Route path="/advisor" element={<AIAdvisor />} />
-                      <Route path="/chat" element={<Chat />} />
-                      <Route path="/account" element={<Account />} />
-                      <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-                      <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
-                      <Route path="/admin/codes" element={<AdminRoute><AdminInviteCodes /></AdminRoute>} />
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
+                    <Suspense fallback={<RouteFallback />}>
+                      <Routes>
+                        <Route path="/" element={<BudgetCalculator />} />
+                        <Route path="/business-plan" element={<BusinessPlan />} />
+                        <Route path="/mortgage" element={<MortgageCalculator />} />
+                        <Route path="/advisor" element={<AIAdvisor />} />
+                        <Route path="/chat" element={<Chat />} />
+                        <Route path="/account" element={<Account />} />
+                        <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+                        <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
+                        <Route path="/admin/codes" element={<AdminRoute><AdminInviteCodes /></AdminRoute>} />
+                        <Route path="/admin/inbox" element={<AdminRoute><AdminInbox /></AdminRoute>} />
+                        <Route path="/admin/broadcasts" element={<AdminRoute><AdminBroadcasts /></AdminRoute>} />
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </Suspense>
                   </div>
                 </Layout>
               </ProtectedRoute>

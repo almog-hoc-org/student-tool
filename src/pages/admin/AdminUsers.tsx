@@ -4,10 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Check, X, Shield, Search } from 'lucide-react';
+import { ArrowLeft, Check, X, Shield, Search, Activity } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { Database } from '@/integrations/supabase/types';
+import { UserDrawer } from '@/components/UserDrawer';
 
 type UserStatus = Database['public']['Enums']['user_status'];
 type AppRole = Database['public']['Enums']['app_role'];
@@ -39,6 +40,7 @@ export default function AdminUsers() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [drawerUser, setDrawerUser] = useState<UserRow | null>(null);
 
   useEffect(() => { loadUsers(); }, []);
 
@@ -140,6 +142,9 @@ export default function AdminUsers() {
                   </div>
                 </div>
                 <div className="flex gap-1 shrink-0">
+                  <Button size="sm" variant="ghost" onClick={() => setDrawerUser(user)} title="פעילות">
+                    <Activity className="w-4 h-4 text-blue-500" />
+                  </Button>
                   {user.status !== 'approved' && (
                     <Button size="sm" variant="ghost" onClick={() => updateStatus(user.user_id, 'approved')} title="אשר">
                       <Check className="w-4 h-4 text-green-500" />
@@ -159,6 +164,12 @@ export default function AdminUsers() {
           ))
         )}
       </div>
+
+      <UserDrawer
+        userId={drawerUser?.user_id ?? null}
+        userLabel={drawerUser ? (drawerUser.display_name || drawerUser.email) : null}
+        onClose={() => setDrawerUser(null)}
+      />
     </div>
   );
 }

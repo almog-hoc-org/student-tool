@@ -141,6 +141,207 @@ export type Database = {
         }
         Relationships: []
       }
+      conversations: {
+        Row: {
+          id: string
+          user_id: string
+          title: string | null
+          status: Database["public"]["Enums"]["conversation_status"]
+          priority: number
+          assigned_to: string | null
+          last_message_at: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string
+          title?: string | null
+          status?: Database["public"]["Enums"]["conversation_status"]
+          priority?: number
+          assigned_to?: string | null
+          last_message_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          title?: string | null
+          status?: Database["public"]["Enums"]["conversation_status"]
+          priority?: number
+          assigned_to?: string | null
+          last_message_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          id: string
+          conversation_id: string
+          role: Database["public"]["Enums"]["message_role"]
+          content: string
+          tokens_used: number | null
+          author_id: string | null
+          metadata: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          conversation_id: string
+          role: Database["public"]["Enums"]["message_role"]
+          content: string
+          tokens_used?: number | null
+          author_id?: string | null
+          metadata?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          conversation_id?: string
+          role?: Database["public"]["Enums"]["message_role"]
+          content?: string
+          tokens_used?: number | null
+          author_id?: string | null
+          metadata?: Json
+          created_at?: string
+        }
+        Relationships: []
+      }
+      calculation_snapshots: {
+        Row: {
+          id: string
+          user_id: string
+          tool_key: string
+          name: string
+          data: Json
+          notes: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          tool_key: string
+          name: string
+          data?: Json
+          notes?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          tool_key?: string
+          name?: string
+          data?: Json
+          notes?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          id: string
+          user_id: string
+          type: string
+          title: string
+          body: string | null
+          link: string | null
+          metadata: Json
+          read_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          type: string
+          title: string
+          body?: string | null
+          link?: string | null
+          metadata?: Json
+          read_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          type?: string
+          title?: string
+          body?: string | null
+          link?: string | null
+          metadata?: Json
+          read_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      broadcasts: {
+        Row: {
+          id: string
+          title: string
+          body: string
+          link: string | null
+          target_filter: Json
+          sent_by: string | null
+          sent_at: string
+          total_recipients: number
+        }
+        Insert: {
+          id?: string
+          title: string
+          body: string
+          link?: string | null
+          target_filter?: Json
+          sent_by?: string | null
+          sent_at?: string
+          total_recipients?: number
+        }
+        Update: {
+          id?: string
+          title?: string
+          body?: string
+          link?: string | null
+          target_filter?: Json
+          sent_by?: string | null
+          sent_at?: string
+          total_recipients?: number
+        }
+        Relationships: []
+      }
+      knowledge_chunks: {
+        Row: {
+          id: string
+          source_file: string
+          source_id: string | null
+          chunk_index: number
+          content: string
+          embedding: unknown | null
+          metadata: Json
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          source_file: string
+          source_id?: string | null
+          chunk_index?: number
+          content: string
+          embedding?: unknown | null
+          metadata?: Json
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          source_file?: string
+          source_id?: string | null
+          chunk_index?: number
+          content?: string
+          embedding?: unknown | null
+          metadata?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -180,10 +381,106 @@ export type Database = {
         }
         Returns: boolean
       }
+      conversation_escalate_to_human: {
+        Args: { _conversation_id: string; _reason: string | null }
+        Returns: undefined
+      }
+      admin_list_conversations: {
+        Args: {
+          _status: Database["public"]["Enums"]["conversation_status"] | null
+          _limit?: number
+        }
+        Returns: {
+          id: string
+          user_id: string
+          user_email: string
+          user_display_name: string | null
+          title: string | null
+          status: Database["public"]["Enums"]["conversation_status"]
+          priority: number
+          assigned_to: string | null
+          last_message_at: string
+          created_at: string
+          message_count: number
+          last_message_preview: string | null
+        }[]
+      }
+      admin_assign_conversation: {
+        Args: { _conversation_id: string; _assignee: string }
+        Returns: undefined
+      }
+      admin_reply: {
+        Args: {
+          _conversation_id: string
+          _content: string
+          _resolve?: boolean
+        }
+        Returns: string
+      }
+      admin_send_broadcast: {
+        Args: {
+          _title: string
+          _body: string
+          _link: string | null
+          _target_filter: Json
+        }
+        Returns: string
+      }
+      admin_broadcast_preview_count: {
+        Args: { _target_filter: Json }
+        Returns: number
+      }
+      admin_user_activity: {
+        Args: { _user_id: string; _limit?: number }
+        Returns: {
+          event_kind: string
+          event_type: string
+          tool_key: string | null
+          content: string | null
+          occurred_at: string
+        }[]
+      }
+      admin_dashboard_kpis: {
+        Args: Record<string, never>
+        Returns: {
+          total_users: number
+          approved_users: number
+          pending_users: number
+          active_7d: number
+          inactive_14d: number
+          open_conversations: number
+          awaiting_human: number
+          avg_response_seconds: number | null
+        }[]
+      }
+      mark_notification_read: {
+        Args: { _id: string }
+        Returns: undefined
+      }
+      mark_all_notifications_read: {
+        Args: Record<string, never>
+        Returns: number
+      }
+      match_chunks: {
+        Args: {
+          query_embedding: unknown
+          match_threshold?: number
+          match_count?: number
+        }
+        Returns: {
+          id: string
+          source_file: string
+          content: string
+          metadata: Json
+          similarity: number
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "student"
       user_status: "pending" | "approved" | "rejected"
+      conversation_status: "open" | "awaiting_human" | "resolved"
+      message_role: "user" | "ai" | "human" | "system"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -313,6 +610,8 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "student"],
       user_status: ["pending", "approved", "rejected"],
+      conversation_status: ["open", "awaiting_human", "resolved"],
+      message_role: ["user", "ai", "human", "system"],
     },
   },
 } as const

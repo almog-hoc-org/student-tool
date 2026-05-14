@@ -22,6 +22,7 @@ import {
   SensitivityResult,
 } from '@/types/mortgage-calculator';
 import { Plus, Trash2, Home as HomeIcon, Import, RotateCcw, ArrowLeft } from 'lucide-react';
+import { SaveSnapshotButton } from '@/components/SaveSnapshotButton';
 import { formatCurrency } from '@/lib/validation/validators';
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,
@@ -145,9 +146,19 @@ export default function MortgageCalculator() {
         <div className="md:col-span-2 space-y-4 md:sticky md:top-28 md:self-start">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold">מחשבון משכנתא</h1>
-            <Button variant="ghost" size="sm" onClick={handleReset} className="text-muted-foreground h-8 gap-1">
-              <RotateCcw className="w-3.5 h-3.5" /> אפס
-            </Button>
+            <div className="flex items-center gap-1">
+              <SaveSnapshotButton
+                toolKey="mortgage"
+                disabled={!results}
+                getData={() => ({
+                  inputs: { tracks, monthlyIncome, isOffPlan, propertyPrice, madadRate, madadYears },
+                  results,
+                })}
+              />
+              <Button variant="ghost" size="sm" onClick={handleReset} className="text-muted-foreground h-8 gap-1">
+                <RotateCcw className="w-3.5 h-3.5" /> אפס
+              </Button>
+            </div>
           </div>
           <p className="text-sm text-muted-foreground">
             בנה תמהיל, השווה מסלולים וראה כמה תשלם.

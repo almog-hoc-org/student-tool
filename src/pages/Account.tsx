@@ -5,12 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
   User, Wallet, TrendingUp, Home, Sparkles, LogOut, CheckCircle2, Circle,
-  MessageCircle, ArrowLeft, Calendar,
+  MessageCircle, ArrowLeft, Calendar, Bookmark,
 } from 'lucide-react';
 import { load } from '@/lib/storage';
 import { BudgetOutput } from '@/lib/calculations/budget-calculator';
 import { formatCurrency } from '@/lib/validation/validators';
 import { cn } from '@/lib/utils';
+import { SnapshotsList } from '@/components/SnapshotsList';
 
 interface ToolStatus {
   key: string;
@@ -157,6 +158,15 @@ export default function Account() {
             </Link>
           );
         })}
+      </div>
+
+      {/* Saved snapshots */}
+      <div className="space-y-2">
+        <h2 className="font-semibold text-sm text-muted-foreground px-1 flex items-center gap-1">
+          <Bookmark className="w-4 h-4" />
+          התרחישים השמורים שלי
+        </h2>
+        <SnapshotsList />
       </div>
 
       {/* Quick actions */}
