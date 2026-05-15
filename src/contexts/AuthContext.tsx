@@ -15,6 +15,7 @@ interface Profile {
   status: UserStatus;
   created_at: string;
   updated_at: string;
+  onboarded_at: string | null;
 }
 
 interface AuthState {

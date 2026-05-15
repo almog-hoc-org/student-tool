@@ -8,8 +8,13 @@ import {
 } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Activity, MessageCircle, Bookmark, BellRing, Wrench } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import {
+  Loader2, Activity, MessageCircle, Bookmark, BellRing, Wrench, StickyNote, Save,
+} from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 interface ActivityRow {
@@ -43,21 +48,59 @@ const KIND_COLORS = {
 export function UserDrawer({ userId, userLabel, onClose }: Props) {
   const [rows, setRows] = useState<ActivityRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const [notes, setNotes] = useState('');
+  const [notesLoading, setNotesLoading] = useState(false);
+  const [savingNotes, setSavingNotes] = useState(false);
+  const [notesDirty, setNotesDirty] = useState(false);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      setRows([]);
+      setNotes('');
+      setNotesDirty(false);
+      return;
+    }
     setLoading(true);
+    setNotesLoading(true);
     supabase
       .rpc('admin_user_activity', { _user_id: userId, _limit: 200 })
       .then(({ data, error }) => {
         if (!error && data) setRows(data as ActivityRow[]);
         setLoading(false);
       });
+    supabase
+      .from('profiles')
+      .select('admin_notes')
+      .eq('user_id', userId)
+      .maybeSingle()
+      .then(({ data }) => {
+        setNotes(data?.admin_notes ?? '');
+        setNotesDirty(false);
+        setNotesLoading(false);
+      });
   }, [userId]);
+
+  const saveNotes = async () => {
+    if (!userId) return;
+    setSavingNotes(true);
+    try {
+      const { error } = await supabase.rpc('admin_set_notes', {
+        _user_id: userId,
+        _notes: notes,
+      });
+      if (error) throw error;
+      toast.success('הערות נשמרו');
+      setNotesDirty(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'שגיאה בשמירה');
+    } finally {
+      setSavingNotes(false);
+    }
+  };
 
   return (
     <Sheet open={!!userId} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent dir="rtl" side="left" className="w-full sm:max-w-md">
+      <SheetContent dir="rtl" side="left" className="w-full sm:max-w-md flex flex-col">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <Activity className="w-5 h-5" />
@@ -66,7 +109,45 @@ export function UserDrawer({ userId, userLabel, onClose }: Props) {
           <SheetDescription>{userLabel}</SheetDescription>
         </SheetHeader>
 
-        <div className="mt-4 h-[calc(100vh-150px)]">
+        <div className="mt-4 space-y-2 border-y py-3">
+          <div className="flex items-center justify-between gap-2">
+            <label className="text-sm font-medium flex items-center gap-1">
+              <StickyNote className="w-4 h-4" />
+              הערות פנימיות (רק אדמין)
+            </label>
+            {notesDirty && (
+              <Button
+                size="sm"
+                onClick={saveNotes}
+                disabled={savingNotes}
+                className="gap-1 h-7"
+              >
+                {savingNotes ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <Save className="w-3 h-3" />
+                )}
+                שמור
+              </Button>
+            )}
+          </div>
+          {notesLoading ? (
+            <p className="text-xs text-muted-foreground">טוען...</p>
+          ) : (
+            <Textarea
+              rows={3}
+              value={notes}
+              onChange={(e) => {
+                setNotes(e.target.value);
+                setNotesDirty(true);
+              }}
+              placeholder="לדוגמה: התלמיד שאל על השכרת דירה ביבנה. דוחף אותו לשיעור 3..."
+              className="text-sm"
+            />
+          )}
+        </div>
+
+        <div className="mt-2 flex-1 min-h-0">
           {loading ? (
             <div className="flex items-center gap-2 p-4 text-sm text-muted-foreground">
               <Loader2 className="w-4 h-4 animate-spin" /> טוען…

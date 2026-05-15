@@ -26,6 +26,7 @@ const AdminInviteCodes = lazy(() => import("./pages/admin/AdminInviteCodes"));
 const AdminInbox = lazy(() => import("./pages/admin/AdminInbox"));
 const AdminBroadcasts = lazy(() => import("./pages/admin/AdminBroadcasts"));
 const AdminKnowledge = lazy(() => import("./pages/admin/AdminKnowledge"));
+const Onboarding = lazy(() => import("./pages/Onboarding"));
 
 const queryClient = new QueryClient({});
 
@@ -60,6 +61,7 @@ const App = () => (
                         <Route path="/advisor" element={<AIAdvisor />} />
                         <Route path="/chat" element={<Chat />} />
                         <Route path="/account" element={<Account />} />
+                        <Route path="/onboarding" element={<Onboarding />} />
                         <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
                         <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
                         <Route path="/admin/codes" element={<AdminRoute><AdminInviteCodes /></AdminRoute>} />
