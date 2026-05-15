@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,7 @@ import {
   sendAiMessage,
   escalateToHuman,
   getOrCreateLatestConversation,
+  getConversation,
   type ChatDbMessage,
   type ConversationRow,
 } from '@/lib/chat-api';
@@ -34,6 +36,8 @@ const SUGGESTIONS = [
 
 export default function Chat() {
   const { profile } = useAuth();
+  const [searchParams] = useSearchParams();
+  const explicitConversationId = searchParams.get('conversation');
   const [conversation, setConversation] = useState<ConversationRow | null>(null);
   const [messages, setMessages] = useState<ChatDbMessage[]>([]);
   const [input, setInput] = useState('');
@@ -42,13 +46,19 @@ export default function Chat() {
   const [initError, setInitError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Init: load (or create) latest conversation + its messages
+  // Init: load explicit conversation (deep-link from notification) or latest
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const conv = await getOrCreateLatestConversation();
+        const conv = explicitConversationId
+          ? await getConversation(explicitConversationId)
+          : await getOrCreateLatestConversation();
         if (cancelled) return;
+        if (!conv) {
+          setInitError('שיחה לא נמצאה');
+          return;
+        }
         setConversation(conv);
         const msgs = await loadMessages(conv.id);
         if (cancelled) return;
@@ -61,7 +71,7 @@ export default function Chat() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [explicitConversationId]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({

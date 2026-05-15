@@ -12,6 +12,7 @@ import { BudgetOutput } from '@/lib/calculations/budget-calculator';
 import { formatCurrency } from '@/lib/validation/validators';
 import { cn } from '@/lib/utils';
 import { SnapshotsList } from '@/components/SnapshotsList';
+import { ExpertContactCard } from '@/components/ExpertContactCard';
 
 interface ToolStatus {
   key: string;
@@ -159,6 +160,9 @@ export default function Account() {
           );
         })}
       </div>
+
+      {/* Expert contact CTA */}
+      <ExpertContactCard />
 
       {/* Saved snapshots */}
       <div className="space-y-2">

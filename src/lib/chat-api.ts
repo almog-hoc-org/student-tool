@@ -39,6 +39,16 @@ export async function getOrCreateLatestConversation(): Promise<ConversationRow> 
   return data as ConversationRow;
 }
 
+export async function getConversation(id: string): Promise<ConversationRow | null> {
+  const { data, error } = await supabase
+    .from('conversations')
+    .select('id, title, status, last_message_at')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw error;
+  return data as ConversationRow | null;
+}
+
 export async function loadMessages(conversationId: string): Promise<ChatDbMessage[]> {
   const { data, error } = await supabase
     .from('messages')
