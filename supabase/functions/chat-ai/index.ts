@@ -22,7 +22,7 @@ const CORS_HEADERS = {
 };
 
 const CHAT_MODEL = Deno.env.get("GEMINI_CHAT_MODEL") || "gemini-2.5-flash";
-const EMBED_MODEL = Deno.env.get("GEMINI_EMBED_MODEL") || "text-embedding-004";
+const EMBED_MODEL = Deno.env.get("GEMINI_EMBED_MODEL") || "gemini-embedding-001";
 const HISTORY_LIMIT = 10;
 const RAG_TOP_K = 5;
 const RAG_THRESHOLD = 0.72;
@@ -252,6 +252,7 @@ async function retrieveChunks(
       body: JSON.stringify({
         content: { parts: [{ text: query }] },
         taskType: "RETRIEVAL_QUERY",
+        outputDimensionality: 768,
       }),
     });
     if (!embedResp.ok) return null;

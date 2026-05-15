@@ -20,7 +20,7 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const EMBED_MODEL = Deno.env.get("GEMINI_EMBED_MODEL") || "text-embedding-004";
+const EMBED_MODEL = Deno.env.get("GEMINI_EMBED_MODEL") || "gemini-embedding-001";
 const CHUNK_WORDS = 280;
 const CHUNK_OVERLAP = 40;
 
@@ -118,8 +118,8 @@ async function embed(text: string, key: string): Promise<number[]> {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: `models/${EMBED_MODEL}`,
         content: { parts: [{ text }] },
+        outputDimensionality: 768,
       }),
     },
   );
