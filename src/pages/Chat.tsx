@@ -11,14 +11,12 @@ import {
   Loader2,
   User as UserIcon,
   AlertCircle,
-  LifeBuoy,
   BookOpen,
   Clock,
 } from 'lucide-react';
 import {
   loadMessages,
   sendAiMessage,
-  escalateToHuman,
   getOrCreateLatestConversation,
   getConversation,
   type ChatDbMessage,
@@ -43,7 +41,6 @@ export default function Chat() {
   const [messages, setMessages] = useState<ChatDbMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [escalating, setEscalating] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -113,25 +110,6 @@ export default function Chat() {
     [conversation, loading],
   );
 
-  const handleEscalate = async () => {
-    if (!conversation || escalating) return;
-    setEscalating(true);
-    try {
-      await escalateToHuman(conversation.id, 'התלמיד ביקש מענה אנושי');
-      toast.success('נציג יחזור אליך תוך 24 שעות', {
-        description: 'ההודעה האחרונה נשלחה לצוות.',
-      });
-      const fresh = await loadMessages(conversation.id);
-      setMessages(fresh);
-      setConversation((c) => (c ? { ...c, status: 'awaiting_human' } : c));
-    } catch (e) {
-      toast.error('שגיאה בהעברה לנציג');
-      console.error(e);
-    } finally {
-      setEscalating(false);
-    }
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     send(input);
@@ -159,25 +137,14 @@ export default function Chat() {
       dir="rtl"
     >
       {/* Header */}
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <MessageCircle className="w-5 h-5 text-primary" />
-          <h1 className="text-xl font-bold">יועץ AI</h1>
-          {awaitingHuman && (
-            <span className="inline-flex items-center gap-1 text-xs bg-amber-500/10 text-amber-600 px-2 py-0.5 rounded-full">
-              <Clock className="w-3 h-3" /> ממתין לנציג
-            </span>
-          )}
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleEscalate}
-          disabled={escalating || awaitingHuman || !conversation}
-        >
-          <LifeBuoy className="w-4 h-4 ml-1" />
-          {awaitingHuman ? 'נציג יחזור אליך' : 'אני רוצה תשובה מאדם'}
-        </Button>
+      <div className="mb-3 flex items-center gap-2">
+        <MessageCircle className="w-5 h-5 text-primary" />
+        <h1 className="text-xl font-bold">יועץ AI</h1>
+        {awaitingHuman && (
+          <span className="inline-flex items-center gap-1 text-xs bg-amber-500/10 text-amber-600 px-2 py-0.5 rounded-full">
+            <Clock className="w-3 h-3" /> ממתין לנציג
+          </span>
+        )}
       </div>
 
       {/* Messages */}
