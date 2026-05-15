@@ -26,6 +26,7 @@ import {
 } from '@/lib/chat-api';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { ExpertContactCard } from '@/components/ExpertContactCard';
 
 const SUGGESTIONS = [
   'מה אני יכול לקנות עם ההון שלי?',
@@ -228,8 +229,13 @@ export default function Chat() {
         )}
       </div>
 
+      {/* Expert contact CTA — visible after AI tried */}
+      <div className="pt-2 border-t">
+        <ExpertContactCard />
+      </div>
+
       {/* Input */}
-      <form onSubmit={handleSubmit} className="flex gap-2 pt-2 border-t">
+      <form onSubmit={handleSubmit} className="flex gap-2 pt-2 border-t mt-2">
         <Input
           value={input}
           onChange={(e) => setInput(e.target.value)}
