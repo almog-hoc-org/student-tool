@@ -246,8 +246,10 @@ export default function Chat() {
         * המידע להעשרה בלבד ואינו מהווה ייעוץ פיננסי מקצועי.
       </p>
 
-      {/* Subtle escape hatch — AI is the primary path; human is a safety net */}
-      <ExpertContactCard variant="subtle" />
+      {/* Inviting banner — AI is the primary path; human is a clearly-marked safety net */}
+      <div className="mt-3">
+        <ExpertContactCard variant="subtle" />
+      </div>
     </div>
   );
 }

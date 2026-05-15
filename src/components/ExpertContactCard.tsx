@@ -62,12 +62,22 @@ export function ExpertContactCard({ variant = 'card' }: { variant?: 'card' | 'su
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="w-full flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition py-1"
+          className="w-full group flex items-center gap-3 rounded-xl border border-border bg-muted/40 hover:bg-muted/70 hover:border-primary/40 transition px-4 py-3 text-right"
         >
-          <Headphones className="w-3.5 h-3.5" />
-          <span>
-            לא מצאת תשובה? <span className="underline underline-offset-2">פנה למומחה קרנף אנושי</span>
-          </span>
+          <div className="w-9 h-9 rounded-full bg-background border flex items-center justify-center shrink-0 text-primary group-hover:scale-105 transition">
+            <Headphones className="w-4 h-4" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium leading-tight">
+              לא מצאת תשובה? כתוב למומחה קרנף אנושי
+            </p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              נחזור אליך בהקדם עם מענה אישי
+            </p>
+          </div>
+          <div className="text-xs font-medium text-primary opacity-70 group-hover:opacity-100 transition shrink-0">
+            פנייה ←
+          </div>
         </button>
       ) : (
         <Card className="border-primary/30 bg-gradient-to-l from-primary/5 to-transparent">
