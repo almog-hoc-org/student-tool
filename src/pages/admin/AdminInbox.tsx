@@ -11,6 +11,7 @@ import {
   Sparkles,
   User as UserIcon,
   LifeBuoy,
+  Pin,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -46,6 +47,29 @@ interface Message {
   role: 'user' | 'ai' | 'human' | 'system';
   content: string;
   created_at: string;
+  metadata?: { event?: string; origin?: string } | null;
+}
+
+/**
+ * Find the specific question the student wants answered.
+ * - If there's an escalation marker (system message with metadata.event='escalation'),
+ *   the question is the most recent user message BEFORE that marker.
+ * - Otherwise, the first user message in the conversation.
+ */
+function findStudentQuestion(messages: Message[]): Message | null {
+  let escalationAt = -1;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].role === 'system' && messages[i].metadata?.event === 'escalation') {
+      escalationAt = i;
+      break;
+    }
+  }
+  if (escalationAt > 0) {
+    for (let i = escalationAt - 1; i >= 0; i--) {
+      if (messages[i].role === 'user') return messages[i];
+    }
+  }
+  return messages.find((m) => m.role === 'user') ?? null;
 }
 
 export default function AdminInbox() {
@@ -75,7 +99,7 @@ export default function AdminInbox() {
   const fetchMessages = useCallback(async (conversationId: string) => {
     const { data } = await supabase
       .from('messages')
-      .select('id, role, content, created_at')
+      .select('id, role, content, created_at, metadata')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true });
     setMessages((data || []) as Message[]);
@@ -244,8 +268,29 @@ export default function AdminInbox() {
                   {selected.user_email}
                 </p>
               </CardContent>
+              {(() => {
+                const question = findStudentQuestion(messages);
+                if (!question) return null;
+                return (
+                  <div className="bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-900/50 p-3">
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-700 dark:text-amber-400 mb-1.5">
+                      <Pin className="w-3.5 h-3.5" />
+                      השאלה שהתלמיד שואל
+                    </div>
+                    <p className="text-sm font-medium whitespace-pre-wrap leading-relaxed text-foreground">
+                      {question.content}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-1.5">
+                      נשלחה ב-{new Date(question.created_at).toLocaleString('he-IL')}
+                    </p>
+                  </div>
+                );
+              })()}
               <ScrollArea className="flex-1 p-3">
                 <div className="space-y-2">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1 px-1">
+                    התכתבות מלאה (כולל הצ׳אט עם ה-AI)
+                  </p>
                   {messages.map((m) => (
                     <InboxMessage key={m.id} message={m} />
                   ))}
