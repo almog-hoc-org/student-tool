@@ -28,9 +28,11 @@ export async function listMyConversations(): Promise<ConversationRow[]> {
 export async function getOrCreateLatestConversation(): Promise<ConversationRow> {
   const list = await listMyConversations();
   if (list.length > 0) return list[0];
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
   const { data, error } = await supabase
     .from('conversations')
-    .insert({ title: null })
+    .insert({ user_id: user.id, title: null })
     .select('id, title, status, last_message_at')
     .single();
   if (error) throw error;
