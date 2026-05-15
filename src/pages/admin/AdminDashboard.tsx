@@ -12,6 +12,7 @@ import {
   AlertTriangle,
   Activity,
   Clock,
+  Brain,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
@@ -118,7 +119,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Action shortcuts */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
         <ShortcutCard
           to="/admin/inbox"
           icon={Inbox}
@@ -133,6 +134,7 @@ export default function AdminDashboard() {
         />
         <ShortcutCard to="/admin/users" icon={Users} label="משתמשים" />
         <ShortcutCard to="/admin/codes" icon={KeyRound} label="קודי הזמנה" />
+        <ShortcutCard to="/admin/knowledge" icon={Brain} label="מוח הצ׳אט" />
       </div>
 
       {/* KPI cards */}
