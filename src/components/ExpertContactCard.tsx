@@ -18,12 +18,14 @@ import { toast } from 'sonner';
 
 /**
  * Persistent "ask a human expert" entry point.
- * Renders a card with a prompt-style CTA; clicking opens a dialog with
- * subject + question fields. On submit, calls ask_human_expert RPC which
- * creates a fresh conversation pre-escalated to awaiting_human, then the
- * notification on admin reply lands the student back here.
+ *
+ * variant="card" (default) — gradient card, prominent. For /account.
+ * variant="subtle" — single-line muted link. For /chat (below input), so
+ *   the student tries the AI first and treats the human as a safety net.
+ *
+ * Both variants open the same submission dialog.
  */
-export function ExpertContactCard() {
+export function ExpertContactCard({ variant = 'card' }: { variant?: 'card' | 'subtle' } = {}) {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [subject, setSubject] = useState('');
@@ -56,27 +58,40 @@ export function ExpertContactCard() {
 
   return (
     <>
-      <Card className="border-primary/30 bg-gradient-to-l from-primary/5 to-transparent">
-        <CardContent className="p-4 flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-primary/15 text-primary flex items-center justify-center shrink-0">
-            <Headphones className="w-6 h-6" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sm">לא מצאת תשובה לשאלה שחיפשת?</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              כתוב למומחה קרנף אנושי ונענה לך בהקדם.
-            </p>
-          </div>
-          <Button
-            size="sm"
-            onClick={() => setOpen(true)}
-            className="gap-1 shrink-0"
-          >
-            <Send className="w-4 h-4" />
-            פנייה
-          </Button>
-        </CardContent>
-      </Card>
+      {variant === 'subtle' ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="w-full flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition py-1"
+        >
+          <Headphones className="w-3.5 h-3.5" />
+          <span>
+            לא מצאת תשובה? <span className="underline underline-offset-2">פנה למומחה קרנף אנושי</span>
+          </span>
+        </button>
+      ) : (
+        <Card className="border-primary/30 bg-gradient-to-l from-primary/5 to-transparent">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-primary/15 text-primary flex items-center justify-center shrink-0">
+              <Headphones className="w-6 h-6" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-sm">לא מצאת תשובה לשאלה שחיפשת?</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                כתוב למומחה קרנף אנושי ונענה לך בהקדם.
+              </p>
+            </div>
+            <Button
+              size="sm"
+              onClick={() => setOpen(true)}
+              className="gap-1 shrink-0"
+            >
+              <Send className="w-4 h-4" />
+              פנייה
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent dir="rtl" className="sm:max-w-md">

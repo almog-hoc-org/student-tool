@@ -229,13 +229,8 @@ export default function Chat() {
         )}
       </div>
 
-      {/* Expert contact CTA — visible after AI tried */}
-      <div className="pt-2 border-t">
-        <ExpertContactCard />
-      </div>
-
       {/* Input */}
-      <form onSubmit={handleSubmit} className="flex gap-2 pt-2 border-t mt-2">
+      <form onSubmit={handleSubmit} className="flex gap-2 pt-2 border-t">
         <Input
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -250,6 +245,9 @@ export default function Chat() {
       <p className="text-xs text-muted-foreground text-center mt-2">
         * המידע להעשרה בלבד ואינו מהווה ייעוץ פיננסי מקצועי.
       </p>
+
+      {/* Subtle escape hatch — AI is the primary path; human is a safety net */}
+      <ExpertContactCard variant="subtle" />
     </div>
   );
 }
