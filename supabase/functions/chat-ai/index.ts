@@ -222,8 +222,11 @@ Deno.serve(async (req: Request) => {
       .map((g: any) => g?.web?.uri)
       .filter(Boolean);
 
-    // 6. Persist AI message
+    // 6. Persist AI message — include source_id so the student UI can fetch
+    // the full source chunks on demand. Older messages without source_id
+    // remain navigable via source_file fallback.
     const sources = (ragChunks || []).map((c: any) => ({
+      source_id: c.source_id,
       source_file: c.source_file,
       similarity: c.similarity,
     }));

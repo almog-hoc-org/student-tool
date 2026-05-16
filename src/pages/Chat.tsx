@@ -25,6 +25,7 @@ import {
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { ExpertContactCard } from '@/components/ExpertContactCard';
+import { SourcePreviewDialog } from '@/components/SourcePreviewDialog';
 
 const SUGGESTIONS = [
   'מה אני יכול לקנות עם ההון שלי?',
@@ -250,7 +251,8 @@ function MessageBubble({ message }: { message: ChatDbMessage }) {
     );
   }
 
-  const sources = ((message.metadata as { sources?: { source_file: string }[] } | null)?.sources ?? []);
+  const sources = ((message.metadata as { sources?: { source_file: string; source_id?: string }[] } | null)?.sources ?? []);
+  const [previewSource, setPreviewSource] = useState<{ source_id: string | null; source_file: string } | null>(null);
 
   return (
     <div className={cn('flex gap-2', isUser ? 'flex-row-reverse' : 'flex-row')}>
@@ -286,13 +288,31 @@ function MessageBubble({ message }: { message: ChatDbMessage }) {
           {message.content}
         </div>
         {sources.length > 0 && (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <BookOpen className="w-3 h-3" />
-            <span>
-              מבוסס על: {sources.map((s) => s.source_file).join(', ')}
-            </span>
+          <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+            <BookOpen className="w-3 h-3 shrink-0" />
+            <span>מבוסס על:</span>
+            {Array.from(new Map(sources.map((s) => [s.source_id || s.source_file, s])).values()).map((s) => (
+              <button
+                key={s.source_id || s.source_file}
+                type="button"
+                onClick={() => setPreviewSource({
+                  source_id: s.source_id ?? null,
+                  source_file: s.source_file,
+                })}
+                className="underline underline-offset-2 hover:text-foreground transition"
+                title="לחץ לצפייה במקור"
+              >
+                {s.source_file}
+              </button>
+            ))}
           </div>
         )}
+        <SourcePreviewDialog
+          open={!!previewSource}
+          onClose={() => setPreviewSource(null)}
+          sourceId={previewSource?.source_id ?? null}
+          sourceFile={previewSource?.source_file ?? null}
+        />
         {isHuman && (
           <div className="text-xs text-emerald-600">תשובה מנציג אנושי</div>
         )}
