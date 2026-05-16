@@ -125,9 +125,14 @@ export default function Onboarding() {
           </div>
 
           <p className="text-center text-xs">
-            <Link to="/" className="text-muted-foreground hover:underline" onClick={finish}>
+            <button
+              type="button"
+              onClick={finish}
+              disabled={finishing}
+              className="text-muted-foreground hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               דלג
-            </Link>
+            </button>
           </p>
         </CardContent>
       </Card>

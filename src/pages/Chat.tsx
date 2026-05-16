@@ -71,11 +71,17 @@ export default function Chat() {
     };
   }, [explicitConversationId]);
 
+  // Jump instantly on initial mount (avoid the visible "scroll from top to bottom"
+  // animation when opening an existing conversation with many messages), then
+  // smooth-scroll for subsequent new messages.
+  const initialScrollDone = useRef(false);
   useEffect(() => {
-    scrollRef.current?.scrollTo({
+    if (!scrollRef.current || messages.length === 0) return;
+    scrollRef.current.scrollTo({
       top: scrollRef.current.scrollHeight,
-      behavior: 'smooth',
+      behavior: initialScrollDone.current ? 'smooth' : 'auto',
     });
+    initialScrollDone.current = true;
   }, [messages, loading]);
 
   const send = useCallback(
@@ -119,10 +125,18 @@ export default function Chat() {
     return (
       <div dir="rtl" className="space-y-4">
         <Card>
-          <CardContent className="p-8 text-center space-y-2">
+          <CardContent className="p-8 text-center space-y-4">
             <AlertCircle className="w-7 h-7 text-amber-500 mx-auto" />
             <h3 className="font-semibold">לא הצלחנו לטעון את הצ׳אט</h3>
             <p className="text-sm text-muted-foreground">{initError}</p>
+            <div className="flex justify-center gap-2 pt-2">
+              <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+                נסה שוב
+              </Button>
+              <Button size="sm" onClick={() => { window.location.href = '/chat'; }}>
+                פתח שיחה חדשה
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

@@ -13,6 +13,7 @@ import { formatCurrency } from '@/lib/validation/validators';
 import { cn } from '@/lib/utils';
 import { SnapshotsList } from '@/components/SnapshotsList';
 import { ExpertContactCard } from '@/components/ExpertContactCard';
+import { MyActivityCard } from '@/components/MyActivityCard';
 
 interface ToolStatus {
   key: string;
@@ -160,6 +161,9 @@ export default function Account() {
           );
         })}
       </div>
+
+      {/* Recent activity — gives the student a sense of their journey */}
+      <MyActivityCard />
 
       {/* Expert contact CTA */}
       <ExpertContactCard />

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -113,31 +113,43 @@ export default function AdminInbox() {
     if (selectedId) fetchMessages(selectedId);
   }, [selectedId, fetchMessages]);
 
-  // Realtime: new messages on selected conversation + refresh list
+  // Realtime: one persistent channel for the lifetime of this page.
+  // Inside the handler we read the latest selectedId via a ref so we don't
+  // re-subscribe every time the admin picks a different conversation.
+  const selectedIdRef = useRef(selectedId);
+  selectedIdRef.current = selectedId;
+  const fetchListRef = useRef(fetchList);
+  fetchListRef.current = fetchList;
+
   useEffect(() => {
+    let pending = false;
+    const refreshSoon = () => {
+      if (pending) return;
+      pending = true;
+      // Coalesce bursts of real-time events to a single fetch
+      setTimeout(() => { pending = false; fetchListRef.current(); }, 250);
+    };
     const channel = supabase
-      .channel(`inbox-admin`)
+      .channel('inbox-admin')
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'messages' },
         (payload) => {
           const m = payload.new as Message & { conversation_id: string };
-          if (m.conversation_id === selectedId) {
+          if (m.conversation_id === selectedIdRef.current) {
             setMessages((curr) => [...curr, m]);
           }
-          fetchList();
+          refreshSoon();
         },
       )
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'conversations' },
-        () => fetchList(),
+        () => refreshSoon(),
       )
       .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [selectedId, fetchList]);
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   const selected = useMemo(
     () => conversations.find((c) => c.id === selectedId) || null,

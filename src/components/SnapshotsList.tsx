@@ -27,19 +27,24 @@ export function SnapshotsList() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  const refresh = async () => {
+  const refresh = async (cancelled?: { current: boolean }) => {
     try {
       setLoading(true);
-      setSnapshots(await listSnapshots());
+      const data = await listSnapshots();
+      if (cancelled?.current) return;
+      setSnapshots(data);
     } catch (e) {
+      if (!cancelled?.current) toast.error('שגיאה בטעינת תרחישים');
       console.error(e);
     } finally {
-      setLoading(false);
+      if (!cancelled?.current) setLoading(false);
     }
   };
 
   useEffect(() => {
-    refresh();
+    const cancelled = { current: false };
+    refresh(cancelled);
+    return () => { cancelled.current = true; };
   }, []);
 
   const handleLoad = (s: Snapshot) => {

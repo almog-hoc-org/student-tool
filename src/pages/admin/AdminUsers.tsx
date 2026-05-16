@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -39,7 +39,14 @@ const statusColors: Record<UserStatus, string> = {
 export default function AdminUsers() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [loading, setLoading] = useState(true);
+
+  // Debounce: avoid filtering on every keystroke (matters when users > 200)
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 200);
+    return () => clearTimeout(t);
+  }, [search]);
   const [drawerUser, setDrawerUser] = useState<UserRow | null>(null);
 
   useEffect(() => { loadUsers(); }, []);
@@ -82,10 +89,14 @@ export default function AdminUsers() {
     }
   }
 
-  const filtered = users.filter(u =>
-    (u.display_name ?? '').includes(search) ||
-    u.email.includes(search)
-  );
+  const filtered = useMemo(() => {
+    const q = debouncedSearch.trim().toLowerCase();
+    if (!q) return users;
+    return users.filter(u =>
+      (u.display_name ?? '').toLowerCase().includes(q) ||
+      u.email.toLowerCase().includes(q),
+    );
+  }, [users, debouncedSearch]);
 
   return (
     <div className="space-y-4" dir="rtl">

@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import { BarChart3, Import, RotateCcw } from 'lucide-react';
+import { BarChart3, Import, RotateCcw, TrendingUp } from 'lucide-react';
 import { SaveSnapshotButton } from '@/components/SaveSnapshotButton';
 import { calculateBusinessPlan, BusinessPlanOutput, ScenarioResult } from '@/lib/calculations/business-plan';
 import { formatCurrency } from '@/lib/validation/validators';
@@ -167,7 +167,10 @@ export default function BusinessPlan() {
         {/* Input Section */}
         <div className="md:col-span-2 space-y-4 md:sticky md:top-28 md:self-start">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold">תוכנית עסקית</h1>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <TrendingUp className="w-6 h-6 text-primary" />
+              תוכנית עסקית
+            </h1>
             <div className="flex items-center gap-1">
               <SaveSnapshotButton
                 toolKey="business_plan"

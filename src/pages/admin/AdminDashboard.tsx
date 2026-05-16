@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
+import { toast } from 'sonner';
 
 interface Kpis {
   total_users: number;
@@ -54,56 +55,60 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const cancelled = { current: false };
     (async () => {
       setLoading(true);
-      const [kpiRes, eventsRes, usersRes] = await Promise.all([
-        supabase.rpc('admin_dashboard_kpis'),
-        supabase.from('usage_events').select('tool_key'),
-        supabase.rpc('admin_list_users'),
-      ]);
+      try {
+        const [kpiRes, eventsRes, usersRes] = await Promise.all([
+          supabase.rpc('admin_dashboard_kpis'),
+          supabase.from('usage_events').select('tool_key'),
+          supabase.rpc('admin_list_users'),
+        ]);
+        if (cancelled.current) return;
 
-      if (kpiRes.data && kpiRes.data.length) {
-        setKpis(kpiRes.data[0] as Kpis);
+        if (kpiRes.error) toast.error('שגיאה בטעינת KPIs');
+        else if (kpiRes.data && kpiRes.data.length) setKpis(kpiRes.data[0] as Kpis);
+
+        const events = (eventsRes.data ?? []) as { tool_key: string }[];
+        const counts = new Map<string, number>();
+        events.forEach((e) => {
+          if (!e.tool_key || e.tool_key.endsWith('_results')) return;
+          counts.set(e.tool_key, (counts.get(e.tool_key) ?? 0) + 1);
+        });
+        setToolUsage(
+          Array.from(counts.entries()).map(([k, c]) => ({
+            tool_key: TOOL_LABELS[k] ?? k,
+            count: c,
+          })),
+        );
+
+        const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+        const all = (usersRes.data ?? []) as Array<{
+          user_id: string;
+          email: string;
+          display_name: string | null;
+          status: string;
+          last_sign_in: string | null;
+        }>;
+        const stuck = all
+          .filter((u) => u.status === 'approved')
+          .filter((u) => !u.last_sign_in || new Date(u.last_sign_in) < fourteenDaysAgo)
+          .slice(0, 5)
+          .map((u) => ({
+            user_id: u.user_id,
+            email: u.email,
+            display_name: u.display_name,
+            last_sign_in: u.last_sign_in,
+          }));
+        setStuckUsers(stuck);
+      } catch (err) {
+        if (!cancelled.current) toast.error('שגיאה בטעינת לוח הבקרה');
+        console.error(err);
+      } finally {
+        if (!cancelled.current) setLoading(false);
       }
-
-      const events = (eventsRes.data ?? []) as { tool_key: string }[];
-      const counts = new Map<string, number>();
-      events.forEach((e) => {
-        if (e.tool_key.endsWith('_results')) return;
-        counts.set(e.tool_key, (counts.get(e.tool_key) ?? 0) + 1);
-      });
-      setToolUsage(
-        Array.from(counts.entries()).map(([k, c]) => ({
-          tool_key: TOOL_LABELS[k] ?? k,
-          count: c,
-        })),
-      );
-
-      const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
-      const all = (usersRes.data ?? []) as Array<{
-        user_id: string;
-        email: string;
-        display_name: string | null;
-        status: string;
-        last_sign_in: string | null;
-      }>;
-      const stuck = all
-        .filter((u) => u.status === 'approved')
-        .filter((u) => {
-          if (!u.last_sign_in) return true;
-          return new Date(u.last_sign_in) < fourteenDaysAgo;
-        })
-        .slice(0, 5)
-        .map((u) => ({
-          user_id: u.user_id,
-          email: u.email,
-          display_name: u.display_name,
-          last_sign_in: u.last_sign_in,
-        }));
-      setStuckUsers(stuck);
-
-      setLoading(false);
     })();
+    return () => { cancelled.current = true; };
   }, []);
 
   return (
@@ -137,52 +142,34 @@ export default function AdminDashboard() {
         <ShortcutCard to="/admin/knowledge" icon={Brain} label="מוח הצ׳אט" />
       </div>
 
-      {/* KPI cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KpiCard
-          label="פעילים השבוע"
-          value={kpis?.active_7d ?? 0}
-          icon={Activity}
-          color="text-emerald-500"
-        />
-        <KpiCard
-          label="לא פעילים 14d+"
-          value={kpis?.inactive_14d ?? 0}
-          icon={AlertTriangle}
-          color="text-amber-500"
-        />
-        <KpiCard
-          label="פניות פתוחות"
-          value={kpis?.awaiting_human ?? 0}
-          icon={Inbox}
-          color="text-blue-500"
-        />
-        <KpiCard
-          label="זמן תגובה ממוצע"
-          value={fmtDuration(kpis?.avg_response_seconds ?? null)}
-          icon={Clock}
-          color="text-purple-500"
-          isText
-        />
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KpiCard label="סה״כ" value={kpis?.total_users ?? 0} />
-        <KpiCard
-          label="מאושרים"
-          value={kpis?.approved_users ?? 0}
-          color="text-emerald-500"
-        />
-        <KpiCard
-          label="ממתינים"
-          value={kpis?.pending_users ?? 0}
-          color="text-amber-500"
-        />
-        <KpiCard
-          label="שיחות פתוחות"
-          value={kpis?.open_conversations ?? 0}
-        />
-      </div>
+      {/* KPI cards — render skeletons until first load completes */}
+      {loading && !kpis ? (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3" aria-busy="true">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Card key={i}>
+              <CardContent className="p-4">
+                <div className="h-6 w-12 bg-muted rounded animate-pulse mb-2" />
+                <div className="h-3 w-20 bg-muted/60 rounded animate-pulse" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <KpiCard label="פעילים השבוע" value={kpis?.active_7d ?? 0} icon={Activity} color="text-emerald-500" />
+            <KpiCard label="לא פעילים 14d+" value={kpis?.inactive_14d ?? 0} icon={AlertTriangle} color="text-amber-500" />
+            <KpiCard label="פניות פתוחות" value={kpis?.awaiting_human ?? 0} icon={Inbox} color="text-blue-500" />
+            <KpiCard label="זמן תגובה ממוצע" value={fmtDuration(kpis?.avg_response_seconds ?? null)} icon={Clock} color="text-purple-500" isText />
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <KpiCard label="סה״כ" value={kpis?.total_users ?? 0} />
+            <KpiCard label="מאושרים" value={kpis?.approved_users ?? 0} color="text-emerald-500" />
+            <KpiCard label="ממתינים" value={kpis?.pending_users ?? 0} color="text-amber-500" />
+            <KpiCard label="שיחות פתוחות" value={kpis?.open_conversations ?? 0} />
+          </div>
+        </>
+      )}
 
       {/* Stuck users */}
       {stuckUsers.length > 0 && (
