@@ -299,7 +299,7 @@ export default function BudgetCalculator() {
     if (!window.confirm('בטוח? כל הנתונים יימחקו')) return;
     setEquity(DEFAULTS.equity); setMonthlyIncome(DEFAULTS.monthlyIncome);
     setMonthlyObligations(DEFAULTS.monthlyObligations); setBuyerType(DEFAULTS.buyerType);
-    setMortgageYears(DEFAULTS.mortgageYears); clear('budget', uid); clear('budget_results', uid);
+    setMortgageYears(DEFAULTS.mortgageYears); clear('budget', uid); clear('budget_profile', uid); clear('budget_results', uid);
   };
 
   const maxAllowedPayment = monthlyIncome * 0.4;

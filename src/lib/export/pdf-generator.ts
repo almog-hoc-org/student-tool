@@ -15,251 +15,215 @@ interface PDFExportOptions {
   disclaimer?: string;
 }
 
-const BRAND_ORANGE_R = 230;
-const BRAND_ORANGE_G = 126;
-const BRAND_ORANGE_B = 34;
-const NAVY_R = 26;
-const NAVY_G = 34;
-const NAVY_B = 56;
+const BRAND_ORANGE = '#e67e22';
+const NAVY = '#1a2238';
 
 export async function exportToPDF(options: PDFExportOptions): Promise<void>;
-export async function exportToPDF(title: string, data: Record<string, any>, chartElementId?: string): Promise<void>;
+export async function exportToPDF(title: string, data: Record<string, unknown>, chartElementId?: string): Promise<void>;
 export async function exportToPDF(
   titleOrOptions: string | PDFExportOptions,
-  data?: Record<string, any>,
+  data?: Record<string, unknown>,
   chartElementId?: string
 ) {
-  const doc = new jsPDF({
-    orientation: 'portrait',
-    unit: 'mm',
-    format: 'a4',
-  });
+  const opts: PDFExportOptions = typeof titleOrOptions === 'string'
+    ? {
+      title: titleOrOptions,
+      sections: [{
+        title: 'נתונים',
+        items: Object.entries(data || {}).map(([label, value]) => ({ label, value: String(value) })),
+      }],
+      chartElementId,
+    }
+    : titleOrOptions;
 
-  doc.setLanguage('he');
-  const pageWidth = 210;
-  const margin = 20;
-  const contentWidth = pageWidth - margin * 2;
+  await exportHebrewReportAsImage(opts);
+}
 
-  // If called with the legacy signature (string, data, chartId)
-  if (typeof titleOrOptions === 'string') {
-    return legacyExport(doc, titleOrOptions, data || {}, chartElementId, pageWidth, margin, contentWidth);
-  }
+function textNode(tag: keyof HTMLElementTagNameMap, text: string, className?: string) {
+  const el = document.createElement(tag);
+  el.textContent = text;
+  if (className) el.className = className;
+  return el;
+}
 
-  const opts = titleOrOptions;
-  let y = 15;
+async function exportHebrewReportAsImage(opts: PDFExportOptions) {
+  const wrapper = document.createElement('div');
+  wrapper.dir = 'rtl';
+  wrapper.style.position = 'fixed';
+  wrapper.style.left = '-10000px';
+  wrapper.style.top = '0';
+  wrapper.style.width = '794px';
+  wrapper.style.background = '#ffffff';
+  wrapper.style.color = '#111827';
+  wrapper.style.fontFamily = 'Arial, "Noto Sans Hebrew", "Rubik", sans-serif';
+  wrapper.style.padding = '0';
+  wrapper.style.direction = 'rtl';
 
-  // --- Branded Header ---
-  // Orange accent line
-  doc.setFillColor(BRAND_ORANGE_R, BRAND_ORANGE_G, BRAND_ORANGE_B);
-  doc.rect(0, 0, pageWidth, 4, 'F');
+  const page = document.createElement('div');
+  page.style.padding = '44px 56px 36px';
+  page.style.boxSizing = 'border-box';
+  page.style.minHeight = '1123px';
+  page.style.borderTop = `10px solid ${BRAND_ORANGE}`;
+  wrapper.appendChild(page);
 
-  // Brand name
-  y = 18;
-  doc.setFontSize(10);
-  doc.setTextColor(BRAND_ORANGE_R, BRAND_ORANGE_G, BRAND_ORANGE_B);
-  doc.text('ארגז הכלים - הדרך לדירה', pageWidth - margin, y, { align: 'right' });
+  const header = document.createElement('div');
+  header.style.display = 'flex';
+  header.style.justifyContent = 'space-between';
+  header.style.alignItems = 'center';
+  header.style.marginBottom = '26px';
+  const brand = textNode('div', 'ארגז הכלים - הדרך לדירה');
+  brand.style.color = BRAND_ORANGE;
+  brand.style.fontWeight = '700';
+  const date = textNode('div', new Date().toLocaleDateString('he-IL', { year: 'numeric', month: 'long', day: 'numeric' }));
+  date.style.color = '#6b7280';
+  date.style.fontSize = '14px';
+  header.append(brand, date);
+  page.appendChild(header);
 
-  // Date
-  const date = new Date().toLocaleDateString('he-IL', { year: 'numeric', month: 'long', day: 'numeric' });
-  doc.setTextColor(120, 120, 120);
-  doc.text(date, margin, y);
-
-  // Title
-  y = 30;
-  doc.setFontSize(22);
-  doc.setTextColor(NAVY_R, NAVY_G, NAVY_B);
-  doc.setFont('helvetica', 'bold');
-  doc.text(opts.title, pageWidth - margin, y, { align: 'right' });
+  const title = textNode('h1', opts.title);
+  title.style.margin = '0 0 8px';
+  title.style.color = NAVY;
+  title.style.fontSize = '32px';
+  title.style.lineHeight = '1.2';
+  page.appendChild(title);
 
   if (opts.subtitle) {
-    y += 8;
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(100, 100, 100);
-    doc.text(opts.subtitle, pageWidth - margin, y, { align: 'right' });
+    const subtitle = textNode('p', opts.subtitle);
+    subtitle.style.margin = '0 0 18px';
+    subtitle.style.color = '#6b7280';
+    subtitle.style.fontSize = '16px';
+    page.appendChild(subtitle);
   }
 
-  // Orange separator
-  y += 6;
-  doc.setDrawColor(BRAND_ORANGE_R, BRAND_ORANGE_G, BRAND_ORANGE_B);
-  doc.setLineWidth(0.8);
-  doc.line(margin, y, pageWidth - margin, y);
-  y += 8;
+  const separator = document.createElement('div');
+  separator.style.height = '3px';
+  separator.style.width = '100%';
+  separator.style.background = BRAND_ORANGE;
+  separator.style.borderRadius = '999px';
+  separator.style.margin = '18px 0 24px';
+  page.appendChild(separator);
 
-  // --- Executive Summary ---
-  if (opts.executiveSummary && opts.executiveSummary.length > 0) {
-    doc.setFillColor(255, 253, 245); // Warm cream background
-    doc.roundedRect(margin, y - 2, contentWidth, opts.executiveSummary.length * 7 + 12, 3, 3, 'F');
-
-    doc.setFontSize(13);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(NAVY_R, NAVY_G, NAVY_B);
-    doc.text('סיכום מנהלים', pageWidth - margin - 4, y + 4, { align: 'right' });
-    y += 12;
-
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(50, 50, 50);
-    for (const line of opts.executiveSummary) {
-      doc.text(`• ${line}`, pageWidth - margin - 4, y, { align: 'right' });
-      y += 7;
-    }
-    y += 6;
+  if (opts.executiveSummary?.length) {
+    const summary = document.createElement('section');
+    summary.style.background = '#fff7ed';
+    summary.style.border = '1px solid #fed7aa';
+    summary.style.borderRadius = '18px';
+    summary.style.padding = '18px 20px';
+    summary.style.marginBottom = '24px';
+    const summaryTitle = textNode('h2', 'סיכום מנהלים');
+    summaryTitle.style.margin = '0 0 12px';
+    summaryTitle.style.color = NAVY;
+    summaryTitle.style.fontSize = '20px';
+    summary.appendChild(summaryTitle);
+    const ul = document.createElement('ul');
+    ul.style.margin = '0';
+    ul.style.padding = '0 20px 0 0';
+    ul.style.lineHeight = '1.8';
+    opts.executiveSummary.forEach((line) => ul.appendChild(textNode('li', line)));
+    summary.appendChild(ul);
+    page.appendChild(summary);
   }
 
-  // --- Sections ---
   for (const section of opts.sections) {
-    if (y + 20 > 270) {
-      doc.addPage();
-      y = 20;
-    }
+    const sectionEl = document.createElement('section');
+    sectionEl.style.marginBottom = '22px';
+    sectionEl.style.breakInside = 'avoid';
 
-    // Section title
-    doc.setFontSize(13);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(NAVY_R, NAVY_G, NAVY_B);
-    doc.text(section.title, pageWidth - margin, y, { align: 'right' });
-    y += 2;
+    const h2 = textNode('h2', section.title);
+    h2.style.margin = '0 0 10px';
+    h2.style.color = NAVY;
+    h2.style.fontSize = '20px';
+    sectionEl.appendChild(h2);
 
-    // Orange underline for section
-    doc.setDrawColor(BRAND_ORANGE_R, BRAND_ORANGE_G, BRAND_ORANGE_B);
-    doc.setLineWidth(0.4);
-    doc.line(pageWidth - margin - 60, y, pageWidth - margin, y);
-    y += 6;
+    const rows = document.createElement('div');
+    rows.style.border = '1px solid #e5e7eb';
+    rows.style.borderRadius = '14px';
+    rows.style.overflow = 'hidden';
 
-    // Items
-    doc.setFontSize(10);
-    for (const item of section.items) {
-      if (y > 270) {
-        doc.addPage();
-        y = 20;
-      }
+    section.items.forEach((item, index) => {
+      const row = document.createElement('div');
+      row.style.display = 'grid';
+      row.style.gridTemplateColumns = '1fr 1fr';
+      row.style.gap = '18px';
+      row.style.padding = '10px 14px';
+      row.style.background = index % 2 === 0 ? '#f9fafb' : '#ffffff';
+      row.style.borderBottom = index === section.items.length - 1 ? '0' : '1px solid #e5e7eb';
 
-      // Alternating row background
-      const rowIndex = section.items.indexOf(item);
-      if (rowIndex % 2 === 0) {
-        doc.setFillColor(248, 248, 248);
-        doc.rect(margin, y - 3, contentWidth, 7, 'F');
-      }
+      const label = textNode('div', item.label);
+      label.style.color = '#6b7280';
+      const value = textNode('div', item.value);
+      value.style.color = NAVY;
+      value.style.fontWeight = '700';
+      value.style.textAlign = 'left';
+      value.style.direction = 'rtl';
+      row.append(label, value);
+      rows.appendChild(row);
+    });
 
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(80, 80, 80);
-      doc.text(item.label, pageWidth - margin - 4, y, { align: 'right' });
-
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(NAVY_R, NAVY_G, NAVY_B);
-      doc.text(item.value, margin + 4, y);
-
-      y += 7;
-    }
-    y += 6;
+    sectionEl.appendChild(rows);
+    page.appendChild(sectionEl);
   }
 
-  // --- Chart ---
   if (opts.chartElementId) {
     const chartEl = document.getElementById(opts.chartElementId);
     if (chartEl) {
       try {
-        const canvas = await html2canvas(chartEl, { backgroundColor: '#ffffff', scale: 2 });
-        const imgData = canvas.toDataURL('image/png');
-        if (y + 100 > 270) {
-          doc.addPage();
-          y = 20;
-        }
-        doc.addImage(imgData, 'PNG', margin, y, contentWidth, 90);
-        y += 96;
+        const chartCanvas = await html2canvas(chartEl, { backgroundColor: '#ffffff', scale: 2 });
+        const img = document.createElement('img');
+        img.src = chartCanvas.toDataURL('image/png');
+        img.style.width = '100%';
+        img.style.margin = '10px 0 20px';
+        img.style.borderRadius = '14px';
+        page.appendChild(img);
       } catch (err) {
         console.error('Chart capture error:', err);
       }
     }
   }
 
-  // --- Disclaimer ---
-  const disclaimer = opts.disclaimer || 'המידע המוצג הינו להמחשה בלבד ואינו מהווה ייעוץ פיננסי או משפטי. ארגז הכלים - הדרך לדירה © 2026';
-  if (y + 20 > 270) {
-    doc.addPage();
-    y = 20;
-  }
-  y = Math.max(y, 270);
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(150, 150, 150);
-  doc.text(disclaimer, pageWidth / 2, y, { align: 'center' });
+  const disclaimer = textNode('div', opts.disclaimer || 'המידע המוצג הינו להמחשה בלבד ואינו מהווה ייעוץ פיננסי או משפטי. ארגז הכלים - הדרך לדירה © 2026');
+  disclaimer.style.marginTop = '24px';
+  disclaimer.style.paddingTop = '14px';
+  disclaimer.style.borderTop = '1px solid #e5e7eb';
+  disclaimer.style.textAlign = 'center';
+  disclaimer.style.color = '#9ca3af';
+  disclaimer.style.fontSize = '12px';
+  page.appendChild(disclaimer);
 
-  // --- Footer page numbers ---
-  const pageCount = doc.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    doc.setFontSize(8);
-    doc.setTextColor(150, 150, 150);
-    doc.text(`${i} / ${pageCount}`, pageWidth / 2, 290, { align: 'center' });
-  }
+  document.body.appendChild(wrapper);
 
-  // Save
-  const filename = `${opts.title.replace(/\s+/g, '-')}-${Date.now()}.pdf`;
-  doc.save(filename);
-}
+  try {
+    const canvas = await html2canvas(wrapper, {
+      backgroundColor: '#ffffff',
+      scale: 2,
+      useCORS: true,
+      logging: false,
+    });
 
-// Legacy function for backwards compatibility
-function legacyExport(
-  doc: jsPDF,
-  title: string,
-  data: Record<string, any>,
-  chartElementId: string | undefined,
-  pageWidth: number,
-  margin: number,
-  contentWidth: number
-) {
-  // Orange accent
-  doc.setFillColor(BRAND_ORANGE_R, BRAND_ORANGE_G, BRAND_ORANGE_B);
-  doc.rect(0, 0, pageWidth, 4, 'F');
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    doc.setLanguage('he');
 
-  doc.setFontSize(22);
-  doc.setTextColor(NAVY_R, NAVY_G, NAVY_B);
-  doc.text(title, 105, 20, { align: 'center' });
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const imgWidth = pageWidth;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    const imgData = canvas.toDataURL('image/png');
 
-  doc.setFontSize(12);
-  doc.setTextColor(100, 100, 100);
-  const date = new Date().toLocaleDateString('he-IL', { year: 'numeric', month: 'long', day: 'numeric' });
-  doc.text(date, 105, 30, { align: 'center' });
+    let heightLeft = imgHeight;
+    let position = 0;
+    doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
 
-  doc.setDrawColor(BRAND_ORANGE_R, BRAND_ORANGE_G, BRAND_ORANGE_B);
-  doc.setLineWidth(0.8);
-  doc.line(margin, 35, pageWidth - margin, 35);
-
-  let y = 45;
-  doc.setFontSize(14);
-  Object.entries(data).forEach(([key, value]) => {
-    if (y > 270) {
+    while (heightLeft > 0) {
+      position = heightLeft - imgHeight;
       doc.addPage();
-      y = 20;
+      doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
     }
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(NAVY_R, NAVY_G, NAVY_B);
-    doc.text(key, margin, y);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(50, 50, 50);
-    doc.text(String(value), 100, y);
-    y += 10;
-  });
 
-  if (chartElementId) {
-    const chartEl = document.getElementById(chartElementId);
-    if (chartEl) {
-      html2canvas(chartEl, { backgroundColor: '#ffffff', scale: 2 }).then((canvas) => {
-        const imgData = canvas.toDataURL('image/png');
-        if (y + 100 > 270) {
-          doc.addPage();
-          y = 20;
-        }
-        doc.addImage(imgData, 'PNG', margin, y, contentWidth, 100);
-        const filename = `${title.replace(/\s/g, '-')}-${Date.now()}.pdf`;
-        doc.save(filename);
-      });
-      return;
-    }
+    const filename = `${opts.title.replace(/\s+/g, '-')}-${Date.now()}.pdf`;
+    doc.save(filename);
+  } finally {
+    wrapper.remove();
   }
-
-  const filename = `${title.replace(/\s/g, '-')}-${Date.now()}.pdf`;
-  doc.save(filename);
 }

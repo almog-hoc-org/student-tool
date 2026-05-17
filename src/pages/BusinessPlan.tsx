@@ -29,8 +29,8 @@ const SCENARIO_HELP: Record<string, string> = {
 
 function ScenarioCard({ scenario, style, monthlyCashflow }: { scenario: ScenarioResult; style: typeof SCENARIO_COLORS.pessimistic; monthlyCashflow: number }) {
   return (
-    <Card className={cn('border', style.border, style.bg)}>
-      <CardContent className="p-4 space-y-3">
+    <Card className={cn('h-full border', style.border, style.bg)}>
+      <CardContent className="p-4 h-full flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <span className={cn('text-sm font-bold', style.text)}>{scenario.label}</span>
           <span className={cn('text-xs font-semibold px-2 py-0.5 rounded-full', style.bg, style.text)}>
@@ -38,36 +38,36 @@ function ScenarioCard({ scenario, style, monthlyCashflow }: { scenario: Scenario
           </span>
         </div>
 
-        <div className="space-y-2">
-          <div>
+        <div className="grid flex-1 gap-2">
+          <div className="min-w-0">
             <p className="text-[11px] text-muted-foreground">שווי נכס בסוף תקופה</p>
-            <p className="text-xl font-bold">{formatCurrency(scenario.propertyValueAtEnd)}</p>
+            <p className="text-lg font-bold tabular-nums leading-tight break-words">{formatCurrency(scenario.propertyValueAtEnd)}</p>
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-[11px] text-muted-foreground">רווח כולל</p>
-            <p className={cn('text-lg font-bold', scenario.totalProfit >= 0 ? 'text-green-600' : 'text-red-600')}>
+            <p className={cn('text-lg font-bold tabular-nums leading-tight break-words', scenario.totalProfit >= 0 ? 'text-green-600' : 'text-red-600')}>
               {formatCurrency(scenario.totalProfit)}
             </p>
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-[11px] text-muted-foreground">תזרים חודשי</p>
-            <p className={cn('text-base font-semibold', monthlyCashflow >= 0 ? 'text-green-600' : 'text-red-600')}>
+            <p className={cn('text-base font-semibold tabular-nums leading-tight break-words', monthlyCashflow >= 0 ? 'text-green-600' : 'text-red-600')}>
               {formatCurrency(monthlyCashflow)}
             </p>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
               <p className="text-[11px] text-muted-foreground flex items-center gap-1">תשואת COC <InfoTooltip text="כמה אתה מרוויח בשנה ביחס להון שהשקעת — שכירות נטו חלקי הון עצמי" /></p>
-              <p className="text-base font-semibold">{(scenario.cocYield * 100).toFixed(1)}%</p>
+              <p className="text-base font-semibold tabular-nums">{(scenario.cocYield * 100).toFixed(1)}%</p>
             </div>
             <div>
               <p className="text-[11px] text-muted-foreground flex items-center gap-1">IRR <InfoTooltip text="שיעור תשואה פנימי: התשואה האמיתית כולל עליית ערך, שכירות ועלויות — המדד המקצועי להשוואת השקעות" /></p>
-              <p className="text-base font-semibold">
+              <p className="text-base font-semibold tabular-nums">
                 {scenario.irr !== null ? `${(scenario.irr * 100).toFixed(1)}%` : 'N/A'}
               </p>
             </div>
           </div>
-          <p className="text-[11px] text-muted-foreground border-t pt-2">
+          <p className="text-[11px] text-muted-foreground border-t pt-2 leading-relaxed">
             {SCENARIO_HELP[scenario.label]}
           </p>
         </div>
@@ -83,10 +83,13 @@ const BP_DEFAULTS = {
   baseAppreciation: 1, manualMode: true, customRates: { pessimistic: 0, average: 1, optimistic: 2 },
 };
 
+type EditingDeal = { id: string; name: string; notes?: string | null };
+
 export default function BusinessPlan() {
   const { user } = useAuth();
   const uid = user?.id;
   const saved = load<typeof BP_DEFAULTS>('business_plan');
+  const [editingDeal, setEditingDeal] = useState<EditingDeal | null>(() => load<EditingDeal>('business_plan_editing'));
   const [purchasePrice, setPurchasePrice] = useState(saved?.purchasePrice ?? BP_DEFAULTS.purchasePrice);
   const [sideCosts, setSideCosts] = useState(saved?.sideCosts ?? BP_DEFAULTS.sideCosts);
   const [renovationCost, setRenovationCost] = useState(saved?.renovationCost ?? BP_DEFAULTS.renovationCost);
@@ -146,6 +149,8 @@ export default function BusinessPlan() {
     setManualMode(BP_DEFAULTS.manualMode);
     setCustomRates(BP_DEFAULTS.customRates);
     clear('business_plan', uid);
+    clear('business_plan_editing');
+    setEditingDeal(null);
   };
 
   const result: BusinessPlanOutput | null = useMemo(() => {
@@ -178,12 +183,19 @@ export default function BusinessPlan() {
               <SaveSnapshotButton
                 toolKey="business_plan"
                 disabled={!result}
-                buttonLabel="שמור עסקה"
-                dialogTitle="שמור עסקה בשם"
-                dialogDescription="שמירת העסקה כדי להשוות אותה מול עסקאות אחרות בהמשך."
+                buttonLabel={editingDeal ? 'עדכן עסקה' : 'שמור עסקה'}
+                dialogTitle={editingDeal ? 'עדכן עסקה שמורה' : 'שמור עסקה בשם'}
+                dialogDescription={editingDeal ? 'העסקה השמורה תתעדכן לפי הנתונים שמופיעים עכשיו.' : 'שמירת העסקה כדי להשוות אותה מול עסקאות אחרות בהמשך.'}
                 nameLabel="שם העסקה"
                 namePlaceholder='לדוגמה: "דירת 3 חדרים בחיפה — רח׳ הרצל"'
                 defaultName={`עסקה ב-${formatCurrency(purchasePrice)} — ${new Date().toLocaleDateString('he-IL')}`}
+                snapshotId={editingDeal?.id ?? null}
+                initialName={editingDeal?.name ?? ''}
+                initialNotes={editingDeal?.notes ?? ''}
+                onSaved={() => {
+                  clear('business_plan_editing');
+                  setEditingDeal(null);
+                }}
                 getData={() => ({
                   inputs: {
                     purchasePrice, sideCosts, renovationCost, equityInvested,
@@ -202,6 +214,11 @@ export default function BusinessPlan() {
           <p className="text-sm text-muted-foreground">
             הזן את פרטי העסקה וראה 3 תרחישים לפי אחוז עלייה שנתי.
           </p>
+          {editingDeal && (
+            <div className="rounded-xl border border-primary/25 bg-primary/5 p-3 text-xs text-primary">
+              עורך עכשיו את העסקה השמורה: <span className="font-bold">{editingDeal.name}</span>
+            </div>
+          )}
 
           {budgetData && (
             <Button variant="outline" size="sm" onClick={handleImportBudget} className="w-full gap-1.5 border-primary/30 text-primary">
@@ -275,46 +292,6 @@ export default function BusinessPlan() {
             <p className="text-[11px] text-muted-foreground">הוצאות: ארנונה, ביטוח, ועד בית, תחזוקה, ניהול</p>
           </div>
 
-          {/* Scenario appreciation rates */}
-          <Card className="border-0 bg-muted/50">
-            <CardContent className="p-4 space-y-3">
-              <div>
-                <Label className="text-sm font-semibold">אחוזי עליית ערך לפי תרחיש</Label>
-                <p className="text-[11px] text-muted-foreground mt-1">
-                  שנה את ההנחות כדי לראות מיד איך העסקה משתנה. ברירת המחדל: מחמיר 0%, בינוני 1%, טוב 2%.
-                </p>
-              </div>
-              <div className="grid grid-cols-3 gap-2 pt-1">
-                <div>
-                  <Label className="text-[10px] text-red-500">מחמיר %</Label>
-                  <Input
-                    type="number" step="0.5" className="h-8 text-sm"
-                    value={customRates.pessimistic}
-                    onChange={(e) => setCustomRates({ ...customRates, pessimistic: Number(e.target.value) })}
-                  />
-                </div>
-                <div>
-                  <Label className="text-[10px] text-blue-500">בינוני %</Label>
-                  <Input
-                    type="number" step="0.5" className="h-8 text-sm"
-                    value={customRates.average}
-                    onChange={(e) => setCustomRates({ ...customRates, average: Number(e.target.value) })}
-                  />
-                </div>
-                <div>
-                  <Label className="text-[10px] text-green-500">טוב %</Label>
-                  <Input
-                    type="number" step="0.5" className="h-8 text-sm"
-                    value={customRates.optimistic}
-                    onChange={(e) => setCustomRates({ ...customRates, optimistic: Number(e.target.value) })}
-                  />
-                </div>
-              </div>
-              {customRates.pessimistic > customRates.optimistic && (
-                <p className="text-[11px] text-amber-500">שים לב — התרחיש המחמיר גבוה מהתרחיש הטוב</p>
-              )}
-            </CardContent>
-          </Card>
         </div>
 
         {/* Results Section */}
@@ -357,6 +334,47 @@ export default function BusinessPlan() {
                   <ScenarioCard scenario={result.scenarios[1]} style={SCENARIO_COLORS.average} monthlyCashflow={result.monthlyCashflow} />
                   <ScenarioCard scenario={result.scenarios[2]} style={SCENARIO_COLORS.optimistic} monthlyCashflow={result.monthlyCashflow} />
                 </div>
+
+                {/* Scenario appreciation rates */}
+                <Card className="border-0 bg-muted/50">
+                  <CardContent className="p-4 space-y-3">
+                    <div>
+                      <Label className="text-sm font-semibold">אחוזי עליית ערך לפי תרחיש</Label>
+                      <p className="text-[11px] text-muted-foreground mt-1">
+                        שנה את ההנחות כדי לראות מיד איך העסקה משתנה. ברירת המחדל: מחמיר 0%, בינוני 1%, טוב 2%.
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 pt-1">
+                      <div>
+                        <Label className="text-[10px] text-red-500">מחמיר %</Label>
+                        <Input
+                          type="number" step="0.5" className="h-8 text-sm"
+                          value={customRates.pessimistic}
+                          onChange={(e) => setCustomRates({ ...customRates, pessimistic: Number(e.target.value) })}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-[10px] text-blue-500">בינוני %</Label>
+                        <Input
+                          type="number" step="0.5" className="h-8 text-sm"
+                          value={customRates.average}
+                          onChange={(e) => setCustomRates({ ...customRates, average: Number(e.target.value) })}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-[10px] text-green-500">טוב %</Label>
+                        <Input
+                          type="number" step="0.5" className="h-8 text-sm"
+                          value={customRates.optimistic}
+                          onChange={(e) => setCustomRates({ ...customRates, optimistic: Number(e.target.value) })}
+                        />
+                      </div>
+                    </div>
+                    {customRates.pessimistic > customRates.optimistic && (
+                      <p className="text-[11px] text-amber-500">שים לב — התרחיש המחמיר גבוה מהתרחיש הטוב</p>
+                    )}
+                  </CardContent>
+                </Card>
 
                 {/* PDF Export */}
                 <div className="flex justify-end">

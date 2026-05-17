@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { BarChart3, Loader2, RefreshCw, TrendingUp } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { BarChart3, Edit3, Loader2, RefreshCw, Trash2, TrendingUp } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { listSnapshots, type Snapshot } from '@/lib/snapshots';
+import { deleteSnapshot, listSnapshots, type Snapshot } from '@/lib/snapshots';
 import { formatCurrency } from '@/lib/validation/validators';
 import { cn } from '@/lib/utils';
+import { save } from '@/lib/storage';
+import { toast } from 'sonner';
 
 interface DealRow {
   id: string;
@@ -111,6 +113,7 @@ function MobileMetric({ label, value, highlight }: { label: string; value: strin
 }
 
 export default function DealComparison() {
+  const navigate = useNavigate();
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [scenarioFilter, setScenarioFilter] = useState<'all' | 'מחמיר' | 'בינוני' | 'טוב'>('all');
@@ -135,7 +138,7 @@ export default function DealComparison() {
     load();
   }, []);
 
-  const dealOptions = snapshots.map((snapshot) => ({ id: snapshot.id, name: snapshot.name }));
+  const dealOptions = snapshots.map((snapshot) => ({ id: snapshot.id, name: snapshot.name, snapshot }));
 
   const rows = useMemo(() => {
     return snapshots
@@ -151,6 +154,10 @@ export default function DealComparison() {
     totalProfit: Math.max(...rows.map((r) => r.totalProfit), -Infinity),
   }), [rows]);
 
+  const snapshotsById = useMemo(() => {
+    return new Map(snapshots.map((snapshot) => [snapshot.id, snapshot]));
+  }, [snapshots]);
+
   const toggleDeal = (id: string) => {
     setSelectedIds((current) => {
       const next = new Set(current);
@@ -158,6 +165,33 @@ export default function DealComparison() {
       else next.add(id);
       return next;
     });
+  };
+
+  const editDeal = (snapshot: Snapshot) => {
+    const data = snapshot.data as SnapshotData | null;
+    if (!data?.inputs) {
+      toast.error('לא ניתן לערוך את העסקה — חסרים נתוני מקור');
+      return;
+    }
+    save('business_plan', data.inputs);
+    save('business_plan_editing', { id: snapshot.id, name: snapshot.name, notes: snapshot.notes });
+    navigate('/business-plan');
+  };
+
+  const removeDeal = async (snapshot: Snapshot) => {
+    if (!window.confirm(`למחוק את העסקה "${snapshot.name}"?`)) return;
+    try {
+      await deleteSnapshot(snapshot.id);
+      setSnapshots((current) => current.filter((s) => s.id !== snapshot.id));
+      setSelectedIds((current) => {
+        const next = new Set(current);
+        next.delete(snapshot.id);
+        return next;
+      });
+      toast.success('העסקה נמחקה');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'שגיאה במחיקת העסקה');
+    }
   };
 
   return (
@@ -188,20 +222,29 @@ export default function DealComparison() {
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {dealOptions.map((deal) => (
-                    <label
+                    <div
                       key={deal.id}
                       className={cn(
-                        'inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-xs transition',
+                        'inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs transition',
                         selectedIds.has(deal.id) ? 'bg-primary/10 border-primary/40 text-primary' : 'bg-background text-muted-foreground',
                       )}
                     >
-                      <Checkbox
-                        checked={selectedIds.has(deal.id)}
-                        onCheckedChange={() => toggleDeal(deal.id)}
-                        className="w-3.5 h-3.5"
-                      />
-                      {deal.name}
-                    </label>
+                      <label className="inline-flex cursor-pointer items-center gap-2 py-0.5 pr-1">
+                        <Checkbox
+                          checked={selectedIds.has(deal.id)}
+                          onCheckedChange={() => toggleDeal(deal.id)}
+                          className="w-3.5 h-3.5"
+                        />
+                        <span className="max-w-[180px] truncate">{deal.name}</span>
+                      </label>
+                      <span className="h-4 w-px bg-border" />
+                      <button type="button" onClick={() => editDeal(deal.snapshot)} className="rounded-full p-1 hover:bg-background" aria-label="ערוך עסקה">
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+                      <button type="button" onClick={() => removeDeal(deal.snapshot)} className="rounded-full p-1 text-destructive hover:bg-background" aria-label="מחק עסקה">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   ))}
                 </div>
               )}
@@ -266,6 +309,17 @@ export default function DealComparison() {
                   </Badge>
                 </div>
 
+                {snapshotsById.get(row.snapshotId) && (
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" className="h-8 flex-1 gap-1" onClick={() => editDeal(snapshotsById.get(row.snapshotId)!)}>
+                      <Edit3 className="w-3.5 h-3.5" /> ערוך
+                    </Button>
+                    <Button variant="outline" size="sm" className="h-8 flex-1 gap-1 text-destructive" onClick={() => removeDeal(snapshotsById.get(row.snapshotId)!)}>
+                      <Trash2 className="w-3.5 h-3.5" /> מחק
+                    </Button>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-2">
                   <MobileMetric label="תזרים חודשי" value={formatCurrency(row.monthlyCashflow)} highlight={row.monthlyCashflow >= 0 ? 'good' : 'bad'} />
                   <MobileMetric label="רווח כולל" value={formatCurrency(row.totalProfit)} highlight={row.totalProfit === best.totalProfit ? 'best' : row.totalProfit >= 0 ? 'good' : 'bad'} />
@@ -291,7 +345,7 @@ export default function DealComparison() {
               <table className="w-full min-w-[1180px] border-collapse text-xs">
                 <thead className="bg-muted/80 sticky top-0 z-10">
                   <tr className="text-right">
-                    {['עסקה', 'תרחיש', 'עלייה שנתית', 'מחיר רכישה', 'הון עצמי', 'משכנתא', 'החזר חודשי', 'שכ״ד', 'תזרים חודשי', 'COC', 'IRR', 'רווח כולל', 'שווי בסוף', 'תקופה', 'נשמר'].map((head) => (
+                    {['עסקה', 'תרחיש', 'עלייה שנתית', 'מחיר רכישה', 'הון עצמי', 'משכנתא', 'החזר חודשי', 'שכ״ד', 'תזרים חודשי', 'COC', 'IRR', 'רווח כולל', 'שווי בסוף', 'תקופה', 'נשמר', 'פעולות'].map((head) => (
                       <th key={head} className="border-b border-l px-3 py-2 font-semibold whitespace-nowrap">{head}</th>
                     ))}
                   </tr>
@@ -313,7 +367,15 @@ export default function DealComparison() {
                       <td className={cn('border-b border-l px-3 py-2', row.totalProfit >= 0 ? 'text-green-600' : 'text-red-600', bestClass(row.totalProfit, best.totalProfit))}>{formatCurrency(row.totalProfit)}</td>
                       <td className="border-b border-l px-3 py-2">{formatCurrency(row.propertyValueAtEnd)}</td>
                       <td className="border-b border-l px-3 py-2 text-center">{row.holdingPeriodYears} שנים</td>
-                      <td className="border-b px-3 py-2 whitespace-nowrap">{new Date(row.createdAt).toLocaleDateString('he-IL')}</td>
+                      <td className="border-b border-l px-3 py-2 whitespace-nowrap">{new Date(row.createdAt).toLocaleDateString('he-IL')}</td>
+                      <td className="border-b px-3 py-2 whitespace-nowrap">
+                        {snapshotsById.get(row.snapshotId) && (
+                          <div className="flex gap-1">
+                            <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => editDeal(snapshotsById.get(row.snapshotId)!)}>ערוך</Button>
+                            <Button variant="ghost" size="sm" className="h-7 px-2 text-destructive" onClick={() => removeDeal(snapshotsById.get(row.snapshotId)!)}>מחק</Button>
+                          </div>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

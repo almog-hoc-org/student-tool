@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Bookmark, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import { saveSnapshot } from '@/lib/snapshots';
+import { saveSnapshot, updateSnapshot } from '@/lib/snapshots';
 
 interface Props {
   toolKey: string;
@@ -28,6 +28,10 @@ interface Props {
   nameLabel?: string;
   namePlaceholder?: string;
   defaultName?: string;
+  snapshotId?: string | null;
+  initialName?: string;
+  initialNotes?: string | null;
+  onSaved?: () => void;
 }
 
 export function SaveSnapshotButton({
@@ -41,12 +45,23 @@ export function SaveSnapshotButton({
   nameLabel = 'שם התרחיש',
   namePlaceholder = 'לדוגמה: "דירה בפ״ת — אפשרות א"',
   defaultName,
+  snapshotId,
+  initialName = '',
+  initialNotes = '',
+  onSaved,
 }: Props) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState('');
-  const [notes, setNotes] = useState('');
+  const [name, setName] = useState(initialName);
+  const [notes, setNotes] = useState(initialNotes ?? '');
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setName(initialName);
+      setNotes(initialNotes ?? '');
+    }
+  }, [open, initialName, initialNotes]);
 
   const handleSave = async () => {
     if (!user?.id) {
@@ -60,17 +75,29 @@ export function SaveSnapshotButton({
     }
     setSaving(true);
     try {
-      await saveSnapshot({
-        userId: user.id,
-        toolKey,
-        name: trimmed,
-        data: getData(),
-        notes: notes.trim() || undefined,
-      });
-      toast.success(`נשמר: "${trimmed}"`);
+      if (snapshotId) {
+        await updateSnapshot({
+          id: snapshotId,
+          name: trimmed,
+          data: getData(),
+          notes: notes.trim() || null,
+        });
+      } else {
+        await saveSnapshot({
+          userId: user.id,
+          toolKey,
+          name: trimmed,
+          data: getData(),
+          notes: notes.trim() || undefined,
+        });
+      }
+      toast.success(snapshotId ? `עודכן: "${trimmed}"` : `נשמר: "${trimmed}"`);
       setOpen(false);
-      setName('');
-      setNotes('');
+      if (!snapshotId) {
+        setName('');
+        setNotes('');
+      }
+      onSaved?.();
     } catch (e) {
       toast.error('שגיאה בשמירה');
       console.error(e);

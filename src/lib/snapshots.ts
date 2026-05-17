@@ -53,6 +53,27 @@ export async function saveSnapshot(input: {
   return data as Snapshot;
 }
 
+export async function updateSnapshot(input: {
+  id: string;
+  name: string;
+  data: unknown;
+  notes?: string | null;
+}): Promise<Snapshot> {
+  const { data, error } = await supabase
+    .from('calculation_snapshots')
+    .update({
+      name: input.name,
+      data: input.data as never,
+      notes: input.notes ?? null,
+    })
+    .eq('id', input.id)
+    .select('id, tool_key, name, data, notes, created_at')
+    .single();
+  if (error) throw error;
+
+  return data as Snapshot;
+}
+
 export async function deleteSnapshot(id: string): Promise<void> {
   const { error } = await supabase
     .from('calculation_snapshots')
