@@ -233,7 +233,7 @@ function QuickBudgetWizard({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent dir="rtl" className="sm:max-w-md">
+      <DialogContent dir="rtl" className="w-[calc(100vw-24px)] rounded-2xl sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{current.title}</DialogTitle>
           <DialogDescription>{current.description}</DialogDescription>
@@ -327,12 +327,12 @@ export default function BudgetCalculator() {
       <div className="md:grid md:grid-cols-5 md:gap-8">
         {/* Input Section */}
         <div className="md:col-span-2 space-y-4 md:sticky md:top-28 md:self-start">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <Wallet className="w-6 h-6 text-primary" />
               מחשבון תקציב
             </h1>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
               <SaveSnapshotButton
                 toolKey="budget"
                 disabled={!result}
@@ -351,12 +351,12 @@ export default function BudgetCalculator() {
           </p>
 
           <Card className="border-primary/20 bg-primary/5">
-            <CardContent className="p-4 flex items-center justify-between gap-3">
+            <CardContent className="p-4 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm font-semibold">רוצה למלא מהר?</p>
                 <p className="text-xs text-muted-foreground">ענה על 5 שאלות ונמלא את המחשבון עבורך. הנתונים יישמרו לפעם הבאה.</p>
               </div>
-              <Button size="sm" onClick={() => setWizardOpen(true)}>שאלון קצר</Button>
+              <Button size="sm" onClick={() => setWizardOpen(true)} className="w-full sm:w-auto">שאלון קצר</Button>
             </CardContent>
           </Card>
 

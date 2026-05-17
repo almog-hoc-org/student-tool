@@ -96,6 +96,20 @@ function bestClass(value: number, best: number, higherIsBetter = true) {
   return isBest ? 'bg-green-50 text-green-700 font-bold' : '';
 }
 
+function MobileMetric({ label, value, highlight }: { label: string; value: string; highlight?: 'good' | 'bad' | 'best' }) {
+  return (
+    <div className={cn(
+      'rounded-xl border bg-background p-3',
+      highlight === 'best' && 'border-green-200 bg-green-50 text-green-700',
+      highlight === 'good' && 'text-green-600',
+      highlight === 'bad' && 'text-red-600',
+    )}>
+      <p className="text-[11px] text-muted-foreground mb-1">{label}</p>
+      <p className="text-sm font-bold leading-tight">{value}</p>
+    </div>
+  );
+}
+
 export default function DealComparison() {
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -235,7 +249,43 @@ export default function DealComparison() {
       ) : rows.length === 0 ? (
         <Card><CardContent className="p-6 text-center text-muted-foreground">בחר לפחות עסקה אחת או שנה סינון תרחיש.</CardContent></Card>
       ) : (
-        <Card className="border-0 shadow-sm overflow-hidden">
+        <>
+        <div className="md:hidden space-y-3">
+          {rows.map((row) => (
+            <Card key={row.id} className="border-0 shadow-sm overflow-hidden">
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 className="font-bold truncate">{row.name}</h3>
+                    <p className="text-[11px] text-muted-foreground">
+                      נשמר ב-{new Date(row.createdAt).toLocaleDateString('he-IL')} · {row.holdingPeriodYears} שנים
+                    </p>
+                  </div>
+                  <Badge variant="outline" className={cn('shrink-0', getScenarioTone(row.scenarioLabel))}>
+                    {row.scenarioLabel} · {row.annualAppreciation}%
+                  </Badge>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <MobileMetric label="תזרים חודשי" value={formatCurrency(row.monthlyCashflow)} highlight={row.monthlyCashflow >= 0 ? 'good' : 'bad'} />
+                  <MobileMetric label="רווח כולל" value={formatCurrency(row.totalProfit)} highlight={row.totalProfit === best.totalProfit ? 'best' : row.totalProfit >= 0 ? 'good' : 'bad'} />
+                  <MobileMetric label="COC" value={formatPercent(row.cocYield)} highlight={row.cocYield === best.cocYield ? 'best' : undefined} />
+                  <MobileMetric label="IRR" value={formatPercent(row.irr)} highlight={(row.irr ?? -Infinity) === best.irr ? 'best' : undefined} />
+                </div>
+
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs text-muted-foreground border-t pt-3">
+                  <div>מחיר רכישה: <span className="font-semibold text-foreground">{formatCurrency(row.purchasePrice)}</span></div>
+                  <div>הון עצמי: <span className="font-semibold text-foreground">{formatCurrency(row.equityInvested)}</span></div>
+                  <div>משכנתא: <span className="font-semibold text-foreground">{formatCurrency(row.mortgageAmount)}</span></div>
+                  <div>שכ״ד: <span className="font-semibold text-foreground">{formatCurrency(row.expectedMonthlyRent)}</span></div>
+                  <div className="col-span-2">שווי בסוף תקופה: <span className="font-semibold text-foreground">{formatCurrency(row.propertyValueAtEnd)}</span></div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        <Card className="hidden md:block border-0 shadow-sm overflow-hidden">
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[1180px] border-collapse text-xs">
@@ -271,6 +321,7 @@ export default function DealComparison() {
             </div>
           </CardContent>
         </Card>
+        </>
       )}
     </div>
   );

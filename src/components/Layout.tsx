@@ -122,7 +122,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
       {/* Mobile Bottom Tab Bar */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-t border-border pb-[env(safe-area-inset-bottom)]">
-        <div className="flex items-center justify-around h-16 px-2">
+        <div className="flex h-16 gap-1 overflow-x-auto px-2 no-scrollbar">
           {tabs.map((tab) => {
             const isActive = currentPath === tab.href;
             return (
@@ -130,14 +130,14 @@ export function Layout({ children }: { children: ReactNode }) {
                 key={tab.href}
                 to={tab.href}
                 className={cn(
-                  'flex flex-col items-center justify-center gap-1 flex-1 py-2 rounded-xl transition-colors',
+                  'flex min-w-[72px] flex-col items-center justify-center gap-1 py-2 rounded-xl transition-colors',
                   isActive
                     ? 'text-primary'
                     : 'text-muted-foreground'
                 )}
               >
                 <tab.icon className={cn('w-5 h-5', isActive && 'scale-110')} />
-                <span className="text-[11px] font-semibold">{tab.name}</span>
+                <span className="text-[10px] font-semibold leading-tight text-center">{tab.name}</span>
                 {isActive && <div className="w-1.5 h-1.5 rounded-full bg-primary" />}
               </Link>
             );

@@ -169,12 +169,12 @@ export default function BusinessPlan() {
       <div className="md:grid md:grid-cols-5 md:gap-8">
         {/* Input Section */}
         <div className="md:col-span-2 space-y-4 md:sticky md:top-28 md:self-start">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <TrendingUp className="w-6 h-6 text-primary" />
               תוכנית עסקית
             </h1>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
               <SaveSnapshotButton
                 toolKey="business_plan"
                 disabled={!result}
