@@ -27,6 +27,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { ExpertContactCard } from '@/components/ExpertContactCard';
 import { SourcePreviewDialog } from '@/components/SourcePreviewDialog';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 const SUGGESTIONS = [
   'מה אני יכול לקנות עם ההון שלי?',
@@ -197,7 +198,13 @@ export default function Chat() {
           </div>
         ) : (
           messages.map((m) => (
-            <MessageBubble key={m.id} message={m} />
+            <ErrorBoundary
+              key={m.id}
+              compact
+              description="לא הצלחנו להציג הודעה אחת בצ׳אט, אבל שאר השיחה זמינה."
+            >
+              <MessageBubble message={m} />
+            </ErrorBoundary>
           ))
         )}
         {loading && (

@@ -9,6 +9,7 @@ import { Layout } from "@/components/Layout";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminRoute } from "@/components/AdminRoute";
 import { ScrollToTop } from "@/components/ScrollToTop";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import BudgetCalculator from "./pages/BudgetCalculator";
 import Login from "./pages/Login";
 import PendingApproval from "./pages/PendingApproval";
@@ -59,7 +60,7 @@ const App = () => (
                         <Route path="/business-plan" element={<BusinessPlan />} />
                         <Route path="/mortgage" element={<MortgageCalculator />} />
                         <Route path="/advisor" element={<AIAdvisor />} />
-                        <Route path="/chat" element={<Chat />} />
+                        <Route path="/chat" element={<ErrorBoundary title="הצ׳אט נתקל בשגיאה" description="רענן את העמוד. אם זה חוזר, הודעה בעייתית תבודד במקום להפיל את כל המסך."><Chat /></ErrorBoundary>} />
                         <Route path="/account" element={<Account />} />
                         <Route path="/onboarding" element={<Onboarding />} />
                         <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
