@@ -10,6 +10,7 @@ import {
   Sparkles,
   Loader2,
   User as UserIcon,
+  LifeBuoy,
   AlertCircle,
   BookOpen,
   Clock,
@@ -240,6 +241,22 @@ function MessageBubble({ message }: { message: ChatDbMessage }) {
   const isUser = message.role === 'user';
   const isSystem = message.role === 'system';
   const isHuman = message.role === 'human';
+  const [previewSource, setPreviewSource] = useState<{ source_id: string | null; source_file: string } | null>(null);
+
+  const rawSources = (message.metadata as { sources?: unknown } | null)?.sources;
+  const sources = Array.isArray(rawSources)
+    ? rawSources.filter(
+        (source): source is { source_file: string; source_id?: string } =>
+          !!source
+          && typeof source === 'object'
+          && 'source_file' in source
+          && typeof (source as { source_file?: unknown }).source_file === 'string'
+          && (
+            !('source_id' in source)
+            || typeof (source as { source_id?: unknown }).source_id === 'string'
+          ),
+      )
+    : [];
 
   if (isSystem) {
     return (
@@ -250,9 +267,6 @@ function MessageBubble({ message }: { message: ChatDbMessage }) {
       </div>
     );
   }
-
-  const sources = ((message.metadata as { sources?: { source_file: string; source_id?: string }[] } | null)?.sources ?? []);
-  const [previewSource, setPreviewSource] = useState<{ source_id: string | null; source_file: string } | null>(null);
 
   return (
     <div className={cn('flex gap-2', isUser ? 'flex-row-reverse' : 'flex-row')}>
