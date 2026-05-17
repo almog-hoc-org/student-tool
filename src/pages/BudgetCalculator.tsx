@@ -5,6 +5,14 @@ import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Wallet, Home, CreditCard, Receipt, PiggyBank, ArrowLeft, RotateCcw } from 'lucide-react';
 import { calculateBudget, BudgetOutput } from '@/lib/calculations/budget-calculator';
 import { BuyerType } from '@/lib/calculations/purchase-tax';
@@ -109,6 +117,157 @@ function DtiIndicator({ percent }: { percent: number }) {
 
 const DEFAULTS = { equity: 400000, monthlyIncome: 20000, monthlyObligations: 0, buyerType: 'singleApartment' as BuyerType, mortgageYears: 25 };
 
+interface BudgetWizardValues {
+  equity: number;
+  monthlyIncome: number;
+  monthlyObligations: number;
+  buyerType: BuyerType;
+  mortgageYears: number;
+}
+
+function QuickBudgetWizard({
+  open,
+  onOpenChange,
+  initialValues,
+  onComplete,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  initialValues: BudgetWizardValues;
+  onComplete: (values: BudgetWizardValues) => void;
+}) {
+  const [step, setStep] = useState(0);
+  const [values, setValues] = useState<BudgetWizardValues>(initialValues);
+
+  useEffect(() => {
+    if (open) {
+      setStep(0);
+      setValues(initialValues);
+    }
+  }, [open, initialValues]);
+
+  const steps = [
+    {
+      title: 'כמה הון עצמי זמין יש לך?',
+      description: 'כסף פנוי לעסקה, לפני מס רכישה ועלויות נלוות.',
+      content: (
+        <Input
+          type="number"
+          min="0"
+          value={values.equity || ''}
+          onChange={(e) => setValues({ ...values, equity: Number(e.target.value) })}
+          className="h-12 text-lg font-semibold"
+          placeholder="400000"
+          autoFocus
+        />
+      ),
+    },
+    {
+      title: 'מה ההכנסה החודשית נטו של משק הבית?',
+      description: 'הכנסה נטו קבועה אחרי מסים.',
+      content: (
+        <Input
+          type="number"
+          min="0"
+          value={values.monthlyIncome || ''}
+          onChange={(e) => setValues({ ...values, monthlyIncome: Number(e.target.value) })}
+          className="h-12 text-lg font-semibold"
+          placeholder="20000"
+          autoFocus
+        />
+      ),
+    },
+    {
+      title: 'כמה התחייבויות חודשיות קיימות יש?',
+      description: 'הלוואות, ליסינג, אשראי וכל החזר קבוע אחר.',
+      content: (
+        <Input
+          type="number"
+          min="0"
+          value={values.monthlyObligations || ''}
+          onChange={(e) => setValues({ ...values, monthlyObligations: Number(e.target.value) })}
+          className="h-12 text-lg font-semibold"
+          placeholder="0"
+          autoFocus
+        />
+      ),
+    },
+    {
+      title: 'מה סוג הרוכש?',
+      description: 'זה משפיע על מס רכישה ואחוזי המימון.',
+      content: (
+        <Select value={values.buyerType} onValueChange={(buyerType: BuyerType) => setValues({ ...values, buyerType })}>
+          <SelectTrigger className="h-12"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="singleApartment">דירה ראשונה (יחידה)</SelectItem>
+            <SelectItem value="additionalApartment">דירה נוספת / משקיע</SelectItem>
+            <SelectItem value="foreignResident">תושב חוץ</SelectItem>
+          </SelectContent>
+        </Select>
+      ),
+    },
+    {
+      title: 'לכמה שנים תרצה לפרוס את המשכנתא?',
+      description: 'אפשר לשנות גם אחר כך במחשבון.',
+      content: (
+        <div className="space-y-3">
+          <div className="text-center text-2xl font-bold text-primary">{values.mortgageYears} שנים</div>
+          <Slider
+            value={[values.mortgageYears]}
+            onValueChange={([mortgageYears]) => setValues({ ...values, mortgageYears })}
+            min={15}
+            max={30}
+            step={1}
+          />
+          <div className="flex justify-between text-[11px] text-muted-foreground">
+            <span>15</span>
+            <span>30</span>
+          </div>
+        </div>
+      ),
+    },
+  ];
+
+  const current = steps[step];
+  const isLast = step === steps.length - 1;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent dir="rtl" className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{current.title}</DialogTitle>
+          <DialogDescription>{current.description}</DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          <div className="flex gap-1">
+            {steps.map((_, i) => (
+              <div key={i} className={cn('h-1.5 flex-1 rounded-full', i <= step ? 'bg-primary' : 'bg-muted')} />
+            ))}
+          </div>
+          {current.content}
+        </div>
+
+        <DialogFooter className="gap-2 sm:gap-2">
+          <Button variant="ghost" onClick={() => step === 0 ? onOpenChange(false) : setStep(step - 1)}>
+            {step === 0 ? 'ביטול' : 'חזור'}
+          </Button>
+          <Button onClick={() => {
+            if (isLast) {
+              onComplete(values);
+              onOpenChange(false);
+            } else {
+              setStep(step + 1);
+            }
+          }}>
+            {isLast ? 'מלא את המחשבון' : 'הבא'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function BudgetCalculator() {
   const { user } = useAuth();
   const uid = user?.id;
@@ -118,10 +277,12 @@ export default function BudgetCalculator() {
   const [monthlyObligations, setMonthlyObligations] = useState(saved?.monthlyObligations ?? DEFAULTS.monthlyObligations);
   const [buyerType, setBuyerType] = useState<BuyerType>(saved?.buyerType ?? DEFAULTS.buyerType);
   const [mortgageYears, setMortgageYears] = useState(saved?.mortgageYears ?? DEFAULTS.mortgageYears);
+  const [wizardOpen, setWizardOpen] = useState(false);
 
   // Auto-save inputs
   useEffect(() => {
     save('budget', { equity, monthlyIncome, monthlyObligations, buyerType, mortgageYears }, uid);
+    save('budget_profile', { equity, monthlyIncome, monthlyObligations, buyerType, mortgageYears }, uid);
   }, [equity, monthlyIncome, monthlyObligations, buyerType, mortgageYears, uid]);
 
   const result: BudgetOutput | null = useMemo(() => {
@@ -143,6 +304,16 @@ export default function BudgetCalculator() {
 
   const maxAllowedPayment = monthlyIncome * 0.4;
   const obligationsExceedDTI = monthlyObligations >= maxAllowedPayment && monthlyIncome > 0;
+
+  const applyWizard = (values: BudgetWizardValues) => {
+    setEquity(values.equity);
+    setMonthlyIncome(values.monthlyIncome);
+    setMonthlyObligations(values.monthlyObligations);
+    setBuyerType(values.buyerType);
+    setMortgageYears(values.mortgageYears);
+    save('budget', values, uid);
+    save('budget_profile', values, uid);
+  };
 
   const pieData = result ? [
     { name: 'הון עצמי נטו', value: result.equityBreakdown.netEquity, color: COLORS.equity },
@@ -178,6 +349,23 @@ export default function BudgetCalculator() {
           <p className="text-sm text-muted-foreground">
             כמה דירה אתה יכול לקנות? הזן את הנתונים וקבל תשובה מיידית.
           </p>
+
+          <Card className="border-primary/20 bg-primary/5">
+            <CardContent className="p-4 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold">רוצה למלא מהר?</p>
+                <p className="text-xs text-muted-foreground">ענה על 5 שאלות ונמלא את המחשבון עבורך. הנתונים יישמרו לפעם הבאה.</p>
+              </div>
+              <Button size="sm" onClick={() => setWizardOpen(true)}>שאלון קצר</Button>
+            </CardContent>
+          </Card>
+
+          <QuickBudgetWizard
+            open={wizardOpen}
+            onOpenChange={setWizardOpen}
+            initialValues={{ equity, monthlyIncome, monthlyObligations, buyerType, mortgageYears }}
+            onComplete={applyWizard}
+          />
 
           {/* Equity */}
           <div className="space-y-2">

@@ -112,12 +112,12 @@ export function calculateBusinessPlan(
 
   const pessRate = customRates?.pessimistic ?? Math.max(0, baseAppreciation - 2);
   const avgRate = customRates?.average ?? baseAppreciation;
-  const optRate = customRates?.optimistic ?? baseAppreciation + 2;
+  const optRate = customRates?.optimistic ?? baseAppreciation + 1;
 
   const scenarios: [ScenarioResult, ScenarioResult, ScenarioResult] = [
     calculateScenario(input, pessRate, 'מחמיר', totalDealCost, annualNetCashflow),
-    calculateScenario(input, avgRate, 'ממוצע', totalDealCost, annualNetCashflow),
-    calculateScenario(input, optRate, 'אופטימי', totalDealCost, annualNetCashflow),
+    calculateScenario(input, avgRate, 'בינוני', totalDealCost, annualNetCashflow),
+    calculateScenario(input, optRate, 'טוב', totalDealCost, annualNetCashflow),
   ];
 
   return {

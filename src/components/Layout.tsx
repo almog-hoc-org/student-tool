@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Wallet, TrendingUp, Home, MessageCircle, Settings, LogOut, UserCircle, User } from 'lucide-react';
+import { Wallet, TrendingUp, Home, MessageCircle, Settings, LogOut, UserCircle, User, BarChart3 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { NotificationCenter } from './NotificationCenter';
 import { StepIndicator } from './StepIndicator';
@@ -18,6 +18,7 @@ import {
 const tabs = [
   { name: 'תקציב', href: '/', icon: Wallet },
   { name: 'תוכנית עסקית', href: '/business-plan', icon: TrendingUp },
+  { name: 'השוואת עסקאות', href: '/deal-comparison', icon: BarChart3 },
   { name: 'משכנתא', href: '/mortgage', icon: Home },
   { name: 'צ׳אט AI', href: '/chat', icon: MessageCircle },
   { name: 'אזור אישי', href: '/account', icon: User },

@@ -22,9 +22,26 @@ interface Props {
   getData: () => unknown;
   disabled?: boolean;
   className?: string;
+  buttonLabel?: string;
+  dialogTitle?: string;
+  dialogDescription?: string;
+  nameLabel?: string;
+  namePlaceholder?: string;
+  defaultName?: string;
 }
 
-export function SaveSnapshotButton({ toolKey, getData, disabled, className }: Props) {
+export function SaveSnapshotButton({
+  toolKey,
+  getData,
+  disabled,
+  className,
+  buttonLabel = 'שמור תרחיש',
+  dialogTitle = 'שמור תרחיש בשם',
+  dialogDescription = 'שמירת התרחיש הזה כדי לחזור אליו אחר כך מהאזור האישי.',
+  nameLabel = 'שם התרחיש',
+  namePlaceholder = 'לדוגמה: "דירה בפ״ת — אפשרות א"',
+  defaultName,
+}: Props) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
@@ -36,9 +53,9 @@ export function SaveSnapshotButton({ toolKey, getData, disabled, className }: Pr
       toast.error('צריך להיות מחובר');
       return;
     }
-    const trimmed = name.trim();
+    const trimmed = name.trim() || defaultName?.trim();
     if (!trimmed) {
-      toast.error('תן שם לתרחיש');
+      toast.error('תן שם לשמירה');
       return;
     }
     setSaving(true);
@@ -72,26 +89,31 @@ export function SaveSnapshotButton({ toolKey, getData, disabled, className }: Pr
           className={className}
         >
           <Bookmark className="w-4 h-4 ml-1" />
-          שמור תרחיש
+          {buttonLabel}
         </Button>
       </DialogTrigger>
       <DialogContent dir="rtl">
         <DialogHeader>
-          <DialogTitle>שמור תרחיש בשם</DialogTitle>
+          <DialogTitle>{dialogTitle}</DialogTitle>
           <DialogDescription>
-            שמירת התרחיש הזה כדי לחזור אליו אחר כך מהאזור האישי.
+            {dialogDescription}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1">
-            <Label htmlFor="snap-name">שם התרחיש</Label>
+            <Label htmlFor="snap-name">{nameLabel}</Label>
             <Input
               id="snap-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder='לדוגמה: "דירה בפ"ת — אפשרות א"'
+              placeholder={namePlaceholder}
               autoFocus
             />
+            {defaultName && (
+              <p className="text-[11px] text-muted-foreground">
+                אם תשאיר ריק נשמור בשם: {defaultName}
+              </p>
+            )}
           </div>
           <div className="space-y-1">
             <Label htmlFor="snap-notes">הערות (לא חובה)</Label>

@@ -2,14 +2,11 @@ import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { BarChart3, Import, RotateCcw, TrendingUp } from 'lucide-react';
 import { SaveSnapshotButton } from '@/components/SaveSnapshotButton';
 import { calculateBusinessPlan, BusinessPlanOutput, ScenarioResult } from '@/lib/calculations/business-plan';
 import { formatCurrency } from '@/lib/validation/validators';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { save, load, clear } from '@/lib/storage';
@@ -24,7 +21,13 @@ const SCENARIO_COLORS = {
   optimistic: { bg: 'bg-green-50 dark:bg-green-950/30', border: 'border-green-200 dark:border-green-800', text: 'text-green-600 dark:text-green-400', chart: '#22C55E' },
 };
 
-function ScenarioCard({ scenario, style }: { scenario: ScenarioResult; style: typeof SCENARIO_COLORS.pessimistic }) {
+const SCENARIO_HELP: Record<string, string> = {
+  'מחמיר': 'בודק אם העסקה עדיין סבירה גם בלי עליית ערך.',
+  'בינוני': 'תרחיש שמרני-ריאלי לקבלת החלטה יומיומית.',
+  'טוב': 'בודק את פוטנציאל העסקה אם השוק עולה בקצב מתון.',
+};
+
+function ScenarioCard({ scenario, style, monthlyCashflow }: { scenario: ScenarioResult; style: typeof SCENARIO_COLORS.pessimistic; monthlyCashflow: number }) {
   return (
     <Card className={cn('border', style.border, style.bg)}>
       <CardContent className="p-4 space-y-3">
@@ -46,6 +49,12 @@ function ScenarioCard({ scenario, style }: { scenario: ScenarioResult; style: ty
               {formatCurrency(scenario.totalProfit)}
             </p>
           </div>
+          <div>
+            <p className="text-[11px] text-muted-foreground">תזרים חודשי</p>
+            <p className={cn('text-base font-semibold', monthlyCashflow >= 0 ? 'text-green-600' : 'text-red-600')}>
+              {formatCurrency(monthlyCashflow)}
+            </p>
+          </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
               <p className="text-[11px] text-muted-foreground flex items-center gap-1">תשואת COC <InfoTooltip text="כמה אתה מרוויח בשנה ביחס להון שהשקעת — שכירות נטו חלקי הון עצמי" /></p>
@@ -58,6 +67,9 @@ function ScenarioCard({ scenario, style }: { scenario: ScenarioResult; style: ty
               </p>
             </div>
           </div>
+          <p className="text-[11px] text-muted-foreground border-t pt-2">
+            {SCENARIO_HELP[scenario.label]}
+          </p>
         </div>
       </CardContent>
     </Card>
@@ -68,7 +80,7 @@ const BP_DEFAULTS = {
   purchasePrice: 1200000, sideCosts: 40000, renovationCost: 0, equityInvested: 400000,
   mortgageAmount: 800000, mortgageMonthlyPayment: 4500, mortgageInterestRate: 5, mortgageYears: 25,
   expectedMonthlyRent: 4000, annualOperatingCosts: 8000, holdingPeriodYears: 10,
-  baseAppreciation: 3, manualMode: false, customRates: { pessimistic: 1, average: 3, optimistic: 5 },
+  baseAppreciation: 1, manualMode: true, customRates: { pessimistic: 0, average: 1, optimistic: 2 },
 };
 
 export default function BusinessPlan() {
@@ -111,7 +123,7 @@ export default function BusinessPlan() {
     setMortgageMonthlyPayment(budgetData.monthlyPayment);
     setSideCosts(budgetData.purchaseTax + budgetData.sideCosts);
     // Import interest rate from mortgage results if available
-    const mortgageData = load<any>('mortgage_results');
+    const mortgageData = load<{ weightedAverageInterest?: number }>('mortgage_results');
     if (mortgageData?.weightedAverageInterest) {
       setMortgageInterestRate(mortgageData.weightedAverageInterest);
     }
@@ -119,17 +131,20 @@ export default function BusinessPlan() {
 
   const handleReset = () => {
     if (!window.confirm('בטוח? כל הנתונים יימחקו')) return;
-    Object.entries(BP_DEFAULTS).forEach(([k, v]) => {
-      const setters: Record<string, Function> = {
-        purchasePrice: setPurchasePrice, sideCosts: setSideCosts, renovationCost: setRenovationCost,
-        equityInvested: setEquityInvested, mortgageAmount: setMortgageAmount,
-        mortgageMonthlyPayment: setMortgageMonthlyPayment, mortgageInterestRate: setMortgageInterestRate,
-        mortgageYears: setMortgageYears, expectedMonthlyRent: setExpectedMonthlyRent,
-        annualOperatingCosts: setAnnualOperatingCosts, holdingPeriodYears: setHoldingPeriodYears,
-        baseAppreciation: setBaseAppreciation, manualMode: setManualMode, customRates: setCustomRates,
-      };
-      setters[k]?.(v);
-    });
+    setPurchasePrice(BP_DEFAULTS.purchasePrice);
+    setSideCosts(BP_DEFAULTS.sideCosts);
+    setRenovationCost(BP_DEFAULTS.renovationCost);
+    setEquityInvested(BP_DEFAULTS.equityInvested);
+    setMortgageAmount(BP_DEFAULTS.mortgageAmount);
+    setMortgageMonthlyPayment(BP_DEFAULTS.mortgageMonthlyPayment);
+    setMortgageInterestRate(BP_DEFAULTS.mortgageInterestRate);
+    setMortgageYears(BP_DEFAULTS.mortgageYears);
+    setExpectedMonthlyRent(BP_DEFAULTS.expectedMonthlyRent);
+    setAnnualOperatingCosts(BP_DEFAULTS.annualOperatingCosts);
+    setHoldingPeriodYears(BP_DEFAULTS.holdingPeriodYears);
+    setBaseAppreciation(BP_DEFAULTS.baseAppreciation);
+    setManualMode(BP_DEFAULTS.manualMode);
+    setCustomRates(BP_DEFAULTS.customRates);
     clear('business_plan', uid);
   };
 
@@ -143,23 +158,11 @@ export default function BusinessPlan() {
         annualOperatingCosts, holdingPeriodYears,
       },
       baseAppreciation,
-      manualMode ? customRates : undefined,
+      customRates,
     );
   }, [purchasePrice, sideCosts, renovationCost, equityInvested, mortgageAmount,
     mortgageMonthlyPayment, mortgageInterestRate, mortgageYears, expectedMonthlyRent,
-    annualOperatingCosts, holdingPeriodYears, baseAppreciation, manualMode, customRates]);
-
-  // Chart data - merge yearly projections
-  const chartData = useMemo(() => {
-    if (!result) return [];
-    const years = result.scenarios[0].yearlyProjection.length;
-    return Array.from({ length: years }, (_, i) => ({
-      year: i,
-      מחמיר: result.scenarios[0].yearlyProjection[i]?.value || 0,
-      ממוצע: result.scenarios[1].yearlyProjection[i]?.value || 0,
-      אופטימי: result.scenarios[2].yearlyProjection[i]?.value || 0,
-    }));
-  }, [result]);
+    annualOperatingCosts, holdingPeriodYears, baseAppreciation, customRates]);
 
   return (
     <div className="space-y-6">
@@ -175,6 +178,12 @@ export default function BusinessPlan() {
               <SaveSnapshotButton
                 toolKey="business_plan"
                 disabled={!result}
+                buttonLabel="שמור עסקה"
+                dialogTitle="שמור עסקה בשם"
+                dialogDescription="שמירת העסקה כדי להשוות אותה מול עסקאות אחרות בהמשך."
+                nameLabel="שם העסקה"
+                namePlaceholder='לדוגמה: "דירת 3 חדרים בחיפה — רח׳ הרצל"'
+                defaultName={`עסקה ב-${formatCurrency(purchasePrice)} — ${new Date().toLocaleDateString('he-IL')}`}
                 getData={() => ({
                   inputs: {
                     purchasePrice, sideCosts, renovationCost, equityInvested,
@@ -266,66 +275,43 @@ export default function BusinessPlan() {
             <p className="text-[11px] text-muted-foreground">הוצאות: ארנונה, ביטוח, ועד בית, תחזוקה, ניהול</p>
           </div>
 
-          {/* Appreciation Slider */}
+          {/* Scenario appreciation rates */}
           <Card className="border-0 bg-muted/50">
             <CardContent className="p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm font-semibold">אחוז עלייה שנתי</Label>
-                <span className="text-lg font-bold text-primary">{baseAppreciation}%</span>
+              <div>
+                <Label className="text-sm font-semibold">אחוזי עליית ערך לפי תרחיש</Label>
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  שנה את ההנחות כדי לראות מיד איך העסקה משתנה. ברירת המחדל: מחמיר 0%, בינוני 1%, טוב 2%.
+                </p>
               </div>
-              <Slider
-                value={[baseAppreciation]}
-                onValueChange={([v]) => {
-                  setBaseAppreciation(v);
-                  if (!manualMode) {
-                    setCustomRates({ pessimistic: Math.max(0, v - 2), average: v, optimistic: v + 2 });
-                  }
-                }}
-                min={0}
-                max={10}
-                step={0.5}
-              />
-              <div className="flex justify-between text-[10px] text-muted-foreground">
-                <span>0%</span>
-                <span>5%</span>
-                <span>10%</span>
-              </div>
-
-              <div className="flex items-center gap-2 pt-1">
-                <Switch checked={manualMode} onCheckedChange={setManualMode} />
-                <Label className="text-xs">עריכה ידנית לכל תרחיש</Label>
-              </div>
-
-              {manualMode && (
-                <div className="grid grid-cols-3 gap-2 pt-1">
-                  <div>
-                    <Label className="text-[10px] text-red-500">מחמיר %</Label>
-                    <Input
-                      type="number" step="0.5" className="h-8 text-sm"
-                      value={customRates.pessimistic}
-                      onChange={(e) => setCustomRates({ ...customRates, pessimistic: Number(e.target.value) })}
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-[10px] text-blue-500">ממוצע %</Label>
-                    <Input
-                      type="number" step="0.5" className="h-8 text-sm"
-                      value={customRates.average}
-                      onChange={(e) => setCustomRates({ ...customRates, average: Number(e.target.value) })}
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-[10px] text-green-500">אופטימי %</Label>
-                    <Input
-                      type="number" step="0.5" className="h-8 text-sm"
-                      value={customRates.optimistic}
-                      onChange={(e) => setCustomRates({ ...customRates, optimistic: Number(e.target.value) })}
-                    />
-                  </div>
+              <div className="grid grid-cols-3 gap-2 pt-1">
+                <div>
+                  <Label className="text-[10px] text-red-500">מחמיר %</Label>
+                  <Input
+                    type="number" step="0.5" className="h-8 text-sm"
+                    value={customRates.pessimistic}
+                    onChange={(e) => setCustomRates({ ...customRates, pessimistic: Number(e.target.value) })}
+                  />
                 </div>
-              )}
-              {manualMode && customRates.pessimistic > customRates.optimistic && (
-                <p className="text-[11px] text-amber-500">שים לב — התרחיש המחמיר גבוה מהאופטימי</p>
+                <div>
+                  <Label className="text-[10px] text-blue-500">בינוני %</Label>
+                  <Input
+                    type="number" step="0.5" className="h-8 text-sm"
+                    value={customRates.average}
+                    onChange={(e) => setCustomRates({ ...customRates, average: Number(e.target.value) })}
+                  />
+                </div>
+                <div>
+                  <Label className="text-[10px] text-green-500">טוב %</Label>
+                  <Input
+                    type="number" step="0.5" className="h-8 text-sm"
+                    value={customRates.optimistic}
+                    onChange={(e) => setCustomRates({ ...customRates, optimistic: Number(e.target.value) })}
+                  />
+                </div>
+              </div>
+              {customRates.pessimistic > customRates.optimistic && (
+                <p className="text-[11px] text-amber-500">שים לב — התרחיש המחמיר גבוה מהתרחיש הטוב</p>
               )}
             </CardContent>
           </Card>
@@ -367,38 +353,15 @@ export default function BusinessPlan() {
 
                 {/* 3 Scenario Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <ScenarioCard scenario={result.scenarios[0]} style={SCENARIO_COLORS.pessimistic} />
-                  <ScenarioCard scenario={result.scenarios[1]} style={SCENARIO_COLORS.average} />
-                  <ScenarioCard scenario={result.scenarios[2]} style={SCENARIO_COLORS.optimistic} />
+                  <ScenarioCard scenario={result.scenarios[0]} style={SCENARIO_COLORS.pessimistic} monthlyCashflow={result.monthlyCashflow} />
+                  <ScenarioCard scenario={result.scenarios[1]} style={SCENARIO_COLORS.average} monthlyCashflow={result.monthlyCashflow} />
+                  <ScenarioCard scenario={result.scenarios[2]} style={SCENARIO_COLORS.optimistic} monthlyCashflow={result.monthlyCashflow} />
                 </div>
 
-                {/* Property Value Chart */}
-                {chartData.length > 1 && (
-                  <Card className="border-0 shadow-sm">
-                    <CardContent className="p-4">
-                      <p className="text-sm font-semibold mb-3">עליית שווי נכס לאורך השנים</p>
-                      <div id="bp-chart">
-                      <ResponsiveContainer width="100%" height={280}>
-                        <LineChart data={chartData}>
-                          <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                          <XAxis dataKey="year" label={{ value: 'שנה', position: 'insideBottom', offset: -5 }} />
-                          <YAxis tickFormatter={(v) => `₪${(v / 1000000).toFixed(1)}M`} />
-                          <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                          <Legend />
-                          <Line type="monotone" dataKey="מחמיר" stroke={SCENARIO_COLORS.pessimistic.chart} strokeWidth={2} dot={false} />
-                          <Line type="monotone" dataKey="ממוצע" stroke={SCENARIO_COLORS.average.chart} strokeWidth={2.5} dot={false} />
-                          <Line type="monotone" dataKey="אופטימי" stroke={SCENARIO_COLORS.optimistic.chart} strokeWidth={2} dot={false} />
-                        </LineChart>
-                      </ResponsiveContainer>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
                 {/* PDF Export */}
                 <div className="flex justify-end">
                   <ExportButton
                     title="תוכנית עסקית"
-                    chartElementId="bp-chart"
                     executiveSummary={[
                       `עלות עסקה כוללת: ${formatCurrency(result.totalDealCost)}`,
                       `תזרים חודשי נטו: ${formatCurrency(result.monthlyCashflow)}`,

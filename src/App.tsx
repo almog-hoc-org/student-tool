@@ -20,6 +20,7 @@ const BusinessPlan = lazy(() => import("./pages/BusinessPlan"));
 const MortgageCalculator = lazy(() => import("./pages/MortgageCalculator"));
 const AIAdvisor = lazy(() => import("./pages/AIAdvisor"));
 const Chat = lazy(() => import("./pages/Chat"));
+const DealComparison = lazy(() => import("./pages/DealComparison"));
 const Account = lazy(() => import("./pages/Account"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
@@ -61,6 +62,7 @@ const App = () => (
                         <Route path="/mortgage" element={<MortgageCalculator />} />
                         <Route path="/advisor" element={<AIAdvisor />} />
                         <Route path="/chat" element={<ErrorBoundary title="הצ׳אט נתקל בשגיאה" description="רענן את העמוד. אם זה חוזר, הודעה בעייתית תבודד במקום להפיל את כל המסך."><Chat /></ErrorBoundary>} />
+                        <Route path="/deal-comparison" element={<DealComparison />} />
                         <Route path="/account" element={<Account />} />
                         <Route path="/onboarding" element={<Onboarding />} />
                         <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
