@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 
 interface LineChartProps {
-  data: any[];
+  data: Record<string, unknown>[];
   title: string;
   description?: string;
   xKey: string;

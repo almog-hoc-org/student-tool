@@ -12,9 +12,9 @@ export interface ChatMessage {
 interface UserData {
   budget: { equity: number; monthlyIncome: number; monthlyObligations: number; buyerType: string; mortgageYears: number } | null;
   budgetResults: BudgetOutput | null;
-  businessPlan: any;
-  mortgage: any;
-  mortgageResults: any;
+  businessPlan: { purchasePrice?: number; expectedMonthlyRent?: number; mortgageMonthlyPayment?: number; holdingPeriodYears?: number } | null;
+  mortgage: { tracks?: { principal?: number }[]; freeCashFlow?: number; monthlyIncome?: number } | null;
+  mortgageResults: { totalMonthlyPayment: number; weightedAverageInterest: number; totalInterestPaid?: number; totalPaid?: number } | null;
 }
 
 function loadUserData(): UserData {
@@ -52,10 +52,13 @@ const INTENTS: Intent[] = [
   {
     keywords: /(dti|יחס.*(הכנס|החזר)|החזר.*הכנס|כמה.*מההכנסה)/i,
     handler: (d) => {
-      if (!d.budgetResults) return 'יחס DTI (החזר/הכנסה) הוא החלק מההכנסה שהולך להחזרי הלוואות. בנקים בישראל לא מאשרים מעל 40%, ומומלץ לשאוף ל-33% או פחות. מלא את מחשבון התקציב כדי לראות את היחס שלך.';
+      if (!d.budgetResults) return 'יחס ההחזר הרלוונטי אצלנו מבוסס על התזרים הפנוי: הכנסה נטו פחות התחייבויות. מלא את מחשבון התקציב כדי לראות כמה החזר חודשי באמת אפשר לקחת.';
       const dti = d.budgetResults.dtiPercent;
+      if (d.budgetResults.freeCashFlow <= 0) {
+        return `התזרים הפנוי שלך שלילי (${fmt(d.budgetResults.freeCashFlow)}), ולכן כרגע אין החזר משכנתא סביר. צריך קודם לסגור את הפער החודשי.`;
+      }
       const status = dti > 40 ? '🔴 חורג מהמקסימום' : dti > 33 ? '🟡 גבוה, מומלץ להפחית' : '🟢 בריא';
-      return `יחס ה-DTI שלך: **${dti.toFixed(1)}%** ${status}\n\n• עד 33% — נוח, מרווח גדול\n• 33-40% — גבולי, צריך זהירות\n• מעל 40% — הבנק לא יאשר\n\nכדי להפחית: הגדל הכנסה, צמצם התחייבויות, או קח משכנתא ארוכה יותר.`;
+      return `התזרים הפנוי שלך הוא **${fmt(d.budgetResults.freeCashFlow)}**.\n\nזה מתורגם להחזר חודשי מרבי של **${fmt(d.budgetResults.maxAffordableMortgagePayment)}**${status ? ` — ${status}` : ''}.\n\n• עד 33% מהתזרים — נוח\n• 33-40% — גבולי\n• מעל 40% — מסוכן\n\nכדי לשפר: הגדל הכנסה, צמצם התחייבויות, או הארך תקופה.`;
     },
   },
   // Equity / how much money do I need
@@ -78,7 +81,7 @@ const INTENTS: Intent[] = [
         return `המשכנתא שבנית:\n\n- **החזר חודשי: ${fmt(m.totalMonthlyPayment)}**\n- ריבית משוקללת: ${m.weightedAverageInterest.toFixed(2)}%\n- סך ריבית לכל התקופה: ${fmt(m.totalInterestPaid)}\n- סך תשלום: ${fmt(m.totalPaid)}\n\nכדי להוזיל: קצר תקופה, הגדל הון עצמי, או השווה הצעות מבנקים.`;
       }
       if (d.budgetResults) {
-        return `על בסיס התקציב שלך, החזר חודשי מוערך: **${fmt(d.budgetResults.monthlyPayment)}** לסכום משכנתא של ${fmt(d.budgetResults.maxMortgage)}.\n\nלחישוב מדויק של תמהיל משכנתא — עבור למחשבון המשכנתא.`;
+        return `על בסיס התקציב שלך, ההחזר החודשי המקסימלי הוא **${fmt(d.budgetResults.maxAffordableMortgagePayment)}** ולפיו אפשר לגזור משכנתא של ${fmt(d.budgetResults.maxMortgageByCashflow)} (בכפוף להון עצמי).\n\nלחישוב מדויק של תמהיל משכנתא — עבור למחשבון המשכנתא.`;
       }
       return 'מחשבון המשכנתא מאפשר לבנות תמהיל עם מספר מסלולים (קבועה, פריים, משתנה) ולראות השפעה על החזר חודשי וריבית כוללת. הפעל אותו כדי לקבל תשובות ספציפיות.';
     },

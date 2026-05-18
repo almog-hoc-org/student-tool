@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 
 interface RadarChartProps {
-  data: any[];
+  data: Record<string, unknown>[];
   title: string;
   description?: string;
   dataKey: string;

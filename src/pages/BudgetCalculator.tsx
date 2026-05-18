@@ -81,45 +81,13 @@ function KPICard({ title, value, icon: Icon, color, large, tooltip }: {
   );
 }
 
-function DtiIndicator({ percent }: { percent: number }) {
-  const getStatus = () => {
-    if (percent < 30) return { label: 'בטוח', color: 'bg-green-500', textColor: 'text-green-600' };
-    if (percent < 37) return { label: 'סביר', color: 'bg-amber-500', textColor: 'text-amber-600' };
-    return { label: 'גבולי', color: 'bg-red-500', textColor: 'text-red-600' };
-  };
-  const status = getStatus();
-
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-muted-foreground flex items-center gap-1">יחס החזר/הכנסה (DTI) <InfoTooltip text="הבנק דורש שמקסימום 40% מההכנסה החודשית ילך להחזרי הלוואות — כולל המשכנתא החדשה" /></span>
-        <span className={cn('font-semibold', status.textColor)}>
-          {percent.toFixed(1)}% — {status.label}
-        </span>
-      </div>
-      <div className="h-2.5 bg-muted rounded-full overflow-hidden">
-        <motion.div
-          className={cn('h-full rounded-full', status.color)}
-          initial={{ width: 0 }}
-          animate={{ width: `${Math.min(percent / 50 * 100, 100)}%` }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
-        />
-      </div>
-      <div className="flex justify-between text-[10px] text-muted-foreground">
-        <span>0%</span>
-        <span>30%</span>
-        <span>40% (מקסימום)</span>
-        <span>50%</span>
-      </div>
-    </div>
-  );
-}
-
-const DEFAULTS = { equity: 400000, monthlyIncome: 20000, monthlyObligations: 0, buyerType: 'singleApartment' as BuyerType, mortgageYears: 25 };
+const DEFAULTS = { equity: 400000, monthlyIncome: 20000, currentRent: 0, livingExpenses: 0, monthlyObligations: 0, buyerType: 'singleApartment' as BuyerType, mortgageYears: 25 };
 
 interface BudgetWizardValues {
   equity: number;
   monthlyIncome: number;
+  currentRent: number;
+  livingExpenses: number;
   monthlyObligations: number;
   buyerType: BuyerType;
   mortgageYears: number;
@@ -173,6 +141,36 @@ function QuickBudgetWizard({
           onChange={(e) => setValues({ ...values, monthlyIncome: Number(e.target.value) })}
           className="h-12 text-lg font-semibold"
           placeholder="20000"
+          autoFocus
+        />
+      ),
+    },
+    {
+      title: 'כמה אתם משלמים כיום על דיור?',
+      description: 'שכירות/משכנתא קיימת — זה חלק מהתזרים הפנוי.',
+      content: (
+        <Input
+          type="number"
+          min="0"
+          value={values.currentRent || ''}
+          onChange={(e) => setValues({ ...values, currentRent: Number(e.target.value) })}
+          className="h-12 text-lg font-semibold"
+          placeholder="0"
+          autoFocus
+        />
+      ),
+    },
+    {
+      title: 'כמה הוצאות מחיה חודשיות יש?',
+      description: 'אוכל, תחבורה, בילויים, ילדים וכל מה שלא נכנס להתחייבויות.',
+      content: (
+        <Input
+          type="number"
+          min="0"
+          value={values.livingExpenses || ''}
+          onChange={(e) => setValues({ ...values, livingExpenses: Number(e.target.value) })}
+          className="h-12 text-lg font-semibold"
+          placeholder="0"
           autoFocus
         />
       ),
@@ -274,6 +272,8 @@ export default function BudgetCalculator() {
   const saved = load<typeof DEFAULTS>('budget');
   const [equity, setEquity] = useState(saved?.equity ?? DEFAULTS.equity);
   const [monthlyIncome, setMonthlyIncome] = useState(saved?.monthlyIncome ?? DEFAULTS.monthlyIncome);
+  const [currentRent, setCurrentRent] = useState(saved?.currentRent ?? DEFAULTS.currentRent);
+  const [livingExpenses, setLivingExpenses] = useState(saved?.livingExpenses ?? DEFAULTS.livingExpenses);
   const [monthlyObligations, setMonthlyObligations] = useState(saved?.monthlyObligations ?? DEFAULTS.monthlyObligations);
   const [buyerType, setBuyerType] = useState<BuyerType>(saved?.buyerType ?? DEFAULTS.buyerType);
   const [mortgageYears, setMortgageYears] = useState(saved?.mortgageYears ?? DEFAULTS.mortgageYears);
@@ -281,14 +281,14 @@ export default function BudgetCalculator() {
 
   // Auto-save inputs
   useEffect(() => {
-    save('budget', { equity, monthlyIncome, monthlyObligations, buyerType, mortgageYears }, uid);
-    save('budget_profile', { equity, monthlyIncome, monthlyObligations, buyerType, mortgageYears }, uid);
-  }, [equity, monthlyIncome, monthlyObligations, buyerType, mortgageYears, uid]);
+    save('budget', { equity, monthlyIncome, currentRent, livingExpenses, monthlyObligations, buyerType, mortgageYears }, uid);
+    save('budget_profile', { equity, monthlyIncome, currentRent, livingExpenses, monthlyObligations, buyerType, mortgageYears }, uid);
+  }, [equity, monthlyIncome, currentRent, livingExpenses, monthlyObligations, buyerType, mortgageYears, uid]);
 
   const result: BudgetOutput | null = useMemo(() => {
     if (equity <= 0 && monthlyIncome <= 0) return null;
-    return calculateBudget({ equity, monthlyIncome, monthlyObligations, buyerType, mortgageYears });
-  }, [equity, monthlyIncome, monthlyObligations, buyerType, mortgageYears]);
+    return calculateBudget({ equity, monthlyIncome, currentRent, livingExpenses, monthlyObligations, buyerType, mortgageYears });
+  }, [equity, monthlyIncome, currentRent, livingExpenses, monthlyObligations, buyerType, mortgageYears]);
 
   // Save results for flow
   useEffect(() => {
@@ -298,16 +298,19 @@ export default function BudgetCalculator() {
   const handleReset = () => {
     if (!window.confirm('בטוח? כל הנתונים יימחקו')) return;
     setEquity(DEFAULTS.equity); setMonthlyIncome(DEFAULTS.monthlyIncome);
+    setCurrentRent(DEFAULTS.currentRent); setLivingExpenses(DEFAULTS.livingExpenses);
     setMonthlyObligations(DEFAULTS.monthlyObligations); setBuyerType(DEFAULTS.buyerType);
     setMortgageYears(DEFAULTS.mortgageYears); clear('budget', uid); clear('budget_profile', uid); clear('budget_results', uid);
   };
 
-  const maxAllowedPayment = monthlyIncome * 0.4;
-  const obligationsExceedDTI = monthlyObligations >= maxAllowedPayment && monthlyIncome > 0;
+  const freeCashFlow = monthlyIncome - monthlyObligations;
+  const obligationsExceedCashFlow = freeCashFlow <= 0 && monthlyIncome > 0;
 
   const applyWizard = (values: BudgetWizardValues) => {
     setEquity(values.equity);
     setMonthlyIncome(values.monthlyIncome);
+    setCurrentRent(values.currentRent ?? 0);
+    setLivingExpenses(values.livingExpenses ?? 0);
     setMonthlyObligations(values.monthlyObligations);
     setBuyerType(values.buyerType);
     setMortgageYears(values.mortgageYears);
@@ -337,7 +340,7 @@ export default function BudgetCalculator() {
                 toolKey="budget"
                 disabled={!result}
                 getData={() => ({
-                  inputs: { equity, monthlyIncome, monthlyObligations, buyerType, mortgageYears },
+                  inputs: { equity, monthlyIncome, currentRent, livingExpenses, monthlyObligations, buyerType, mortgageYears },
                   results: result,
                 })}
               />
@@ -347,14 +350,14 @@ export default function BudgetCalculator() {
             </div>
           </div>
           <p className="text-sm text-muted-foreground">
-            כמה דירה אתה יכול לקנות? הזן את הנתונים וקבל תשובה מיידית.
+            הזן הון עצמי, הכנסה נטו והתחייבויות — המערכת תחשב תזרים פנוי ותתרגם אותו לשווי נכס מקסימלי.
           </p>
 
           <Card className="border-primary/20 bg-primary/5">
             <CardContent className="p-4 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm font-semibold">רוצה למלא מהר?</p>
-                <p className="text-xs text-muted-foreground">ענה על 5 שאלות ונמלא את המחשבון עבורך. הנתונים יישמרו לפעם הבאה.</p>
+                <p className="text-xs text-muted-foreground">ענה על 7 שאלות ונמלא את המחשבון עבורך. הנתונים יישמרו לפעם הבאה.</p>
               </div>
               <Button size="sm" onClick={() => setWizardOpen(true)} className="w-full sm:w-auto">שאלון קצר</Button>
             </CardContent>
@@ -363,7 +366,7 @@ export default function BudgetCalculator() {
           <QuickBudgetWizard
             open={wizardOpen}
             onOpenChange={setWizardOpen}
-            initialValues={{ equity, monthlyIncome, monthlyObligations, buyerType, mortgageYears }}
+            initialValues={{ equity, monthlyIncome, currentRent, livingExpenses, monthlyObligations, buyerType, mortgageYears }}
             onComplete={applyWizard}
           />
 
@@ -402,6 +405,30 @@ export default function BudgetCalculator() {
             />
           </div>
 
+          {/* Current Housing Cost */}
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium">דיור נוכחי / שכירות</Label>
+            <Input
+              type="number" min="0"
+              value={currentRent ?? ''}
+              onChange={(e) => setCurrentRent(Number(e.target.value))}
+              placeholder="0"
+            />
+            <p className="text-[11px] text-muted-foreground">אם אתם כבר משלמים שכירות או משכנתא — זה נכנס לחישוב התזרים הפנוי.</p>
+          </div>
+
+          {/* Living Expenses */}
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium">הוצאות מחיה חודשיות</Label>
+            <Input
+              type="number" min="0"
+              value={livingExpenses ?? ''}
+              onChange={(e) => setLivingExpenses(Number(e.target.value))}
+              placeholder="0"
+            />
+            <p className="text-[11px] text-muted-foreground">אוכל, תחבורה, בילויים וכל מה שלא נכלל בהתחייבויות.</p>
+          </div>
+
           {/* Obligations */}
           <div className="space-y-1.5">
             <Label className="text-sm font-medium">התחייבויות חודשיות קיימות</Label>
@@ -412,10 +439,22 @@ export default function BudgetCalculator() {
               placeholder="0"
             />
             <p className="text-[11px] text-muted-foreground">הלוואות, אשראי, ליסינג וכו׳</p>
-            {obligationsExceedDTI && (
-              <p className="text-[11px] text-red-500 font-medium">ההתחייבויות חורגות מ-40% מההכנסה — לא ניתן לקבל משכנתא</p>
+            {obligationsExceedCashFlow && (
+              <p className="text-[11px] text-red-500 font-medium">התזרים הפנוי שלילי — לפי זה אין כרגע יכולת לשאת החזר משכנתא</p>
             )}
           </div>
+
+          <Card className="border-0 shadow-sm bg-muted/40">
+            <CardContent className="p-3 flex items-center justify-between">
+              <div>
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">תזרים פנוי מחושב</p>
+                <p className="text-xs text-muted-foreground">הכנסה נטו פחות התחייבויות</p>
+              </div>
+              <p className={cn('text-lg font-bold tabular-nums', freeCashFlow >= 0 ? 'text-green-600' : 'text-red-600')}>
+                {formatCurrency(freeCashFlow)}
+              </p>
+            </CardContent>
+          </Card>
 
           {/* Buyer Type */}
           <div className="space-y-1.5">
@@ -465,47 +504,54 @@ export default function BudgetCalculator() {
               >
                 {/* Main KPI */}
                 <Card className="border-0 bg-primary/5 dark:bg-primary/10">
-                  <CardContent className="p-6 text-center">
+                  <CardContent className="p-6 text-center space-y-2">
                     <p className="text-sm text-muted-foreground mb-1">שווי דירה מקסימלי</p>
                     <p className="text-4xl md:text-5xl font-extrabold text-primary tracking-tight">
                       <AnimatedNumber value={result.maxPropertyValue} />
                     </p>
+                    <p className="text-xs text-muted-foreground">
+                      לפי הון עצמי של לפחות 25% ותזרים פנוי של {formatCurrency(result.maxAffordableMortgagePayment)} לחודש
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-0 shadow-sm bg-muted/40">
+                  <CardContent className="p-4 text-center">
+                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">טווח מומלץ</p>
+                    <p className="text-lg font-bold">{formatCurrency(result.recommendedPropertyValue)}</p>
+                    <p className="text-[11px] text-muted-foreground">יעד שמרני יותר, שומר כרית נזילות ומקטין סיכון</p>
                   </CardContent>
                 </Card>
 
                 {/* Secondary KPIs */}
                 <div className="grid grid-cols-2 gap-3">
-                  <KPICard
-                    title="סכום משכנתא"
-                    value={formatCurrency(result.maxMortgage)}
-                    icon={Home}
-                    color="bg-blue-500"
-                  />
-                  <KPICard
-                    title="החזר חודשי"
-                    value={formatCurrency(result.monthlyPayment)}
-                    icon={CreditCard}
-                    color="bg-indigo-500"
-                  />
-                  <KPICard
-                    title="מס רכישה"
-                    value={formatCurrency(result.purchaseTax)}
-                    icon={Receipt}
-                    color="bg-red-500"
-                  />
-                  <KPICard
-                    title="עלויות נלוות"
-                    value={formatCurrency(result.sideCosts)}
-                    icon={PiggyBank}
-                    color="bg-amber-500"
-                    tooltip="עורך דין, שמאי, רישום טאבו, ביטוח, מתווך"
-                  />
+                  <KPICard title="תזרים פנוי" value={formatCurrency(result.freeCashFlow)} icon={Wallet} color="bg-emerald-500" />
+                  <KPICard title="שכירות/דיור נוכחי" value={formatCurrency(currentRent)} icon={Home} color="bg-slate-500" />
+                  <KPICard title="הוצאות מחיה" value={formatCurrency(livingExpenses)} icon={PiggyBank} color="bg-violet-500" />
+                  <KPICard title="החזר חודשי מרבי" value={formatCurrency(result.maxAffordableMortgagePayment)} icon={CreditCard} color="bg-indigo-500" />
+                  <KPICard title="משכנתא לפי תזרים" value={formatCurrency(result.maxMortgageByCashflow)} icon={Home} color="bg-blue-500" />
+                  <KPICard title="שווי לפי הון עצמי" value={formatCurrency(result.maxPropertyByEquity)} icon={PiggyBank} color="bg-amber-500" tooltip="מחושב לפי הון עצמי של 25% לפחות, לפני מס רכישה ועלויות נלוות" />
+                  <KPICard title="מס רכישה" value={formatCurrency(result.purchaseTax)} icon={Receipt} color="bg-red-500" />
+                  <KPICard title="עלויות נלוות" value={formatCurrency(result.sideCosts)} icon={PiggyBank} color="bg-orange-500" tooltip="עורך דין, שמאי, רישום טאבו, ביטוח, מתווך" />
                 </div>
 
-                {/* DTI Indicator */}
+                {/* Cash Flow Indicator */}
                 <Card className="border-0 shadow-sm">
                   <CardContent className="p-4">
-                    <DtiIndicator percent={result.dtiPercent} />
+                    <div className="flex items-center justify-between text-sm mb-2">
+                      <span className="text-muted-foreground flex items-center gap-1">משכנתא מול תזרים פנוי <InfoTooltip text="החזר המשכנתא המקסימלי לא יכול לעלות על התזרים הפנוי של משק הבית" /></span>
+                      <span className={cn('font-semibold', result.monthlyPayment <= result.maxAffordableMortgagePayment ? 'text-green-600' : 'text-red-600')}>
+                        {formatCurrency(result.monthlyPayment)} / {formatCurrency(result.maxAffordableMortgagePayment)}
+                      </span>
+                    </div>
+                    <div className="h-2.5 bg-muted rounded-full overflow-hidden">
+                      <motion.div
+                        className={cn('h-full rounded-full', result.monthlyPayment <= result.maxAffordableMortgagePayment ? 'bg-green-500' : 'bg-red-500')}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.min((result.maxAffordableMortgagePayment > 0 ? result.monthlyPayment / result.maxAffordableMortgagePayment : 1) * 100, 100)}%` }}
+                        transition={{ duration: 0.5 }}
+                      />
+                    </div>
                   </CardContent>
                 </Card>
 
@@ -557,13 +603,16 @@ export default function BudgetCalculator() {
                     chartElementId="budget-chart"
                     executiveSummary={[
                       `שווי דירה מקסימלי: ${formatCurrency(result.maxPropertyValue)}`,
+                      `טווח מומלץ: ${formatCurrency(result.recommendedPropertyValue)}`,
+                      `תזרים פנוי: ${formatCurrency(result.freeCashFlow)}`,
                       `סכום משכנתא: ${formatCurrency(result.maxMortgage)}`,
                       `החזר חודשי: ${formatCurrency(result.monthlyPayment)}`,
-                      `DTI: ${result.dtiPercent.toFixed(1)}%`,
                     ]}
                     sections={[
                       { title: 'תוצאות עיקריות', items: [
                         { label: 'שווי דירה מקסימלי', value: formatCurrency(result.maxPropertyValue) },
+                        { label: 'טווח מומלץ', value: formatCurrency(result.recommendedPropertyValue) },
+                        { label: 'תזרים פנוי', value: formatCurrency(result.freeCashFlow) },
                         { label: 'סכום משכנתא', value: formatCurrency(result.maxMortgage) },
                         { label: 'החזר חודשי', value: formatCurrency(result.monthlyPayment) },
                         { label: 'מס רכישה', value: formatCurrency(result.purchaseTax) },
@@ -571,7 +620,10 @@ export default function BudgetCalculator() {
                       ]},
                       { title: 'נתוני קלט', items: [
                         { label: 'הון עצמי', value: formatCurrency(equity) },
-                        { label: 'הכנסה חודשית', value: formatCurrency(monthlyIncome) },
+                        { label: 'הכנסה חודשית נטו', value: formatCurrency(monthlyIncome) },
+                        { label: 'דיור נוכחי / שכירות', value: formatCurrency(currentRent) },
+                        { label: 'הוצאות מחיה', value: formatCurrency(livingExpenses) },
+                        { label: 'תזרים פנוי', value: formatCurrency(result.freeCashFlow) },
                         { label: 'התחייבויות', value: formatCurrency(monthlyObligations) },
                         { label: 'תקופת משכנתא', value: `${mortgageYears} שנים` },
                       ]},
@@ -590,7 +642,7 @@ export default function BudgetCalculator() {
                   <Wallet className="w-8 h-8 text-muted-foreground" />
                 </div>
                 <p className="text-muted-foreground text-sm">
-                  הזן הון עצמי והכנסה כדי לראות תוצאות
+                  הזן הון עצמי, הכנסה והתחייבויות כדי לראות תוצאות
                 </p>
               </motion.div>
             )}

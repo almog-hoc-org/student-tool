@@ -62,12 +62,37 @@ function KPICard({ title, value, subtitle, color }: { title: string; value: stri
 
 const DEFAULT_TRACK: MortgageTrack = { id: '1', name: 'קבועה לא צמודה', type: 'fixedUnlinked', principal: 800000, annualInterestRate: 5.5, years: 25 };
 
+function resolveTrackPrincipals(tracks: MortgageTrack[], totalMortgageAmount: number): MortgageTrack[] {
+  const usesAllocation = tracks.some((t) => t.allocationMode && t.allocationMode !== 'amount');
+  if (!usesAllocation) return tracks;
+
+  const amountTracks = tracks.filter((t) => !t.allocationMode || t.allocationMode === 'amount');
+  const percentTracks = tracks.filter((t) => t.allocationMode === 'percent');
+  const remainderTracks = tracks.filter((t) => t.allocationMode === 'remainder');
+
+  const amountSum = amountTracks.reduce((sum, t) => sum + (t.principal || 0), 0);
+  const percentSum = percentTracks.reduce((sum, t) => sum + (t.allocationValue || 0), 0);
+  const percentAmount = totalMortgageAmount * (percentSum / 100);
+  const remainderAmount = Math.max(0, totalMortgageAmount - amountSum - percentAmount);
+  const remainderPerTrack = remainderTracks.length > 0 ? remainderAmount / remainderTracks.length : 0;
+
+  return tracks.map((track) => {
+    if (!track.allocationMode || track.allocationMode === 'amount') return track;
+    if (track.allocationMode === 'percent') {
+      return { ...track, principal: Math.round(totalMortgageAmount * ((track.allocationValue || 0) / 100)) };
+    }
+    return { ...track, principal: Math.round(remainderPerTrack) };
+  });
+}
+
 export default function MortgageCalculator() {
   const { user } = useAuth();
   const uid = user?.id;
-  const savedM = load<{ tracks: MortgageTrack[]; monthlyIncome: number; isOffPlan: boolean; propertyPrice: number; madadRate: number; madadYears: number }>('mortgage');
+  const savedM = load<{ tracks: MortgageTrack[]; totalMortgageAmount: number; freeCashFlow: number; isOffPlan: boolean; propertyPrice: number; madadRate: number; madadYears: number }>('mortgage');
+  const budgetData = getBudgetResults();
   const [tracks, setTracks] = useState<MortgageTrack[]>(savedM?.tracks ?? [DEFAULT_TRACK]);
-  const [monthlyIncome, setMonthlyIncome] = useState(savedM?.monthlyIncome ?? 20000);
+  const [totalMortgageAmount, setTotalMortgageAmount] = useState(savedM?.totalMortgageAmount ?? budgetData?.maxMortgage ?? DEFAULT_TRACK.principal);
+  const [freeCashFlow, setFreeCashFlow] = useState(savedM?.freeCashFlow ?? budgetData?.freeCashFlow ?? 20000);
   const [isOffPlan, setIsOffPlan] = useState(savedM?.isOffPlan ?? false);
   const [propertyPrice, setPropertyPrice] = useState(savedM?.propertyPrice ?? 1600000);
   const [madadRate, setMadadRate] = useState(savedM?.madadRate ?? MARKET_CONSTANTS.DEFAULT_MADAD_RATE);
@@ -75,43 +100,43 @@ export default function MortgageCalculator() {
 
   // Auto-save
   useEffect(() => {
-    save('mortgage', { tracks, monthlyIncome, isOffPlan, propertyPrice, madadRate, madadYears }, uid);
-  }, [tracks, monthlyIncome, isOffPlan, propertyPrice, madadRate, madadYears, uid]);
-
-  const budgetData = getBudgetResults();
+    save('mortgage', { tracks, totalMortgageAmount, freeCashFlow, monthlyIncome: freeCashFlow, isOffPlan, propertyPrice, madadRate, madadYears }, uid);
+  }, [tracks, totalMortgageAmount, freeCashFlow, isOffPlan, propertyPrice, madadRate, madadYears, uid]);
 
   const handleImportBudget = () => {
     if (!budgetData) return;
-    setTracks([{ ...DEFAULT_TRACK, principal: budgetData.maxMortgage }]);
-    setMonthlyIncome(budgetData.monthlyIncome);
+    setTotalMortgageAmount(budgetData.maxMortgage);
+    setFreeCashFlow(budgetData.freeCashFlow);
+    setTracks([{ ...DEFAULT_TRACK, principal: budgetData.maxMortgage, allocationMode: 'amount', allocationValue: budgetData.maxMortgage }]);
   };
 
   const handleReset = () => {
     if (!window.confirm('בטוח? כל הנתונים יימחקו')) return;
-    setTracks([DEFAULT_TRACK]); setMonthlyIncome(20000); setIsOffPlan(false);
+    setTracks([DEFAULT_TRACK]); setTotalMortgageAmount(DEFAULT_TRACK.principal); setFreeCashFlow(20000); setIsOffPlan(false);
     setPropertyPrice(1600000); setMadadRate(MARKET_CONSTANTS.DEFAULT_MADAD_RATE); setMadadYears(3);
     clear('mortgage', uid); clear('mortgage_results', uid);
   };
 
   // Real-time calculation
+  const resolvedTracks = useMemo(() => resolveTrackPrincipals(tracks, totalMortgageAmount), [tracks, totalMortgageAmount]);
   const results: MortgageCalculatorOutput | null = useMemo(() => {
-    const hasValidTrack = tracks.some(t => t.principal > 0);
+    const hasValidTrack = resolvedTracks.some(t => t.principal > 0);
     if (!hasValidTrack) return null;
-    return calculateMortgage({ tracks });
-  }, [tracks]);
+    return calculateMortgage({ tracks: resolvedTracks });
+  }, [resolvedTracks]);
 
   const amortization: AmortizationRow[] = useMemo(() => {
     if (!results) return [];
-    return generateAmortizationSchedule(tracks);
-  }, [results, tracks]);
+    return generateAmortizationSchedule(resolvedTracks);
+  }, [results, resolvedTracks]);
 
   const sensitivity: SensitivityResult[] = useMemo(() => {
     if (!results) return [];
-    return sensitivityAnalysis(tracks);
-  }, [results, tracks]);
+    return sensitivityAnalysis(resolvedTracks);
+  }, [results, resolvedTracks]);
 
-  const totalPrincipal = tracks.reduce((sum, t) => sum + t.principal, 0);
-  const dtiRatio = results && monthlyIncome > 0 ? results.totalMonthlyPayment / monthlyIncome : null;
+  const totalPrincipal = resolvedTracks.reduce((sum, t) => sum + t.principal, 0);
+  const dtiRatio = results && freeCashFlow > 0 ? results.totalMonthlyPayment / freeCashFlow : null;
   const dtiPercent = dtiRatio !== null ? dtiRatio * 100 : 0;
 
   // Save results for flow (clear if null)
@@ -154,7 +179,7 @@ export default function MortgageCalculator() {
                 toolKey="mortgage"
                 disabled={!results}
                 getData={() => ({
-                  inputs: { tracks, monthlyIncome, isOffPlan, propertyPrice, madadRate, madadYears },
+                  inputs: { tracks: resolvedTracks, totalMortgageAmount, freeCashFlow, isOffPlan, propertyPrice, madadRate, madadYears },
                   results,
                 })}
               />
@@ -176,15 +201,23 @@ export default function MortgageCalculator() {
             פריים {MARKET_CONSTANTS.PRIME_RATE}% · ריבית בנק ישראל {MARKET_CONSTANTS.BOI_RATE}%
           </div>
 
-          {/* Income */}
+          <Card className="border-0 shadow-sm bg-muted/40">
+            <CardContent className="p-3 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">תזרים פנוי</p>
+                <p className="text-xs text-muted-foreground">מגיע ממחשבון התקציב ומשמש כמגבלת ההחזר החודשי</p>
+              </div>
+              <div className="text-left">
+                <p className="text-lg font-bold tabular-nums">{formatCurrency(freeCashFlow)}</p>
+                <p className="text-[11px] text-muted-foreground">לעריכה ידנית במקרה הצורך</p>
+              </div>
+            </CardContent>
+          </Card>
+
           <div className="space-y-1.5">
-            <Label className="text-xs">הכנסה חודשית נטו</Label>
-            <Input type="number" min="0" value={monthlyIncome ?? ''} onChange={(e) => setMonthlyIncome(Number(e.target.value))} />
-            {monthlyIncome > 0 && (
-              <p className="text-[11px] text-muted-foreground">
-                תשלום מקסימלי (40%): <span className="font-semibold">{formatCurrency(monthlyIncome * MARKET_CONSTANTS.MAX_DTI)}</span>
-              </p>
-            )}
+            <Label className="text-xs">סך משכנתא כולל</Label>
+            <Input type="number" min="0" value={totalMortgageAmount ?? ''} onChange={(e) => setTotalMortgageAmount(Number(e.target.value))} />
+            <p className="text-[11px] text-muted-foreground">זהו הסכום הכולל שצריך להתפזר בין המסלולים. אפשר לחלק באחוזים, בסכומים או כיתרה.</p>
           </div>
 
           {/* Tracks */}
@@ -211,10 +244,37 @@ export default function MortgageCalculator() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div>
-                    <Label className="text-[11px]">סכום (₪)</Label>
-                    <Input type="number" min="0" className="h-9" value={track.principal ?? ''} onChange={(e) => updateTrack(track.id, { principal: Number(e.target.value) })} />
+                  <div className="col-span-2">
+                    <Label className="text-[11px]">אופן הקצאה</Label>
+                    <Select
+                      value={track.allocationMode ?? 'amount'}
+                      onValueChange={(v) => updateTrack(track.id, { allocationMode: (v as MortgageTrack['allocationMode']) ?? 'amount' })}
+                    >
+                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="amount">סכום</SelectItem>
+                        <SelectItem value="percent">אחוז מסך המשכנתא</SelectItem>
+                        <SelectItem value="remainder">יתרה</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
+                  {((track.allocationMode ?? 'amount') === 'amount') && (
+                    <div>
+                      <Label className="text-[11px]">סכום (₪)</Label>
+                      <Input type="number" min="0" className="h-9" value={track.principal ?? ''} onChange={(e) => updateTrack(track.id, { principal: Number(e.target.value) })} />
+                    </div>
+                  )}
+                  {track.allocationMode === 'percent' && (
+                    <div>
+                      <Label className="text-[11px]">אחוז (%)</Label>
+                      <Input type="number" min="0" max="100" step="0.1" className="h-9" value={track.allocationValue ?? ''} onChange={(e) => updateTrack(track.id, { allocationValue: Number(e.target.value) })} />
+                    </div>
+                  )}
+                  {track.allocationMode === 'remainder' && (
+                    <div className="col-span-2 text-[11px] text-muted-foreground rounded-lg bg-muted/60 px-3 py-2">
+                      מסלול זה יקבל את היתרה אחרי המסלולים האחרים.
+                    </div>
+                  )}
                   <div>
                     <Label className="text-[11px]">ריבית (%)</Label>
                     <Input type="number" min="0" step="0.1" className="h-9" value={track.annualInterestRate ?? ''} onChange={(e) => updateTrack(track.id, { annualInterestRate: Number(e.target.value) })} />
@@ -222,6 +282,10 @@ export default function MortgageCalculator() {
                   <div>
                     <Label className="text-[11px]">שנים</Label>
                     <Input type="number" min="1" className="h-9" value={track.years ?? ''} onChange={(e) => updateTrack(track.id, { years: Number(e.target.value) })} />
+                  </div>
+                  <div className="col-span-2 text-[11px] text-muted-foreground flex justify-between">
+                    <span>סכום מחושב</span>
+                    <span className="font-semibold tabular-nums">{formatCurrency(resolvedTracks[index]?.principal ?? track.principal)}</span>
                   </div>
                 </div>
               </CardContent>
@@ -237,7 +301,7 @@ export default function MortgageCalculator() {
             <CardContent className="p-3 space-y-3">
               <div className="flex items-center gap-2">
                 <Switch checked={isOffPlan} onCheckedChange={setIsOffPlan} />
-                <Label className="text-xs flex items-center gap-1">רכישה מקבלן (מדד תשומות) <InfoTooltip text="כשקונים מקבלן, המחיר עולה בהתאם למדד עלויות הבנייה. חוק יוני 2025: 20% הראשון פטור, השאר צמוד ב-50%" /></Label>
+                <Label className="text-xs flex items-center gap-1">רכישה מקבלן (מדד תשומות) <InfoTooltip text="הנחת עבודה 2026: 20% ראשון פטור, והשאר צמוד ב-50% ממדד תשומות הבנייה" /></Label>
               </div>
               {isOffPlan && (
                 <div className="grid grid-cols-3 gap-2">
@@ -274,8 +338,12 @@ export default function MortgageCalculator() {
                 <KPICard
                   title="תשלום חודשי"
                   value={formatCurrency(results.totalMonthlyPayment)}
-                  subtitle={dtiRatio !== null ? `DTI: ${dtiPercent.toFixed(1)}%` : undefined}
-                  color={dtiRatio && dtiRatio > 0.4 ? 'text-red-600' : undefined}
+                  subtitle={dtiRatio !== null ? `מתוך תזרים פנוי: ${dtiPercent.toFixed(1)}%` : 'אין תזרים פנוי למימון'}
+                  color={dtiRatio && dtiRatio > 1 ? 'text-red-600' : undefined}
+                />
+                <KPICard
+                  title="תזרים פנוי"
+                  value={formatCurrency(freeCashFlow)}
                 />
                 <KPICard
                   title="ריבית משוקללת"
@@ -292,21 +360,21 @@ export default function MortgageCalculator() {
                 />
               </div>
 
-              {/* DTI Bar */}
+              {/* Cash Flow Bar */}
               {dtiRatio !== null && (
                 <Card className="border-0 shadow-sm">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between text-sm mb-2">
-                      <span className="text-muted-foreground flex items-center gap-1">יחס החזר/הכנסה <InfoTooltip text="הבנק דורש שמקסימום 40% מההכנסה ילך להחזרי הלוואות" /></span>
-                      <span className={cn('font-semibold', dtiPercent < 30 ? 'text-green-600' : dtiPercent < 40 ? 'text-amber-600' : 'text-red-600')}>
-                        {dtiPercent.toFixed(1)}%
+                      <span className="text-muted-foreground flex items-center gap-1">החזר מול תזרים פנוי <InfoTooltip text="כאן רואים אם ההחזר החודשי נשאר בתוך התזרים הפנוי של משק הבית" /></span>
+                      <span className={cn('font-semibold', results.totalMonthlyPayment <= freeCashFlow ? 'text-green-600' : 'text-red-600')}>
+                        {formatCurrency(results.totalMonthlyPayment)} / {formatCurrency(freeCashFlow)}
                       </span>
                     </div>
                     <div className="h-2.5 bg-muted rounded-full overflow-hidden">
                       <motion.div
-                        className={cn('h-full rounded-full', dtiPercent < 30 ? 'bg-green-500' : dtiPercent < 40 ? 'bg-amber-500' : 'bg-red-500')}
+                        className={cn('h-full rounded-full', results.totalMonthlyPayment <= freeCashFlow ? 'bg-green-500' : 'bg-red-500')}
                         initial={{ width: 0 }}
-                        animate={{ width: `${Math.min(dtiPercent / 50 * 100, 100)}%` }}
+                        animate={{ width: `${Math.min((freeCashFlow > 0 ? results.totalMonthlyPayment / freeCashFlow : 1) * 100, 100)}%` }}
                         transition={{ duration: 0.5 }}
                       />
                     </div>
@@ -364,7 +432,8 @@ export default function MortgageCalculator() {
               {sensitivity.length > 0 && (
                 <Card className="border-0 shadow-sm">
                   <CardContent className="p-4">
-                    <p className="text-sm font-semibold mb-2">ניתוח רגישות — שינויי ריבית</p>
+                    <p className="text-sm font-semibold mb-2">ניתוח רגישות — מה קורה אם הריבית זזה</p>
+                    <p className="text-[11px] text-muted-foreground mb-3">התרשים מציג את ההחזר החודשי הכולל בכל תרחיש ריבית, ביחס למסלול הנוכחי.</p>
                     <Tabs defaultValue="chart">
                       <TabsList className="grid w-full grid-cols-2 mb-4">
                         <TabsTrigger value="chart">גרף</TabsTrigger>
@@ -389,9 +458,9 @@ export default function MortgageCalculator() {
                           <Table>
                             <TableHeader>
                               <TableRow>
-                                <TableHead>שינוי</TableHead>
-                                <TableHead className="text-left">החזר חודשי</TableHead>
-                                <TableHead className="text-left">הפרש</TableHead>
+                                <TableHead>שינוי ריבית</TableHead>
+                                <TableHead className="text-right">החזר חודשי</TableHead>
+                                <TableHead className="text-right">פער מהבסיס</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -401,8 +470,8 @@ export default function MortgageCalculator() {
                                 return (
                                   <TableRow key={s.deltaPercent} className={s.deltaPercent === 0 ? 'bg-primary/5 font-bold' : ''}>
                                     <TableCell>{s.deltaPercent === 0 ? 'נוכחי' : `${s.deltaPercent > 0 ? '+' : ''}${s.deltaPercent}%`}</TableCell>
-                                    <TableCell>{formatCurrency(s.totalMonthlyPayment)}</TableCell>
-                                    <TableCell className={diff > 0 ? 'text-red-600' : diff < 0 ? 'text-green-600' : ''}>
+                                    <TableCell className="text-right tabular-nums">{formatCurrency(s.totalMonthlyPayment)}</TableCell>
+                                    <TableCell className={cn('text-right tabular-nums', diff > 0 ? 'text-red-600' : diff < 0 ? 'text-green-600' : '')}>
                                       {diff === 0 ? '—' : `${diff > 0 ? '+' : ''}${formatCurrency(diff)}`}
                                     </TableCell>
                                   </TableRow>
@@ -427,8 +496,9 @@ export default function MortgageCalculator() {
                         <TableHeader>
                           <TableRow>
                             <TableHead>מסלול</TableHead>
-                            <TableHead className="text-left">החזר</TableHead>
-                            <TableHead className="text-left">ריבית כוללת</TableHead>
+                            <TableHead className="text-right">הקצאה</TableHead>
+                            <TableHead className="text-right">החזר חודשי</TableHead>
+                            <TableHead className="text-right">ריבית כוללת</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -438,8 +508,9 @@ export default function MortgageCalculator() {
                             return (
                               <TableRow key={tr.trackId}>
                                 <TableCell className="font-medium">{track.name}</TableCell>
-                                <TableCell>{formatCurrency(tr.monthlyPayment)}</TableCell>
-                                <TableCell>{formatCurrency(tr.totalInterestPaid)}</TableCell>
+                                <TableCell className="text-right tabular-nums">{formatCurrency(track.principal)}</TableCell>
+                                <TableCell className="text-right tabular-nums">{formatCurrency(tr.monthlyPayment)}</TableCell>
+                                <TableCell className="text-right tabular-nums">{formatCurrency(tr.totalInterestPaid)}</TableCell>
                               </TableRow>
                             );
                           })}
@@ -460,14 +531,16 @@ export default function MortgageCalculator() {
                   title="דוח משכנתא"
                   chartElementId="mortgage-chart"
                   executiveSummary={[
+                    `סך משכנתא: ${formatCurrency(totalMortgageAmount)}`,
                     `תשלום חודשי: ${formatCurrency(results.totalMonthlyPayment)}`,
+                    `תזרים פנוי: ${formatCurrency(freeCashFlow)}`,
                     `ריבית משוקללת: ${results.weightedAverageInterest.toFixed(2)}%`,
-                    `סך ריבית: ${formatCurrency(results.totalInterestPaid)}`,
-                    dtiRatio !== null ? `DTI: ${dtiPercent.toFixed(1)}%` : '',
-                  ].filter(Boolean)}
+                  ]}
                   sections={[
                     { title: 'סיכום', items: [
+                      { label: 'סך משכנתא', value: formatCurrency(totalMortgageAmount) },
                       { label: 'תשלום חודשי', value: formatCurrency(results.totalMonthlyPayment) },
+                      { label: 'תזרים פנוי', value: formatCurrency(freeCashFlow) },
                       { label: 'ריבית משוקללת', value: `${results.weightedAverageInterest.toFixed(2)}%` },
                       { label: 'סך קרן', value: formatCurrency(totalPrincipal) },
                       { label: 'סך ריבית', value: formatCurrency(results.totalInterestPaid) },
@@ -484,7 +557,7 @@ export default function MortgageCalculator() {
               <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mb-4">
                 <HomeIcon className="w-8 h-8 text-muted-foreground" />
               </div>
-              <p className="text-muted-foreground text-sm">הזן סכום קרן במסלול כדי לראות תוצאות</p>
+              <p className="text-muted-foreground text-sm">הזן סך משכנתא והקצה אותה למסלולים כדי לראות תוצאות</p>
             </div>
           )}
         </div>

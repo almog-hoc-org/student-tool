@@ -11,7 +11,7 @@ export function calculateRenovationFeasibility(
   const valueUplift = input.postRenovationValue - input.currentValue;
   const paperProfit = valueUplift - totalRenovationCost;
 
-  let output: RenovationOutput = {
+  const output: RenovationOutput = {
     totalRenovationCost,
     valueUplift,
     paperProfit,

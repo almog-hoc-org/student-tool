@@ -1,5 +1,7 @@
 export type MortgageTrackType = 'fixedUnlinked' | 'fixedLinked' | 'prime' | 'variableLinked';
 
+export type MortgageAllocationMode = 'amount' | 'percent' | 'remainder';
+
 export type MortgageTrack = {
   id: string;
   name: string;
@@ -7,6 +9,8 @@ export type MortgageTrack = {
   principal: number;
   annualInterestRate: number;
   years: number;
+  allocationMode?: MortgageAllocationMode;
+  allocationValue?: number;
 };
 
 export type MortgageCalculatorInput = {

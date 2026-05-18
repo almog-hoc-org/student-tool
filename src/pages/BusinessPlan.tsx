@@ -6,7 +6,9 @@ import { Button } from '@/components/ui/button';
 import { BarChart3, Import, RotateCcw, TrendingUp } from 'lucide-react';
 import { SaveSnapshotButton } from '@/components/SaveSnapshotButton';
 import { calculateBusinessPlan, BusinessPlanOutput, ScenarioResult } from '@/lib/calculations/business-plan';
+import { calculateMortgageMonthlyPayment } from '@/lib/calculations/mortgage-calculator';
 import { formatCurrency } from '@/lib/validation/validators';
+import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { save, load, clear } from '@/lib/storage';
@@ -57,14 +59,12 @@ function ScenarioCard({ scenario, style, monthlyCashflow }: { scenario: Scenario
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <p className="text-[11px] text-muted-foreground flex items-center gap-1">תשואת COC <InfoTooltip text="כמה אתה מרוויח בשנה ביחס להון שהשקעת — שכירות נטו חלקי הון עצמי" /></p>
-              <p className="text-base font-semibold tabular-nums">{(scenario.cocYield * 100).toFixed(1)}%</p>
+              <p className="text-[11px] text-muted-foreground flex items-center gap-1">תשואה שנתית על ההון <InfoTooltip text="התזרים השנתי נטו ביחס להון שנכנס לעסקה" /></p>
+              <p className="text-base font-semibold tabular-nums">{(scenario.annualEquityReturn * 100).toFixed(1)}%</p>
             </div>
             <div>
-              <p className="text-[11px] text-muted-foreground flex items-center gap-1">IRR <InfoTooltip text="שיעור תשואה פנימי: התשואה האמיתית כולל עליית ערך, שכירות ועלויות — המדד המקצועי להשוואת השקעות" /></p>
-              <p className="text-base font-semibold tabular-nums">
-                {scenario.irr !== null ? `${(scenario.irr * 100).toFixed(1)}%` : 'N/A'}
-              </p>
+              <p className="text-[11px] text-muted-foreground flex items-center gap-1">תשואה כוללת על ההון <InfoTooltip text="הרווח הכולל בסוף תקופת ההחזקה ביחס להון שהושקע" /></p>
+              <p className="text-base font-semibold tabular-nums">{(scenario.totalEquityReturn * 100).toFixed(1)}%</p>
             </div>
           </div>
           <p className="text-[11px] text-muted-foreground border-t pt-2 leading-relaxed">
@@ -77,13 +77,29 @@ function ScenarioCard({ scenario, style, monthlyCashflow }: { scenario: Scenario
 }
 
 const BP_DEFAULTS = {
-  purchasePrice: 1200000, sideCosts: 40000, renovationCost: 0, equityInvested: 400000,
-  mortgageAmount: 800000, mortgageMonthlyPayment: 4500, mortgageInterestRate: 5, mortgageYears: 25,
-  expectedMonthlyRent: 4000, annualOperatingCosts: 8000, holdingPeriodYears: 10,
-  baseAppreciation: 1, manualMode: true, customRates: { pessimistic: 0, average: 1, optimistic: 2 },
+  purchasePrice: 1200000,
+  sideCosts: 40000,
+  renovationCost: 0,
+  equityInvested: 400000,
+  mortgageAmount: 800000,
+  mortgageMonthlyPayment: 4500,
+  mortgageInterestRate: 5,
+  mortgageYears: 25,
+  expectedMonthlyRent: 4000,
+  annualOperatingCosts: 8000,
+  holdingPeriodYears: 10,
+  baseAppreciation: 1,
+  manualMode: true,
+  customRates: { pessimistic: 0, average: 1, optimistic: 2 },
+  urbanRenewalUpliftMode: 'amount' as const,
+  urbanRenewalUpliftValue: 0,
+  manualMortgageAmount: false,
+  manualMortgageMonthlyPayment: false,
 };
 
 type EditingDeal = { id: string; name: string; notes?: string | null };
+
+type UpliftMode = 'amount' | 'percent';
 
 export default function BusinessPlan() {
   const { user } = useAuth();
@@ -104,6 +120,18 @@ export default function BusinessPlan() {
   const [baseAppreciation, setBaseAppreciation] = useState(saved?.baseAppreciation ?? BP_DEFAULTS.baseAppreciation);
   const [manualMode, setManualMode] = useState(saved?.manualMode ?? BP_DEFAULTS.manualMode);
   const [customRates, setCustomRates] = useState(saved?.customRates ?? BP_DEFAULTS.customRates);
+  const [urbanRenewalUpliftMode, setUrbanRenewalUpliftMode] = useState<UpliftMode>(saved?.urbanRenewalUpliftMode ?? BP_DEFAULTS.urbanRenewalUpliftMode);
+  const [urbanRenewalUpliftValue, setUrbanRenewalUpliftValue] = useState(saved?.urbanRenewalUpliftValue ?? BP_DEFAULTS.urbanRenewalUpliftValue);
+  const [manualMortgageAmount, setManualMortgageAmount] = useState(saved?.manualMortgageAmount ?? BP_DEFAULTS.manualMortgageAmount);
+  const [manualMortgageMonthlyPayment, setManualMortgageMonthlyPayment] = useState(saved?.manualMortgageMonthlyPayment ?? BP_DEFAULTS.manualMortgageMonthlyPayment);
+  const [useSideCostPreset, setUseSideCostPreset] = useState(saved?.useSideCostPreset ?? true);
+  const [selectedSideCosts, setSelectedSideCosts] = useState(saved?.selectedSideCosts ?? {
+    broker: true,
+    mortgageAdvice: true,
+    lawyer: true,
+    appraiser: true,
+    extras: true,
+  });
 
   // Auto-save
   useEffect(() => {
@@ -111,12 +139,43 @@ export default function BusinessPlan() {
       purchasePrice, sideCosts, renovationCost, equityInvested, mortgageAmount,
       mortgageMonthlyPayment, mortgageInterestRate, mortgageYears, expectedMonthlyRent,
       annualOperatingCosts, holdingPeriodYears, baseAppreciation, manualMode, customRates,
+      urbanRenewalUpliftMode, urbanRenewalUpliftValue, manualMortgageAmount,
+      manualMortgageMonthlyPayment, useSideCostPreset, selectedSideCosts,
     }, uid);
   }, [purchasePrice, sideCosts, renovationCost, equityInvested, mortgageAmount,
     mortgageMonthlyPayment, mortgageInterestRate, mortgageYears, expectedMonthlyRent,
-    annualOperatingCosts, holdingPeriodYears, baseAppreciation, manualMode, customRates, uid]);
+    annualOperatingCosts, holdingPeriodYears, baseAppreciation, manualMode, customRates,
+    urbanRenewalUpliftMode, urbanRenewalUpliftValue, manualMortgageAmount,
+    manualMortgageMonthlyPayment, useSideCostPreset, selectedSideCosts, uid]);
 
   const budgetData = getBudgetResults();
+
+  const sideCostPresetTotal = useMemo(() => {
+    const broker = selectedSideCosts.broker ? purchasePrice * 0.02 : 0;
+    const mortgageAdvice = selectedSideCosts.mortgageAdvice ? 7000 : 0;
+    const lawyer = selectedSideCosts.lawyer ? purchasePrice * 0.01 : 0;
+    const appraiser = selectedSideCosts.appraiser ? 2000 : 0;
+    const extras = selectedSideCosts.extras ? 5000 : 0;
+    return broker + mortgageAdvice + lawyer + appraiser + extras;
+  }, [purchasePrice, selectedSideCosts]);
+
+  useEffect(() => {
+    if (useSideCostPreset) {
+      setSideCosts(Math.round(sideCostPresetTotal));
+    }
+  }, [sideCostPresetTotal, useSideCostPreset]);
+
+  const autoMortgageAmount = useMemo(() => Math.max(0, purchasePrice - equityInvested), [purchasePrice, equityInvested]);
+  const effectiveMortgageAmount = manualMortgageAmount ? mortgageAmount : autoMortgageAmount;
+  const autoMortgageMonthlyPayment = useMemo(
+    () => calculateMortgageMonthlyPayment(effectiveMortgageAmount, mortgageInterestRate, mortgageYears),
+    [effectiveMortgageAmount, mortgageInterestRate, mortgageYears],
+  );
+  const effectiveMortgageMonthlyPayment = manualMortgageMonthlyPayment ? mortgageMonthlyPayment : autoMortgageMonthlyPayment;
+  const effectiveUpliftValue = useMemo(() => {
+    if (urbanRenewalUpliftMode === 'amount') return Math.max(0, urbanRenewalUpliftValue);
+    return Math.max(0, purchasePrice * (urbanRenewalUpliftValue / 100));
+  }, [urbanRenewalUpliftMode, urbanRenewalUpliftValue, purchasePrice]);
 
   const handleImportBudget = () => {
     if (!budgetData) return;
@@ -124,7 +183,10 @@ export default function BusinessPlan() {
     setEquityInvested(budgetData.equity);
     setMortgageAmount(budgetData.maxMortgage);
     setMortgageMonthlyPayment(budgetData.monthlyPayment);
+    setManualMortgageAmount(false);
+    setManualMortgageMonthlyPayment(false);
     setSideCosts(budgetData.purchaseTax + budgetData.sideCosts);
+    setUseSideCostPreset(false);
     // Import interest rate from mortgage results if available
     const mortgageData = load<{ weightedAverageInterest?: number }>('mortgage_results');
     if (mortgageData?.weightedAverageInterest) {
@@ -148,6 +210,12 @@ export default function BusinessPlan() {
     setBaseAppreciation(BP_DEFAULTS.baseAppreciation);
     setManualMode(BP_DEFAULTS.manualMode);
     setCustomRates(BP_DEFAULTS.customRates);
+    setUrbanRenewalUpliftMode(BP_DEFAULTS.urbanRenewalUpliftMode);
+    setUrbanRenewalUpliftValue(BP_DEFAULTS.urbanRenewalUpliftValue);
+    setManualMortgageAmount(BP_DEFAULTS.manualMortgageAmount);
+    setManualMortgageMonthlyPayment(BP_DEFAULTS.manualMortgageMonthlyPayment);
+    setUseSideCostPreset(true);
+    setSelectedSideCosts({ broker: true, mortgageAdvice: true, lawyer: true, appraiser: true, extras: true });
     clear('business_plan', uid);
     clear('business_plan_editing');
     setEditingDeal(null);
@@ -157,17 +225,27 @@ export default function BusinessPlan() {
     if (purchasePrice <= 0) return null;
     return calculateBusinessPlan(
       {
-        purchasePrice, sideCosts, renovationCost,
-        equityInvested, mortgageAmount, mortgageMonthlyPayment,
-        mortgageInterestRate, mortgageYears, expectedMonthlyRent,
-        annualOperatingCosts, holdingPeriodYears,
+        purchasePrice,
+        sideCosts,
+        renovationCost,
+        equityInvested,
+        mortgageAmount: effectiveMortgageAmount,
+        mortgageMonthlyPayment: effectiveMortgageMonthlyPayment,
+        mortgageInterestRate,
+        mortgageYears,
+        expectedMonthlyRent,
+        annualOperatingCosts,
+        holdingPeriodYears,
+        urbanRenewalUpliftAmount: effectiveUpliftValue,
+        urbanRenewalUpliftPercent: urbanRenewalUpliftMode === 'percent' ? urbanRenewalUpliftValue : undefined,
       },
       baseAppreciation,
       customRates,
     );
-  }, [purchasePrice, sideCosts, renovationCost, equityInvested, mortgageAmount,
-    mortgageMonthlyPayment, mortgageInterestRate, mortgageYears, expectedMonthlyRent,
-    annualOperatingCosts, holdingPeriodYears, baseAppreciation, customRates]);
+  }, [purchasePrice, sideCosts, renovationCost, equityInvested, effectiveMortgageAmount,
+    effectiveMortgageMonthlyPayment, mortgageInterestRate, mortgageYears, expectedMonthlyRent,
+    annualOperatingCosts, holdingPeriodYears, baseAppreciation, customRates,
+    effectiveUpliftValue, urbanRenewalUpliftMode, urbanRenewalUpliftValue]);
 
   return (
     <div className="space-y-6">
@@ -199,9 +277,11 @@ export default function BusinessPlan() {
                 getData={() => ({
                   inputs: {
                     purchasePrice, sideCosts, renovationCost, equityInvested,
-                    mortgageAmount, mortgageMonthlyPayment, mortgageInterestRate,
+                    mortgageAmount: effectiveMortgageAmount, mortgageMonthlyPayment: effectiveMortgageMonthlyPayment, mortgageInterestRate,
                     mortgageYears, expectedMonthlyRent, annualOperatingCosts,
                     holdingPeriodYears, baseAppreciation, manualMode, customRates,
+                    urbanRenewalUpliftMode, urbanRenewalUpliftValue, manualMortgageAmount,
+                    manualMortgageMonthlyPayment, useSideCostPreset, selectedSideCosts,
                   },
                   results: result,
                 })}
@@ -213,6 +293,9 @@ export default function BusinessPlan() {
           </div>
           <p className="text-sm text-muted-foreground">
             הזן את פרטי העסקה וראה 3 תרחישים לפי אחוז עלייה שנתי.
+          </p>
+          <p className="text-[11px] text-muted-foreground">
+            מתאים בעיקר לעסקאות השקעה; לדירת מגורים עדיף להישען קודם על מחשבון התקציב והמשכנתא.
           </p>
           {editingDeal && (
             <div className="rounded-xl border border-primary/25 bg-primary/5 p-3 text-xs text-primary">
@@ -249,21 +332,74 @@ export default function BusinessPlan() {
             </div>
           </div>
 
+          {/* Side Costs */}
+          <Card className="border-0 shadow-sm bg-muted/40">
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">עלויות נלוות</p>
+                  <p className="text-[11px] text-muted-foreground">סמן מה לכלול — הסכום מחושב אוטומטית, ואפשר לכבות ולערוך ידנית.</p>
+                </div>
+                <Button type="button" variant="outline" size="sm" onClick={() => setUseSideCostPreset((v) => !v)}>
+                  {useSideCostPreset ? 'עריכה ידנית' : 'חזור לחישוב'}
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {[
+                  { key: 'broker', label: 'מתווך 2%', value: purchasePrice * 0.02 },
+                  { key: 'mortgageAdvice', label: 'ייעוץ משכנתא 7,000 ש״ח', value: 7000 },
+                  { key: 'lawyer', label: 'עו״ד 1%', value: purchasePrice * 0.01 },
+                  { key: 'appraiser', label: 'שמאי 2,000 ש״ח', value: 2000 },
+                  { key: 'extras', label: 'נוספים 5,000 ש״ח', value: 5000 },
+                ].map((item) => (
+                  <label key={item.key} className="flex items-center gap-3 rounded-xl border bg-background px-3 py-2 text-sm">
+                    <Checkbox
+                      checked={(selectedSideCosts as Record<string, boolean>)[item.key]}
+                      onCheckedChange={(checked) => setSelectedSideCosts((current) => ({ ...current, [item.key]: !!checked }))}
+                      disabled={!useSideCostPreset}
+                    />
+                    <span className="flex-1">{item.label}</span>
+                    <span className="text-xs text-muted-foreground tabular-nums">{formatCurrency(item.value)}</span>
+                  </label>
+                ))}
+              </div>
+              <div className="rounded-xl bg-background px-3 py-2 flex items-center justify-between">
+                <span className="text-sm font-medium">סה״כ עלויות נלוות</span>
+                <span className="text-lg font-bold tabular-nums">{formatCurrency(sideCosts)}</span>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Financing */}
           <div className="space-y-3">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">מימון</p>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">מימון</p>
+              <p className="text-[11px] text-muted-foreground">נדרש למילוי: הון עצמי · מחושב אוטומטית: משכנתא והחזר</p>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-xs">הון עצמי</Label>
                 <Input type="number" min="0" value={equityInvested ?? ''} onChange={(e) => setEquityInvested(Number(e.target.value))} />
               </div>
               <div>
-                <Label className="text-xs">סכום משכנתא</Label>
-                <Input type="number" min="0" value={mortgageAmount ?? ''} onChange={(e) => setMortgageAmount(Number(e.target.value))} />
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <Label className="text-xs">סכום משכנתא</Label>
+                  <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-[11px]" onClick={() => setManualMortgageAmount((v) => !v)}>
+                    {manualMortgageAmount ? 'אוטומטי' : 'עריכה ידנית'}
+                  </Button>
+                </div>
+                <Input type="number" min="0" value={manualMortgageAmount ? mortgageAmount : effectiveMortgageAmount} readOnly={!manualMortgageAmount} onChange={(e) => setMortgageAmount(Number(e.target.value))} />
+                {!manualMortgageAmount && <p className="text-[11px] text-muted-foreground mt-1">מחושב כ־שווי נכס פחות ההון העצמי</p>}
               </div>
               <div>
-                <Label className="text-xs">החזר חודשי</Label>
-                <Input type="number" min="0" value={mortgageMonthlyPayment ?? ''} onChange={(e) => setMortgageMonthlyPayment(Number(e.target.value))} />
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <Label className="text-xs">החזר חודשי</Label>
+                  <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-[11px]" onClick={() => setManualMortgageMonthlyPayment((v) => !v)}>
+                    {manualMortgageMonthlyPayment ? 'אוטומטי' : 'עריכה ידנית'}
+                  </Button>
+                </div>
+                <Input type="number" min="0" value={manualMortgageMonthlyPayment ? mortgageMonthlyPayment : effectiveMortgageMonthlyPayment} readOnly={!manualMortgageMonthlyPayment} onChange={(e) => setMortgageMonthlyPayment(Number(e.target.value))} />
+                {!manualMortgageMonthlyPayment && <p className="text-[11px] text-muted-foreground mt-1">מחושב לפי הסכום, הריבית והתקופה</p>}
               </div>
               <div>
                 <Label className="text-xs">ריבית (%)</Label>
@@ -291,6 +427,29 @@ export default function BusinessPlan() {
             </div>
             <p className="text-[11px] text-muted-foreground">הוצאות: ארנונה, ביטוח, ועד בית, תחזוקה, ניהול</p>
           </div>
+
+          <Card className="border-0 shadow-sm bg-muted/40">
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">השבחה מתחדשות עירונית</p>
+                  <p className="text-[11px] text-muted-foreground">אפשר להזין השבחה בש״ח או באחוזים; היא תיכנס לחישוב התרחישים והיציאה.</p>
+                </div>
+                <Button type="button" variant="outline" size="sm" onClick={() => setUrbanRenewalUpliftMode((m) => m === 'amount' ? 'percent' : 'amount')}>
+                  {urbanRenewalUpliftMode === 'amount' ? 'לעבור לאחוזים' : 'לעבור לש״ח'}
+                </Button>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">השבחה צפויה</Label>
+                  <Input type="number" min="0" value={urbanRenewalUpliftValue ?? ''} onChange={(e) => setUrbanRenewalUpliftValue(Number(e.target.value))} />
+                </div>
+                <div className="flex items-end text-[11px] text-muted-foreground">
+                  {urbanRenewalUpliftMode === 'amount' ? 'מוזן כש״ח ומתווסף לשווי הסופי' : 'מוזן כאחוז משווי הרכישה'}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
         </div>
 
@@ -383,7 +542,7 @@ export default function BusinessPlan() {
                     executiveSummary={[
                       `עלות עסקה כוללת: ${formatCurrency(result.totalDealCost)}`,
                       `תזרים חודשי נטו: ${formatCurrency(result.monthlyCashflow)}`,
-                      `IRR (ממוצע): ${result.scenarios[1].irr !== null ? `${(result.scenarios[1].irr * 100).toFixed(1)}%` : 'N/A'}`,
+                      `תשואה כוללת על ההון: ${(result.scenarios[1].totalEquityReturn * 100).toFixed(1)}%`,
                     ]}
                     sections={[
                       { title: 'נתוני עסקה', items: [
@@ -398,8 +557,8 @@ export default function BusinessPlan() {
                         items: [
                           { label: 'שווי נכס בסוף תקופה', value: formatCurrency(s.propertyValueAtEnd) },
                           { label: 'רווח כולל', value: formatCurrency(s.totalProfit) },
-                          { label: 'תשואת COC', value: `${(s.cocYield * 100).toFixed(1)}%` },
-                          { label: 'IRR', value: s.irr !== null ? `${(s.irr * 100).toFixed(1)}%` : 'N/A' },
+                          { label: 'תשואה שנתית על ההון', value: `${(s.annualEquityReturn * 100).toFixed(1)}%` },
+                          { label: 'תשואה כוללת על ההון', value: `${(s.totalEquityReturn * 100).toFixed(1)}%` },
                         ],
                       })),
                     ]}

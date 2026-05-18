@@ -1,10 +1,12 @@
 import { supabase } from '@/integrations/supabase/client';
 
+type CloudRow = { user_id: string; tool_key: string; data: unknown; updated_at: string };
+
 export async function saveToCloud(userId: string, toolKey: string, data: unknown): Promise<void> {
   await supabase
     .from('user_data')
     .upsert(
-      { user_id: userId, tool_key: toolKey, data: data as any, updated_at: new Date().toISOString() },
+      { user_id: userId, tool_key: toolKey, data: data as CloudRow['data'], updated_at: new Date().toISOString() },
       { onConflict: 'user_id,tool_key' }
     );
 }

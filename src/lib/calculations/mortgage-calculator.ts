@@ -17,7 +17,9 @@ export const MARKET_CONSTANTS = {
   LTV_UPGRADE: 0.70,        // מינוף מקסימלי - משפרי דיור
   LTV_INVESTOR: 0.50,       // מינוף מקסימלי - משקיעים
   DEFAULT_MADAD_RATE: 2.5,   // מדד תשומות הבנייה - שנתי
-  MADAD_EXPOSURE: 0.40,     // חשיפה אפקטיבית למדד (אחרי חוק יוני 2025)
+  MADAD_EXEMPT_PORTION: 0.20,
+  MADAD_LINKED_PORTION: 0.50,
+  MADAD_EFFECTIVE_EXPOSURE: 0.40,
 };
 
 export interface MadadSimulationResult {
@@ -29,7 +31,7 @@ export interface MadadSimulationResult {
 
 /**
  * סימולטור מדד תשומות הבנייה - לרכישה מקבלן (off-plan)
- * לפי חוק יוני 2025: 20% הראשון פטור ממדד, השאר צמוד ב-50%
+ * הנחת עבודה עדכנית: 20% ראשון פטור ממדד, והשאר צמוד ב-50%
  * חשיפה אפקטיבית: ~40% מסכום ההלוואה
  */
 export function simulateMadadImpact(params: {
@@ -38,7 +40,7 @@ export function simulateMadadImpact(params: {
   years: number;
   exposurePercent?: number;
 }): MadadSimulationResult {
-  const { linkedAmount, annualMadadRate, years, exposurePercent = MARKET_CONSTANTS.MADAD_EXPOSURE } = params;
+  const { linkedAmount, annualMadadRate, years, exposurePercent = MARKET_CONSTANTS.MADAD_EFFECTIVE_EXPOSURE } = params;
   const exposedAmount = linkedAmount * exposurePercent;
   const rate = annualMadadRate / 100;
   const cumulativeFactor = Math.pow(1 + rate, years) - 1;
@@ -50,6 +52,14 @@ export function simulateMadadImpact(params: {
     additionalCost,
     effectiveAnnualRate: exposurePercent * annualMadadRate,
   };
+}
+
+export function calculateMortgageMonthlyPayment(principal: number, annualInterestRate: number, years: number): number {
+  const r = annualInterestRate / 100 / 12;
+  const n = years * 12;
+  if (principal <= 0 || years <= 0) return 0;
+  if (r === 0) return principal / n;
+  return (principal * r) / (1 - Math.pow(1 + r, -n));
 }
 
 export function calculateMortgageTrack(

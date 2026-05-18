@@ -19,6 +19,13 @@ interface BudgetData {
   mortgageYears: number;
 }
 
+interface BusinessPlanData {
+  expectedMonthlyRent?: number;
+  mortgageMonthlyPayment?: number;
+  holdingPeriodYears?: number;
+  purchasePrice?: number;
+}
+
 interface MortgageData {
   tracks: { type: string; principal: number; annualInterestRate: number; years: number }[];
   monthlyIncome: number;
@@ -37,7 +44,7 @@ export function generateInsights(): Insight[] {
 
   const budget = load<BudgetData>('budget');
   const budgetResults = load<BudgetOutput>('budget_results');
-  const businessPlan = load<any>('business_plan');
+  const businessPlan = load<BusinessPlanData>('business_plan');
   const mortgage = load<MortgageData>('mortgage');
   const mortgageResults = load<MortgageResults>('mortgage_results');
 
@@ -77,9 +84,20 @@ export function generateInsights(): Insight[] {
 
   // --- Budget Insights ---
   if (hasTools.budget && budgetResults) {
+    const freeCashFlow = budgetResults.freeCashFlow;
     const dti = budgetResults.dtiPercent;
 
-    if (dti > 40) {
+    if (freeCashFlow <= 0) {
+      insights.push({
+        type: 'warning',
+        title: 'תזרים פנוי שלילי',
+        description: 'ההכנסה נטו לא מכסה את ההתחייבויות — לפני משכנתא צריך לסגור את הפער החודשי.',
+        tool: 'תקציב',
+        priority: 1,
+      });
+    }
+
+    if (freeCashFlow > 0 && dti > 40) {
       insights.push({
         type: 'warning',
         title: 'יחס החזר/הכנסה חורג מ-40%',
@@ -87,7 +105,7 @@ export function generateInsights(): Insight[] {
         tool: 'תקציב',
         priority: 1,
       });
-    } else if (dti > 33) {
+    } else if (freeCashFlow > 0 && dti > 33) {
       insights.push({
         type: 'recommendation',
         title: 'יחס החזר/הכנסה גבוה',
@@ -95,7 +113,7 @@ export function generateInsights(): Insight[] {
         tool: 'תקציב',
         priority: 2,
       });
-    } else {
+    } else if (freeCashFlow > 0) {
       insights.push({
         type: 'insight',
         title: 'יחס החזר/הכנסה תקין',
@@ -189,7 +207,7 @@ export function generateInsights(): Insight[] {
     }
 
     const payment = mortgageResults.totalMonthlyPayment;
-    const income = mortgage.monthlyIncome;
+    const income = mortgage.freeCashFlow ?? mortgage.monthlyIncome;
     if (income > 0) {
       const paymentRatio = payment / income;
       if (paymentRatio > 0.35) {

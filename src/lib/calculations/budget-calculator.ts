@@ -1,9 +1,10 @@
-import { MARKET_CONSTANTS } from './mortgage-calculator';
 import { calculatePurchaseTax, BuyerType } from './purchase-tax';
 
 export interface BudgetInput {
   equity: number;
   monthlyIncome: number;
+  currentRent?: number;
+  livingExpenses?: number;
   monthlyObligations: number;
   buyerType: BuyerType;
   mortgageYears: number;
@@ -12,10 +13,15 @@ export interface BudgetInput {
 export interface BudgetOutput {
   maxPropertyValue: number;
   maxMortgage: number;
+  maxMortgageByCashflow: number;
   monthlyPayment: number;
   purchaseTax: number;
   sideCosts: number;
   netEquityForProperty: number;
+  freeCashFlow: number;
+  maxAffordableMortgagePayment: number;
+  maxPropertyByEquity: number;
+  recommendedPropertyValue: number;
   dtiPercent: number;
   equityBreakdown: {
     netEquity: number;
@@ -24,38 +30,28 @@ export interface BudgetOutput {
   };
 }
 
-const DEFAULT_INTEREST_RATE = 5.0; // ריבית ממוצעת משוקללת
+const DEFAULT_INTEREST_RATE = 5.0;
+const MIN_EQUITY_SHARE = 0.25;
 
-// Side costs as percentage of property price
 function getSideCostsRate(buyerType: BuyerType): number {
   switch (buyerType) {
-    case 'singleApartment': return 0.035; // ~3.5%
-    case 'additionalApartment': return 0.04; // ~4%
-    case 'foreignResident': return 0.05; // ~5%
+    case 'singleApartment': return 0.035;
+    case 'additionalApartment': return 0.04;
+    case 'foreignResident': return 0.05;
     default: return 0.035;
   }
 }
 
-// LTV limit based on buyer type
-function getLtvLimit(buyerType: BuyerType): number {
-  switch (buyerType) {
-    case 'singleApartment': return MARKET_CONSTANTS.LTV_FIRST_HOME;
-    case 'additionalApartment': return MARKET_CONSTANTS.LTV_INVESTOR;
-    case 'foreignResident': return MARKET_CONSTANTS.LTV_INVESTOR;
-    default: return MARKET_CONSTANTS.LTV_FIRST_HOME;
-  }
-}
-
-// Calculate max mortgage from monthly payment using PMT inverse
 function maxMortgageFromPayment(monthlyPayment: number, annualRate: number, years: number): number {
+  if (monthlyPayment <= 0 || years <= 0) return 0;
   const r = annualRate / 100 / 12;
   const n = years * 12;
   if (r === 0) return monthlyPayment * n;
   return monthlyPayment * (1 - Math.pow(1 + r, -n)) / r;
 }
 
-// Calculate monthly payment from mortgage amount
 function calculateMonthlyPayment(principal: number, annualRate: number, years: number): number {
+  if (principal <= 0 || years <= 0) return 0;
   const r = annualRate / 100 / 12;
   const n = years * 12;
   if (r === 0) return principal / n;
@@ -63,85 +59,68 @@ function calculateMonthlyPayment(principal: number, annualRate: number, years: n
 }
 
 export function calculateBudget(input: BudgetInput): BudgetOutput {
-  const { equity, monthlyIncome, monthlyObligations, buyerType, mortgageYears } = input;
+  const { equity, monthlyIncome, currentRent = 0, livingExpenses = 0, monthlyObligations, buyerType, mortgageYears } = input;
 
-  // Step 1: Max monthly payment (DTI constraint)
-  // Bank of Israel rule: all obligations (existing + new mortgage) ≤ 40% of income
-  const maxMonthlyPayment = monthlyIncome * MARKET_CONSTANTS.MAX_DTI - monthlyObligations;
-  const effectiveMonthlyPayment = Math.max(0, maxMonthlyPayment);
-
-  // Step 2: Max mortgage from payment capacity
-  const maxMortgageFromDTI = maxMortgageFromPayment(effectiveMonthlyPayment, DEFAULT_INTEREST_RATE, mortgageYears);
-
-  // Step 3: Iterative solve for max property value
-  // Property = Mortgage + (Equity - Tax - SideCosts)
-  // Tax and SideCosts depend on Property value, so we iterate
-  const ltvLimit = getLtvLimit(buyerType);
+  const freeCashFlow = monthlyIncome - currentRent - livingExpenses - monthlyObligations;
+  const maxAffordableMortgagePayment = Math.max(0, freeCashFlow);
+  const maxMortgageByCashflow = maxMortgageFromPayment(maxAffordableMortgagePayment, DEFAULT_INTEREST_RATE, mortgageYears);
   const sideCostsRate = getSideCostsRate(buyerType);
+  const requiredEquityShare = MIN_EQUITY_SHARE;
 
-  let propertyValue = 0;
-  let bestProperty = 0;
-
-  // Binary search for the max property value
-  let lo = 0;
-  let hi = equity + maxMortgageFromDTI + 1000000; // Upper bound
-
-  for (let iter = 0; iter < 50; iter++) {
-    propertyValue = (lo + hi) / 2;
-
+  const canAfford = (propertyValue: number) => {
     const tax = calculatePurchaseTax({ purchasePrice: propertyValue, buyerType }).totalTax;
     const sideCosts = propertyValue * sideCostsRate;
-    const totalCosts = tax + sideCosts;
+    const availableAfterCosts = equity - tax - sideCosts;
+    const minimumEquityNeeded = propertyValue * requiredEquityShare;
+    const mortgageNeeded = Math.max(0, propertyValue - availableAfterCosts);
 
-    // Equity available for down payment
-    const downPayment = equity - totalCosts;
-    if (downPayment <= 0) {
-      hi = propertyValue;
-      continue;
-    }
+    return (
+      availableAfterCosts >= minimumEquityNeeded
+      && mortgageNeeded <= maxMortgageByCashflow
+    );
+  };
 
-    // Mortgage needed
-    const mortgageNeeded = propertyValue - downPayment;
+  let bestProperty = 0;
+  let lo = 0;
+  let hi = Math.max(
+    equity / requiredEquityShare,
+    maxMortgageByCashflow / Math.max(1 - requiredEquityShare, 0.01),
+    1_000_000,
+  ) + 1_000_000;
 
-    // Check LTV constraint
-    const maxMortgageFromLTV = propertyValue * ltvLimit;
-
-    // Check DTI constraint
-    const effectiveMortgage = Math.min(mortgageNeeded, maxMortgageFromLTV, maxMortgageFromDTI);
-
-    // Can we afford this property?
-    const canAfford = downPayment + effectiveMortgage >= propertyValue;
-
-    if (canAfford) {
-      bestProperty = propertyValue;
-      lo = propertyValue;
+  for (let i = 0; i < 60; i++) {
+    const mid = (lo + hi) / 2;
+    if (canAfford(mid)) {
+      bestProperty = mid;
+      lo = mid;
     } else {
-      hi = propertyValue;
+      hi = mid;
     }
-
-    if (hi - lo < 1000) break; // Converged to ₪1,000
+    if (hi - lo < 500) break;
   }
 
-  // Final calculation with best property value
-  propertyValue = Math.round(bestProperty / 10000) * 10000; // Round to 10K
-  const purchaseTax = calculatePurchaseTax({ purchasePrice: propertyValue, buyerType }).totalTax;
-  const sideCosts = Math.round(propertyValue * sideCostsRate);
-  const netEquity = equity - purchaseTax - sideCosts;
-  const mortgage = Math.min(
-    propertyValue - Math.max(0, netEquity),
-    propertyValue * ltvLimit,
-    maxMortgageFromDTI
-  );
-  const monthlyPayment = calculateMonthlyPayment(mortgage, DEFAULT_INTEREST_RATE, mortgageYears);
-  const dtiPercent = monthlyIncome > 0 ? (monthlyPayment / monthlyIncome) * 100 : 0;
+  const maxPropertyValue = Math.max(0, Math.round(bestProperty / 1000) * 1000);
+  const purchaseTax = calculatePurchaseTax({ purchasePrice: maxPropertyValue, buyerType }).totalTax;
+  const sideCosts = Math.round(maxPropertyValue * sideCostsRate);
+  const netEquity = Math.max(0, equity - purchaseTax - sideCosts);
+  const mortgageNeeded = Math.max(0, maxPropertyValue - netEquity);
+  const maxMortgage = Math.min(mortgageNeeded, maxMortgageByCashflow, maxPropertyValue * (1 - requiredEquityShare));
+  const monthlyPayment = calculateMonthlyPayment(maxMortgage, DEFAULT_INTEREST_RATE, mortgageYears);
+  const dtiPercent = maxAffordableMortgagePayment > 0 ? (monthlyPayment / maxAffordableMortgagePayment) * 100 : 0;
+  const recommendedPropertyValue = Math.max(0, Math.round(maxPropertyValue * 0.9 / 1000) * 1000);
 
   return {
-    maxPropertyValue: propertyValue,
-    maxMortgage: Math.round(mortgage),
+    maxPropertyValue,
+    maxMortgage: Math.round(maxMortgage),
+    maxMortgageByCashflow: Math.round(maxMortgageByCashflow),
     monthlyPayment: Math.round(monthlyPayment),
     purchaseTax: Math.round(purchaseTax),
     sideCosts,
     netEquityForProperty: Math.max(0, Math.round(netEquity)),
+    freeCashFlow: Math.round(freeCashFlow),
+    maxAffordableMortgagePayment: Math.round(maxAffordableMortgagePayment),
+    maxPropertyByEquity: Math.round(equity / requiredEquityShare),
+    recommendedPropertyValue,
     dtiPercent,
     equityBreakdown: {
       netEquity: Math.max(0, Math.round(netEquity)),
