@@ -87,7 +87,7 @@ function InputSection({
 }) {
   return (
     <Card className="border-0 shadow-sm bg-background/80">
-      <CardContent className="p-4 space-y-4">
+      <CardContent className="p-3 space-y-3">
         <div className="space-y-1">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{title}</p>
           {description && <p className="text-[11px] leading-relaxed text-muted-foreground">{description}</p>}
@@ -118,7 +118,7 @@ function Field({
         {action}
       </div>
       {children}
-      {hint && <p className="text-[11px] leading-relaxed text-muted-foreground">{hint}</p>}
+      {hint && <p className="text-[10px] leading-relaxed text-muted-foreground">{hint}</p>}
     </div>
   );
 }
@@ -296,9 +296,9 @@ export default function BusinessPlan() {
 
   return (
     <div className="space-y-6">
-      <div className="md:grid md:grid-cols-5 md:gap-8">
+      <div className="md:grid md:grid-cols-12 md:gap-6">
         {/* Input Section */}
-        <div className="md:col-span-2 space-y-4 md:sticky md:top-28 md:self-start">
+        <div className="md:col-span-5 space-y-3 md:sticky md:top-28 md:self-start">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <TrendingUp className="w-6 h-6 text-primary" />
@@ -356,113 +356,120 @@ export default function BusinessPlan() {
             </Button>
           )}
 
-          {/* Deal Details */}
-          <InputSection title="1. פרטי עסקה" description="נתוני בסיס של הנכס והעסקה לפני מימון ותפעול.">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Field label="מחיר רכישה">
-                <Input className="h-11 text-base font-semibold" type="number" min="0" value={purchasePrice ?? ''} onChange={(e) => setPurchasePrice(Number(e.target.value))} />
-              </Field>
-              <Field label="עלויות נלוות">
-                <Input className="h-11" type="number" min="0" value={sideCosts ?? ''} onChange={(e) => setSideCosts(Number(e.target.value))} />
-              </Field>
-              <Field label="עלות שיפוץ">
-                <Input className="h-11" type="number" min="0" value={renovationCost ?? ''} onChange={(e) => setRenovationCost(Number(e.target.value))} />
-              </Field>
-              <Field label="תקופת החזקה" hint="בשנים">
-                <Input className="h-11" type="number" min="0" value={holdingPeriodYears ?? ''} onChange={(e) => setHoldingPeriodYears(Number(e.target.value))} />
-              </Field>
-            </div>
-          </InputSection>
-
-          {/* Side Costs */}
-          <Card className="border-0 shadow-sm bg-muted/40">
-            <CardContent className="p-4 space-y-3">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">עלויות נלוות</p>
-                  <p className="text-[11px] text-muted-foreground">סמן מה לכלול — הסכום מחושב אוטומטית, ואפשר לכבות ולערוך ידנית.</p>
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+            <Card className="border-0 shadow-sm bg-background/80">
+              <CardContent className="p-3 space-y-4">
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">1. ???? ????</p>
+                    <p className="text-[11px] leading-relaxed text-muted-foreground">????? ???? ?? ???? ?????? ???? ????? ??????.</p>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <Field label="???? ?????">
+                      <Input className="h-10 text-base font-semibold" type="number" min="0" value={purchasePrice ?? ''} onChange={(e) => setPurchasePrice(Number(e.target.value))} />
+                    </Field>
+                    <Field label="???? ?????">
+                      <Input className="h-10" type="number" min="0" value={renovationCost ?? ''} onChange={(e) => setRenovationCost(Number(e.target.value))} />
+                    </Field>
+                    <Field label="????? ?????" hint="?????">
+                      <Input className="h-10" type="number" min="0" value={holdingPeriodYears ?? ''} onChange={(e) => setHoldingPeriodYears(Number(e.target.value))} />
+                    </Field>
+                  </div>
                 </div>
-                <Button type="button" variant="outline" size="sm" onClick={() => setUseSideCostPreset((v) => !v)}>
-                  {useSideCostPreset ? 'עריכה ידנית' : 'חזור לחישוב'}
-                </Button>
-              </div>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {[
-                  { key: 'broker', label: 'מתווך 2%', value: purchasePrice * 0.02 },
-                  { key: 'mortgageAdvice', label: 'ייעוץ משכנתא 7,000 ש״ח', value: 7000 },
-                  { key: 'lawyer', label: 'עו״ד 1%', value: purchasePrice * 0.01 },
-                  { key: 'appraiser', label: 'שמאי 2,000 ש״ח', value: 2000 },
-                  { key: 'extras', label: 'נוספים 5,000 ש״ח', value: 5000 },
-                ].map((item) => (
-                  <label key={item.key} className="flex items-center gap-3 rounded-xl border bg-background px-3 py-2 text-sm">
-                    <Checkbox
-                      checked={(selectedSideCosts as Record<string, boolean>)[item.key]}
-                      onCheckedChange={(checked) => setSelectedSideCosts((current) => ({ ...current, [item.key]: !!checked }))}
-                      disabled={!useSideCostPreset}
-                    />
-                    <span className="flex-1">{item.label}</span>
-                    <span className="text-xs text-muted-foreground tabular-nums">{formatCurrency(item.value)}</span>
-                  </label>
-                ))}
-              </div>
-              <div className="rounded-xl bg-background px-3 py-2 flex items-center justify-between">
-                <span className="text-sm font-medium">סה״כ עלויות נלוות</span>
-                <span className="text-lg font-bold tabular-nums">{formatCurrency(sideCosts)}</span>
-              </div>
-            </CardContent>
-          </Card>
 
-          {/* Financing */}
-          <InputSection title="2. מימון" description="נדרש למילוי: הון עצמי. המשכנתא וההחזר מחושבים אוטומטית, עם אפשרות לעריכה ידנית.">
+                <div className="border-t pt-4 space-y-3">
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">2. ?????</p>
+                    <p className="text-[11px] leading-relaxed text-muted-foreground">??? ????, ?????? ????? ?????.</p>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <Field label="??? ????">
+                      <Input className="h-10 text-base font-semibold" type="number" min="0" value={equityInvested ?? ''} onChange={(e) => setEquityInvested(Number(e.target.value))} />
+                    </Field>
+                    <Field
+                      label="???? ??????"
+                      hint={!manualMortgageAmount ? '????? ????? ??? ???? ???? ?????' : undefined}
+                      action={(
+                        <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-[11px]" onClick={() => setManualMortgageAmount((v) => !v)}>
+                          {manualMortgageAmount ? '???????' : '????? ?????'}
+                        </Button>
+                      )}
+                    >
+                      <Input className="h-10" type="number" min="0" value={manualMortgageAmount ? mortgageAmount : effectiveMortgageAmount} readOnly={!manualMortgageAmount} onChange={(e) => setMortgageAmount(Number(e.target.value))} />
+                    </Field>
+                    <Field
+                      label="???? ?????"
+                      hint={!manualMortgageMonthlyPayment ? '????? ??? ?????, ?????? ???????' : undefined}
+                      action={(
+                        <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-[11px]" onClick={() => setManualMortgageMonthlyPayment((v) => !v)}>
+                          {manualMortgageMonthlyPayment ? '???????' : '????? ?????'}
+                        </Button>
+                      )}
+                    >
+                      <Input className="h-10" type="number" min="0" value={manualMortgageMonthlyPayment ? mortgageMonthlyPayment : effectiveMortgageMonthlyPayment} readOnly={!manualMortgageMonthlyPayment} onChange={(e) => setMortgageMonthlyPayment(Number(e.target.value))} />
+                    </Field>
+                    <Field label="????? (%)">
+                      <Input className="h-10" type="number" min="0" step="0.1" value={mortgageInterestRate} onChange={(e) => setMortgageInterestRate(Number(e.target.value))} />
+                    </Field>
+                    <Field label="????? ??????" hint="?????" className="sm:col-span-2">
+                      <Input className="h-10" type="number" min="0" value={mortgageYears ?? ''} onChange={(e) => setMortgageYears(Number(e.target.value))} />
+                    </Field>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-sm bg-muted/40 lg:self-start">
+              <CardContent className="p-3 space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">?????? ?????</p>
+                    <p className="text-[11px] text-muted-foreground">???? ????, ???? ????.</p>
+                  </div>
+                  <Button type="button" variant="outline" size="sm" onClick={() => setUseSideCostPreset((v) => !v)}>
+                    {useSideCostPreset ? '????? ?????' : '???? ??????'}
+                  </Button>
+                </div>
+                <div className="grid grid-cols-1 gap-2">
+                  {[
+                    { key: 'broker', label: '????? 2%', value: purchasePrice * 0.02 },
+                    { key: 'mortgageAdvice', label: '????? ?????? 7,000 ???', value: 7000 },
+                    { key: 'lawyer', label: '???? 1%', value: purchasePrice * 0.01 },
+                    { key: 'appraiser', label: '???? 2,000 ???', value: 2000 },
+                    { key: 'extras', label: '?????? 5,000 ???', value: 5000 },
+                  ].map((item) => (
+                    <label key={item.key} className="flex items-center gap-3 rounded-xl border bg-background px-3 py-2 text-sm">
+                      <Checkbox
+                        checked={(selectedSideCosts as Record<string, boolean>)[item.key]}
+                        onCheckedChange={(checked) => setSelectedSideCosts((current) => ({ ...current, [item.key]: !!checked }))}
+                        disabled={!useSideCostPreset}
+                      />
+                      <span className="flex-1">{item.label}</span>
+                      <span className="text-xs text-muted-foreground tabular-nums">{formatCurrency(item.value)}</span>
+                    </label>
+                  ))}
+                </div>
+                <div className="rounded-xl bg-background px-3 py-2 flex items-center justify-between">
+                  <span className="text-sm font-medium">???? ?????? ?????</span>
+                  <span className="text-lg font-bold tabular-nums">{formatCurrency(sideCosts)}</span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <InputSection title="3. ?????? ???????" description="?????? ????? ??? ?????? ????? ??????.">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Field label="הון עצמי">
-                <Input className="h-11 text-base font-semibold" type="number" min="0" value={equityInvested ?? ''} onChange={(e) => setEquityInvested(Number(e.target.value))} />
+              <Field label="???? ????? ????">
+                <Input className="h-10" type="number" min="0" value={expectedMonthlyRent ?? ''} onChange={(e) => setExpectedMonthlyRent(Number(e.target.value))} />
               </Field>
-              <Field
-                label="סכום משכנתא"
-                hint={!manualMortgageAmount ? 'מחושב כשווי נכס פחות ההון העצמי' : undefined}
-                action={(
-                  <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-[11px]" onClick={() => setManualMortgageAmount((v) => !v)}>
-                    {manualMortgageAmount ? 'אוטומטי' : 'עריכה ידנית'}
-                  </Button>
-                )}
-              >
-                <Input className="h-11" type="number" min="0" value={manualMortgageAmount ? mortgageAmount : effectiveMortgageAmount} readOnly={!manualMortgageAmount} onChange={(e) => setMortgageAmount(Number(e.target.value))} />
-              </Field>
-              <Field
-                label="החזר חודשי"
-                hint={!manualMortgageMonthlyPayment ? 'מחושב לפי הסכום, הריבית והתקופה' : undefined}
-                action={(
-                  <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-[11px]" onClick={() => setManualMortgageMonthlyPayment((v) => !v)}>
-                    {manualMortgageMonthlyPayment ? 'אוטומטי' : 'עריכה ידנית'}
-                  </Button>
-                )}
-              >
-                <Input className="h-11" type="number" min="0" value={manualMortgageMonthlyPayment ? mortgageMonthlyPayment : effectiveMortgageMonthlyPayment} readOnly={!manualMortgageMonthlyPayment} onChange={(e) => setMortgageMonthlyPayment(Number(e.target.value))} />
-              </Field>
-              <Field label="ריבית (%)">
-                <Input className="h-11" type="number" min="0" step="0.1" value={mortgageInterestRate} onChange={(e) => setMortgageInterestRate(Number(e.target.value))} />
-              </Field>
-              <Field label="תקופת משכנתא" hint="בשנים" className="sm:col-span-2">
-                <Input className="h-11" type="number" min="0" value={mortgageYears ?? ''} onChange={(e) => setMortgageYears(Number(e.target.value))} />
+              <Field label="?????? ????? ??????">
+                <Input className="h-10" type="number" min="0" value={annualOperatingCosts ?? ''} onChange={(e) => setAnnualOperatingCosts(Number(e.target.value))} />
               </Field>
             </div>
           </InputSection>
 
-          {/* Rental */}
-          <InputSection title="3. הכנסות והוצאות" description="שכירות צפויה מול הוצאות תפעול שוטפות: ארנונה, ביטוח, ועד בית, תחזוקה וניהול.">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Field label="שכ״ד חודשי צפוי">
-                <Input className="h-11" type="number" min="0" value={expectedMonthlyRent ?? ''} onChange={(e) => setExpectedMonthlyRent(Number(e.target.value))} />
-              </Field>
-              <Field label="הוצאות תפעול שנתיות">
-                <Input className="h-11" type="number" min="0" value={annualOperatingCosts ?? ''} onChange={(e) => setAnnualOperatingCosts(Number(e.target.value))} />
-              </Field>
-            </div>
-          </InputSection>
-
-          <Card className="border-0 shadow-sm bg-muted/40">
-            <CardContent className="p-4 space-y-3">
+                    <Card className="border-0 shadow-sm bg-muted/40">
+            <CardContent className="p-3 space-y-3">
               <div className="flex items-center justify-between gap-2">
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">השבחה מתחדשות עירונית</p>
@@ -475,7 +482,7 @@ export default function BusinessPlan() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label className="text-xs">השבחה צפויה</Label>
-                  <Input type="number" min="0" value={urbanRenewalUpliftValue ?? ''} onChange={(e) => setUrbanRenewalUpliftValue(Number(e.target.value))} />
+                <Input className="h-10" type="number" min="0" value={urbanRenewalUpliftValue ?? ''} onChange={(e) => setUrbanRenewalUpliftValue(Number(e.target.value))} />
                 </div>
                 <div className="flex items-end text-[11px] text-muted-foreground">
                   {urbanRenewalUpliftMode === 'amount' ? 'מוזן כש״ח ומתווסף לשווי הסופי' : 'מוזן כאחוז משווי הרכישה'}
@@ -487,7 +494,7 @@ export default function BusinessPlan() {
         </div>
 
         {/* Results Section */}
-        <div className="md:col-span-3 mt-6 md:mt-0">
+        <div className="md:col-span-7 mt-6 md:mt-0">
           <AnimatePresence mode="wait">
             {result ? (
               <motion.div
