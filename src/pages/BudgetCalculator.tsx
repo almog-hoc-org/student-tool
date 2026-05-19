@@ -515,6 +515,30 @@ export default function BudgetCalculator() {
                   </CardContent>
                 </Card>
 
+                <Card className="border-0 shadow-sm bg-amber-50 dark:bg-amber-950/20">
+                  <CardContent className="p-4 sm:p-5">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-start gap-3">
+                        <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500">
+                          <PiggyBank className="h-5 w-5 text-white" />
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-sm font-semibold">שווי דירה לפי ההון שלי</p>
+                          <p className="text-xs leading-relaxed text-muted-foreground">
+                            חישוב מהיר לפי ההון העצמי בלבד — לפני מגבלת תזרים, החזר חודשי, מס רכישה ועלויות נלוות.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right sm:text-left">
+                        <p className="text-2xl font-extrabold tracking-tight text-amber-700 dark:text-amber-300">
+                          {formatCurrency(result.maxPropertyByEquity)}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">מבוסס על הון עצמי של לפחות 25%</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
                 <Card className="border-0 shadow-sm bg-muted/40">
                   <CardContent className="p-4 text-center">
                     <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">טווח מומלץ</p>
