@@ -298,10 +298,10 @@ export default function BusinessPlan() {
     effectiveUpliftValue, urbanRenewalUpliftMode, urbanRenewalUpliftValue]);
 
   return (
-    <div className="space-y-6">
-      <div className="md:grid md:grid-cols-12 md:gap-6">
+    <div className="mx-auto max-w-3xl space-y-6">
+      <div className="space-y-6">
         {/* Input Section */}
-        <div className="md:col-span-5 space-y-3 md:sticky md:top-28 md:self-start">
+        <div className="space-y-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -364,7 +364,7 @@ export default function BusinessPlan() {
             </Button>
           )}
 
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+          <div className="space-y-3">
             <Card className="border-0 shadow-sm bg-background/80">
               <CardContent className="p-3 space-y-4">
                 <div className="space-y-3">
@@ -373,7 +373,7 @@ export default function BusinessPlan() {
                     <p className="text-[11px] leading-relaxed text-muted-foreground">נתוני בסיס של הנכס והעסקה לפני מימון ותפעול.</p>
                   </div>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <Field label="מחיר רכישה">
+                    <Field label="מחיר רכישה" className="sm:col-span-2">
                       <Input className="h-10 text-base font-semibold" type="number" min="0" value={purchasePrice ?? ''} onChange={(e) => setPurchasePrice(Number(e.target.value))} />
                     </Field>
                     <Field label="עלות שיפוץ">
@@ -391,7 +391,7 @@ export default function BusinessPlan() {
                     <p className="text-[11px] leading-relaxed text-muted-foreground">הון עצמי, סכום משכנתא והחזר חודשי.</p>
                   </div>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <Field label="הון עצמי">
+                    <Field label="הון עצמי" className="sm:col-span-2">
                       <Input className="h-10 text-base font-semibold" type="number" min="0" value={equityInvested ?? ''} onChange={(e) => setEquityInvested(Number(e.target.value))} />
                     </Field>
                     <Field
@@ -419,7 +419,7 @@ export default function BusinessPlan() {
                     <Field label="ריבית (%)">
                       <Input className="h-10" type="number" min="0" step="0.1" value={mortgageInterestRate} onChange={(e) => setMortgageInterestRate(Number(e.target.value))} />
                     </Field>
-                    <Field label="תקופת משכנתא" hint="בשנים" className="sm:col-span-2">
+                    <Field label="תקופת משכנתא" hint="בשנים">
                       <Input className="h-10" type="number" min="0" value={mortgageYears ?? ''} onChange={(e) => setMortgageYears(Number(e.target.value))} />
                     </Field>
                   </div>
@@ -427,8 +427,8 @@ export default function BusinessPlan() {
               </CardContent>
             </Card>
 
-            <Card className="border-0 shadow-sm bg-muted/40 lg:self-start">
-              <CardContent className="p-3 space-y-3">
+            <Card className="border-0 shadow-sm bg-muted/40">
+              <CardContent className="p-4 space-y-3">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">עלויות נלוות</p>
@@ -476,8 +476,8 @@ export default function BusinessPlan() {
             </div>
           </InputSection>
 
-                    <Card className="border-0 shadow-sm bg-muted/40">
-            <CardContent className="p-3 space-y-3">
+          <Card className="border-0 shadow-sm bg-muted/40">
+            <CardContent className="p-4 space-y-3">
               <div className="flex items-center justify-between gap-2">
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">השבחה מתחדשות עירונית</p>
@@ -502,7 +502,7 @@ export default function BusinessPlan() {
         </div>
 
         {/* Results Section */}
-        <div className="md:col-span-7 mt-6 md:mt-0">
+        <div className="space-y-3">
           <AnimatePresence mode="wait">
             {result ? (
               <motion.div
