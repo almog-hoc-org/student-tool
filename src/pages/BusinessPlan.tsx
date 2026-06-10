@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, type ReactNode } from 'react';
+import { useState, useMemo, useEffect, useRef, type ReactNode } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,9 +16,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getBudgetResults } from '@/lib/flow';
 import { ExportButton } from '@/components/ExportButton';
 import { InfoTooltip } from '@/components/InfoTooltip';
-import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LABELS } from '@/lib/content/labels';
+import NextStepCard from '@/components/NextStepCard';
+import { useJourney } from '@/hooks/useJourney';
 
 const SCENARIO_COLORS = {
   pessimistic: { bg: 'bg-red-50 dark:bg-red-950/30', border: 'border-red-200 dark:border-red-800', text: 'text-red-600 dark:text-red-400', chart: '#EF4444' },
@@ -297,21 +298,36 @@ export default function BusinessPlan() {
     annualOperatingCosts, holdingPeriodYears, baseAppreciation, customRates,
     effectiveUpliftValue, urbanRenewalUpliftMode, urbanRenewalUpliftValue]);
 
+  // Auto-complete business_plan milestone once we have a meaningful result.
+  const { complete: completeMilestone, isDone } = useJourney();
+  const markedRef = useRef(false);
+  useEffect(() => {
+    if (
+      !markedRef.current &&
+      uid &&
+      result &&
+      result.totalDealCost > 0 &&
+      !isDone('business_plan')
+    ) {
+      markedRef.current = true;
+      completeMilestone('business_plan', {
+        purchasePrice,
+      }).catch(() => {
+        markedRef.current = false;
+      });
+    }
+  }, [uid, result, purchasePrice, isDone, completeMilestone]);
+
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div className="space-y-6">
         {/* Input Section */}
         <div className="space-y-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-2xl font-bold flex items-center gap-2">
-                <TrendingUp className="w-6 h-6 text-primary" />
-                תוכנית עסקית
-              </h1>
-              <Badge variant="secondary" className="text-[10px] bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
-                {LABELS.common.optionalForInvestors}
-              </Badge>
-            </div>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <TrendingUp className="w-6 h-6 text-primary" />
+              תוכנית עסקית
+            </h1>
             <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
               <SaveSnapshotButton
                 toolKey="business_plan"
@@ -347,10 +363,11 @@ export default function BusinessPlan() {
             </div>
           </div>
           <p className="text-sm text-muted-foreground">
-            הזן את פרטי העסקה וראה 3 תרחישים לפי אחוז עלייה שנתי.
+            איזו דירה אתה יכול לקנות? מה יהיה ההחזר החודשי? פוטנציאל הרווח?
+            הזן את פרטי העסקה וראה 3 תרחישים שיעזרו לך להחליט.
           </p>
           <p className="text-[11px] text-muted-foreground">
-            מתאים בעיקר לעסקאות השקעה; לדירת מגורים עדיף להישען קודם על מחשבון התקציב והמשכנתא.
+            הנתונים כאן יעזרו לבנות אחר כך תמהיל משכנתא שמתאים לעסקה.
           </p>
           {editingDeal && (
             <div className="rounded-xl border border-primary/25 bg-primary/5 p-3 text-xs text-primary">
@@ -582,6 +599,9 @@ export default function BusinessPlan() {
                     )}
                   </CardContent>
                 </Card>
+
+                {/* Next step in the journey */}
+                <NextStepCard currentMilestone="business_plan" />
 
                 {/* PDF Export */}
                 <div className="flex justify-end">

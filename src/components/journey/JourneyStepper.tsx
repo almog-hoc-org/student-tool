@@ -1,5 +1,5 @@
 import { Card, CardContent } from '@/components/ui/card';
-import { Check, Circle, Target, Wallet, Home, Search, FileCheck } from 'lucide-react';
+import { Check, Target, Wallet, Home, Search, FileCheck, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { MILESTONES, type MilestoneKey } from '@/lib/journey';
 import { useJourney } from '@/hooks/useJourney';
@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 const ICONS: Record<MilestoneKey, React.ComponentType<{ className?: string }>> = {
   goal: Target,
   budget: Wallet,
+  business_plan: TrendingUp,
   mortgage: Home,
   property_check: Search,
   pre_purchase: FileCheck,
@@ -17,6 +18,7 @@ const ICONS: Record<MilestoneKey, React.ComponentType<{ className?: string }>> =
 const ROUTES: Record<MilestoneKey, string> = {
   goal: '/account',
   budget: '/',
+  business_plan: '/business-plan',
   mortgage: '/mortgage',
   property_check: '/property-check',
   pre_purchase: '/account',

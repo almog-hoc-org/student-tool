@@ -50,6 +50,7 @@ export const LABELS = {
     steps: {
       goal: { name: 'הגדרת יעד', short: 'יעד' },
       budget: { name: 'תקציב', short: 'תקציב' },
+      business_plan: { name: 'תוכנית עסקית', short: 'עסקה' },
       mortgage: { name: 'משכנתא', short: 'משכנתא' },
       property_check: { name: 'בדיקת נכס', short: 'נכס' },
       pre_purchase: { name: 'לפני רכישה', short: 'רכישה' },

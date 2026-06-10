@@ -49,16 +49,6 @@ export default function Account() {
         : null,
     },
     {
-      key: 'mortgage',
-      name: 'משכנתא',
-      icon: Home,
-      href: '/mortgage',
-      done: !!mortgage && !!mortgageResults,
-      summary: mortgageResults
-        ? `החזר ${formatCurrency(mortgageResults.totalMonthlyPayment)}/חודש, ריבית ${mortgageResults.weightedAverageInterest.toFixed(1)}%`
-        : null,
-    },
-    {
       key: 'business_plan',
       name: 'תוכנית עסקית',
       icon: TrendingUp,
@@ -66,6 +56,16 @@ export default function Account() {
       done: !!businessPlan,
       summary: businessPlan
         ? `נכס ${formatCurrency(businessPlan.purchasePrice)}, שכירות ${formatCurrency(businessPlan.expectedMonthlyRent)}`
+        : null,
+    },
+    {
+      key: 'mortgage',
+      name: 'משכנתא',
+      icon: Home,
+      href: '/mortgage',
+      done: !!mortgage && !!mortgageResults,
+      summary: mortgageResults
+        ? `החזר ${formatCurrency(mortgageResults.totalMonthlyPayment)}/חודש, ריבית ${mortgageResults.weightedAverageInterest.toFixed(1)}%`
         : null,
     },
   ];

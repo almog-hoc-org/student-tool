@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 export const MILESTONES = [
   'goal',
   'budget',
+  'business_plan',
   'mortgage',
   'property_check',
   'pre_purchase',

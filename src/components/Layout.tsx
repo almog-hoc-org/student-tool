@@ -17,9 +17,9 @@ import {
 
 const tabs = [
   { name: 'תקציב', href: '/', icon: Wallet },
+  { name: 'תוכנית עסקית', href: '/business-plan', icon: TrendingUp },
   { name: 'משכנתא', href: '/mortgage', icon: Home },
   { name: 'בדיקת נכס', href: '/property-check', icon: Search },
-  { name: 'תוכנית עסקית', href: '/business-plan', icon: TrendingUp },
   { name: 'השוואת עסקאות', href: '/deal-comparison', icon: BarChart3 },
   { name: 'יועץ חכם', href: '/chat', icon: MessageCircle },
   { name: 'אזור אישי', href: '/account', icon: User },

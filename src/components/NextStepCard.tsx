@@ -8,6 +8,7 @@ import {
   Home,
   Search,
   FileCheck,
+  TrendingUp,
   CheckCircle2,
 } from 'lucide-react';
 import { useJourney } from '@/hooks/useJourney';
@@ -17,6 +18,7 @@ import { LABELS } from '@/lib/content/labels';
 const ROUTES: Record<MilestoneKey, string> = {
   goal: '/account',
   budget: '/',
+  business_plan: '/business-plan',
   mortgage: '/mortgage',
   property_check: '/property-check',
   pre_purchase: '/account',
@@ -25,6 +27,7 @@ const ROUTES: Record<MilestoneKey, string> = {
 const ICONS: Record<MilestoneKey, React.ComponentType<{ className?: string }>> = {
   goal: Target,
   budget: Wallet,
+  business_plan: TrendingUp,
   mortgage: Home,
   property_check: Search,
   pre_purchase: FileCheck,
@@ -33,8 +36,9 @@ const ICONS: Record<MilestoneKey, React.ComponentType<{ className?: string }>> =
 const HINTS: Record<MilestoneKey, string> = {
   goal: 'נתחיל בהגדרת היעד שלך — מחיר דירה ולוח זמנים.',
   budget: 'בוא נראה מה אתה יכול לקנות עם ההון וההכנסה שלך.',
-  mortgage: 'יש לך תקציב — בוא נבנה תמהיל משכנתא.',
-  property_check: 'נכנס לבדיקת נכס — איך לזהות עסקה טובה.',
+  business_plan: 'יש תקציב — נבחן עסקה: איזו דירה, מה ההחזר ופוטנציאל הרווח.',
+  mortgage: 'יש לך את העסקה — עכשיו נבנה תמהיל משכנתא שתואם אותה.',
+  property_check: 'מצאת נכס מעניין? בוא נבדוק אותו לעומק.',
   pre_purchase: 'כמעט שם — צ׳קליסט אחרון לפני חתימה.',
 };
 
