@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -11,7 +10,6 @@ import {
   Loader2,
   User as UserIcon,
   LifeBuoy,
-  AlertCircle,
   BookOpen,
   Clock,
 } from 'lucide-react';
@@ -31,6 +29,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { LABELS } from '@/lib/content/labels';
+import { ErrorState } from '@/components/ui/error-state';
 
 const SUGGESTIONS = [
   'מה אני יכול לקנות עם ההון שלי?',
@@ -132,22 +131,12 @@ export default function Chat() {
 
   if (initError) {
     return (
-      <div dir="rtl" className="space-y-4">
-        <Card>
-          <CardContent className="p-8 text-center space-y-4">
-            <AlertCircle className="w-7 h-7 text-amber-500 mx-auto" />
-            <h3 className="font-semibold">לא הצלחנו לטעון את הצ׳אט</h3>
-            <p className="text-sm text-muted-foreground">{initError}</p>
-            <div className="flex justify-center gap-2 pt-2">
-              <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
-                נסה שוב
-              </Button>
-              <Button size="sm" onClick={() => { window.location.href = '/chat'; }}>
-                פתח שיחה חדשה
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      <div dir="rtl">
+        <ErrorState
+          title="לא הצלחנו לטעון את הצ׳אט"
+          description={initError}
+          retry={() => window.location.reload()}
+        />
       </div>
     );
   }

@@ -17,6 +17,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { LoadingState } from '@/components/ui/loading-state';
+import { EmptyState } from '@/components/ui/empty-state';
 import {
   Tabs,
   TabsList,
@@ -207,13 +209,9 @@ export default function AdminInbox() {
         {/* List */}
         <div className="md:col-span-1 space-y-2">
           {loading ? (
-            <p className="text-sm text-muted-foreground p-4">טוען...</p>
+            <LoadingState compact label="טוען פניות…" />
           ) : conversations.length === 0 ? (
-            <Card>
-              <CardContent className="p-6 text-center text-sm text-muted-foreground">
-                אין פניות בקטגוריה הזו
-              </CardContent>
-            </Card>
+            <EmptyState compact description="אין פניות בקטגוריה הזו" />
           ) : (
             conversations.map((c) => (
               <Card

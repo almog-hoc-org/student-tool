@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { BarChart3, Edit3, Loader2, RefreshCw, Trash2, TrendingUp } from 'lucide-react';
+import { LoadingState } from '@/components/ui/loading-state';
+import { ErrorState } from '@/components/ui/error-state';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -273,11 +275,13 @@ export default function DealComparison() {
       </Card>
 
       {loading ? (
-        <div className="py-16 flex justify-center text-muted-foreground">
-          <Loader2 className="w-6 h-6 animate-spin" />
-        </div>
+        <LoadingState label="טוען עסקאות…" />
       ) : error ? (
-        <Card><CardContent className="p-6 text-center text-destructive">{error}</CardContent></Card>
+        <ErrorState
+          title="שגיאה בטעינת עסקאות"
+          description={error}
+          retry={load}
+        />
       ) : snapshots.length === 0 ? (
         <Card className="border-0 shadow-sm">
           <CardContent className="p-8 text-center space-y-3">

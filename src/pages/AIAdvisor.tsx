@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Sparkles, TrendingUp, AlertTriangle, Lightbulb, ArrowLeft, Loader2 } from 'lucide-react';
+import { Sparkles, TrendingUp, AlertTriangle, Lightbulb, ArrowLeft, Inbox } from 'lucide-react';
 import { useInsights, type Insight } from '@/hooks/useInsights';
 import { cn } from '@/lib/utils';
+import { LoadingState } from '@/components/ui/loading-state';
+import { EmptyState } from '@/components/ui/empty-state';
 
 const iconMap = {
   warning: AlertTriangle,
@@ -98,15 +100,12 @@ export default function AIAdvisor() {
           </CardContent>
         </Card>
       ) : loading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        </div>
+        <LoadingState label="מנתח נתונים…" />
       ) : insights.length === 0 ? (
-        <Card>
-          <CardContent className="p-8 text-center">
-            <p className="text-muted-foreground">לא נמצאו תובנות. הכנס עוד נתונים בכלים ונסה שוב.</p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={<Inbox className="w-6 h-6" />}
+          description="לא נמצאו תובנות. הכנס עוד נתונים בכלים ונסה שוב."
+        />
       ) : (
         <div className="space-y-3">
           {insights.map((insight, i) => (
