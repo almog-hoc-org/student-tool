@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -36,6 +36,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getBudgetResults } from '@/lib/flow';
 import { ExportButton } from '@/components/ExportButton';
 import { InfoTooltip } from '@/components/InfoTooltip';
+import { LABELS } from '@/lib/content/labels';
+import { indexLawNote } from '@/lib/constants/regulations';
+import { EmptyState } from '@/components/ui/empty-state';
+import NextStepCard from '@/components/NextStepCard';
+import { useJourney } from '@/hooks/useJourney';
+import { GlossaryLink } from '@/components/GlossaryLink';
 import { Link } from 'react-router-dom';
 
 const TRACK_COLORS = ['#3B82F6', '#8B5CF6', '#22C55E', '#F59E0B'];
@@ -136,7 +142,10 @@ export default function MortgageCalculator() {
   }, [results, resolvedTracks]);
 
   const totalPrincipal = resolvedTracks.reduce((sum, t) => sum + t.principal, 0);
-  const dtiRatio = results && freeCashFlow > 0 ? results.totalMonthlyPayment / freeCashFlow : null;
+  const dtiRatio =
+    results && freeCashFlow > 0 && Number.isFinite(results.totalMonthlyPayment)
+      ? results.totalMonthlyPayment / freeCashFlow
+      : null;
   const dtiPercent = dtiRatio !== null ? dtiRatio * 100 : 0;
 
   // Save results for flow (clear if null)
@@ -144,6 +153,26 @@ export default function MortgageCalculator() {
     if (results) save('mortgage_results', results, uid);
     else clear('mortgage_results', uid);
   }, [results, uid]);
+
+  // Auto-mark mortgage milestone once we have a meaningful result.
+  const { complete: completeMilestone, isDone } = useJourney();
+  const markedRef = useRef(false);
+  useEffect(() => {
+    if (
+      !markedRef.current &&
+      uid &&
+      results &&
+      results.totalMonthlyPayment > 0 &&
+      !isDone('mortgage')
+    ) {
+      markedRef.current = true;
+      completeMilestone('mortgage', {
+        totalMonthlyPayment: results.totalMonthlyPayment,
+      }).catch(() => {
+        markedRef.current = false;
+      });
+    }
+  }, [uid, results, isDone, completeMilestone]);
 
   const madadResult = isOffPlan && propertyPrice > 0
     ? simulateMadadImpact({ linkedAmount: propertyPrice, annualMadadRate: madadRate, years: madadYears })
@@ -236,7 +265,7 @@ export default function MortgageCalculator() {
                   <div className="col-span-2">
                     <Label className="text-[11px]">סוג מסלול</Label>
                     <Select value={track.type} onValueChange={(v: MortgageTrackType) => updateTrack(track.id, { type: v, name: trackTypeLabels[v] })}>
-                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="h-9" aria-label="סוג מסלול"><SelectValue placeholder={LABELS.common.selectPlaceholder} /></SelectTrigger>
                       <SelectContent>
                         {Object.entries(trackTypeLabels).map(([k, v]) => (
                           <SelectItem key={k} value={k}>{v}</SelectItem>
@@ -250,7 +279,7 @@ export default function MortgageCalculator() {
                       value={track.allocationMode ?? 'amount'}
                       onValueChange={(v) => updateTrack(track.id, { allocationMode: (v as MortgageTrack['allocationMode']) ?? 'amount' })}
                     >
-                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="h-9" aria-label="אופן הקצאה"><SelectValue placeholder={LABELS.common.selectPlaceholder} /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="amount">סכום</SelectItem>
                         <SelectItem value="percent">אחוז מסך המשכנתא</SelectItem>
@@ -301,7 +330,7 @@ export default function MortgageCalculator() {
             <CardContent className="p-3 space-y-3">
               <div className="flex items-center gap-2">
                 <Switch checked={isOffPlan} onCheckedChange={setIsOffPlan} />
-                <Label className="text-xs flex items-center gap-1">רכישה מקבלן (מדד תשומות) <InfoTooltip text="הנחת עבודה 2026: 20% ראשון פטור, והשאר צמוד ב-50% ממדד תשומות הבנייה" /></Label>
+                <Label className="text-xs flex items-center gap-1">רכישה מקבלן (מדד תשומות) <InfoTooltip text={indexLawNote()} /></Label>
               </div>
               {isOffPlan && (
                 <div className="grid grid-cols-3 gap-2">
@@ -361,11 +390,14 @@ export default function MortgageCalculator() {
               </div>
 
               {/* Cash Flow Bar */}
-              {dtiRatio !== null && (
+              {dtiRatio !== null ? (
                 <Card className="border-0 shadow-sm">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between text-sm mb-2">
-                      <span className="text-muted-foreground flex items-center gap-1">החזר מול תזרים פנוי <InfoTooltip text="כאן רואים אם ההחזר החודשי נשאר בתוך התזרים הפנוי של משק הבית" /></span>
+                      <span className="text-muted-foreground flex items-center gap-1">
+                        <GlossaryLink term="dti">החזר מול תזרים פנוי</GlossaryLink>
+                        <InfoTooltip text="כאן רואים אם ההחזר החודשי נשאר בתוך התזרים הפנוי של משק הבית" />
+                      </span>
                       <span className={cn('font-semibold', results.totalMonthlyPayment <= freeCashFlow ? 'text-green-600' : 'text-red-600')}>
                         {formatCurrency(results.totalMonthlyPayment)} / {formatCurrency(freeCashFlow)}
                       </span>
@@ -380,6 +412,8 @@ export default function MortgageCalculator() {
                     </div>
                   </CardContent>
                 </Card>
+              ) : (
+                <EmptyState compact description={LABELS.empty.dtiNeedsIncome} />
               )}
 
               {/* Principal vs Interest Donut */}
@@ -415,7 +449,7 @@ export default function MortgageCalculator() {
                     <ResponsiveContainer width="100%" height={280}>
                       <AreaChart data={amortization}>
                         <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                        <XAxis dataKey="year" />
+                        <XAxis dataKey="year" reversed />
                         <YAxis tickFormatter={(v) => `₪${(v / 1000).toFixed(0)}k`} />
                         <Tooltip formatter={(v) => formatCurrency(Number(v))} />
                         <Legend />
@@ -520,6 +554,9 @@ export default function MortgageCalculator() {
                   </CardContent>
                 </Card>
               )}
+              {/* Next step in the journey */}
+              <NextStepCard currentMilestone="mortgage" />
+
               {/* CTA + Export */}
               <div className="flex flex-col sm:flex-row gap-2">
                 <Link to="/business-plan" className="flex-1">
@@ -553,12 +590,10 @@ export default function MortgageCalculator() {
               </div>
             </motion.div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mb-4">
-                <HomeIcon className="w-8 h-8 text-muted-foreground" />
-              </div>
-              <p className="text-muted-foreground text-sm">הזן סך משכנתא והקצה אותה למסלולים כדי לראות תוצאות</p>
-            </div>
+            <EmptyState
+              icon={<HomeIcon className="w-6 h-6" />}
+              description="הזן סך משכנתא והקצה אותה למסלולים כדי לראות תוצאות"
+            />
           )}
         </div>
       </div>

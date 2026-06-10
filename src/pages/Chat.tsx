@@ -28,6 +28,9 @@ import { cn } from '@/lib/utils';
 import { ExpertContactCard } from '@/components/ExpertContactCard';
 import { SourcePreviewDialog } from '@/components/SourcePreviewDialog';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { LABELS } from '@/lib/content/labels';
 
 const SUGGESTIONS = [
   'מה אני יכול לקנות עם ההון שלי?',
@@ -45,6 +48,7 @@ export default function Chat() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
+  const [useContext, setUseContext] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Init: load explicit conversation (deep-link from notification) or latest
@@ -101,7 +105,9 @@ export default function Chat() {
       setInput('');
       setLoading(true);
       try {
-        const res = await sendAiMessage(text.trim(), conversation.id);
+        const res = await sendAiMessage(text.trim(), conversation.id, {
+          includeUserContext: useContext,
+        });
         const fresh = await loadMessages(conversation.id);
         setMessages(fresh);
         if (res.conversation_id !== conversation.id) {
@@ -116,7 +122,7 @@ export default function Chat() {
         setLoading(false);
       }
     },
-    [conversation, loading],
+    [conversation, loading, useContext],
   );
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -150,13 +156,14 @@ export default function Chat() {
 
   return (
     <div
-      className="flex flex-col h-[calc(100vh-240px)] md:h-[calc(100vh-260px)]"
+      className="flex flex-col min-h-0 h-[70dvh] md:h-[75dvh]"
       dir="rtl"
     >
       {/* Header */}
-      <div className="mb-3 flex items-center gap-2">
+      <div className="mb-3 flex items-center gap-2 flex-wrap">
         <MessageCircle className="w-5 h-5 text-primary" />
-        <h1 className="text-xl font-bold">יועץ AI</h1>
+        <h1 className="text-xl font-bold">{LABELS.advisor.title}</h1>
+        <span className="text-xs text-muted-foreground">{LABELS.advisor.subtitle}</span>
         {awaitingHuman && (
           <span className="inline-flex items-center gap-1 text-xs bg-amber-500/10 text-amber-600 px-2 py-0.5 rounded-full">
             <Clock className="w-3 h-3" /> ממתין לנציג
@@ -164,8 +171,23 @@ export default function Chat() {
         )}
       </div>
 
+      {/* Privacy toggle: include user's data in the prompt */}
+      <div className="mb-2 flex items-center gap-2 px-1">
+        <Switch
+          id="chat-use-context"
+          checked={useContext}
+          onCheckedChange={setUseContext}
+        />
+        <Label htmlFor="chat-use-context" className="text-xs text-muted-foreground cursor-pointer">
+          {LABELS.advisor.contextToggle}
+        </Label>
+        <span className="text-[11px] text-muted-foreground/70 hidden sm:inline">
+          ({LABELS.advisor.contextHint})
+        </span>
+      </div>
+
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-3 pb-3">
+      <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto space-y-3 pb-3">
         {messages.length === 0 && !loading ? (
           <div className="text-center py-8 space-y-4">
             <div className="mx-auto w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center">
@@ -220,7 +242,11 @@ export default function Chat() {
       </div>
 
       {/* Input */}
-      <form onSubmit={handleSubmit} className="flex gap-2 pt-2 border-t">
+      <form
+        onSubmit={handleSubmit}
+        className="flex gap-2 pt-2 border-t"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      >
         <Input
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -228,7 +254,12 @@ export default function Chat() {
           disabled={loading || !conversation}
           className="flex-1"
         />
-        <Button type="submit" size="icon" disabled={loading || !input.trim() || !conversation}>
+        <Button
+          type="submit"
+          size="icon"
+          aria-label="שלח הודעה"
+          disabled={loading || !input.trim() || !conversation}
+        >
           <Send className="w-4 h-4" />
         </Button>
       </form>

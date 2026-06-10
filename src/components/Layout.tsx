@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Wallet, TrendingUp, Home, MessageCircle, Settings, LogOut, UserCircle, User, BarChart3 } from 'lucide-react';
+import { Wallet, TrendingUp, Home, MessageCircle, Settings, LogOut, UserCircle, User, BarChart3, Search } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { NotificationCenter } from './NotificationCenter';
 import { StepIndicator } from './StepIndicator';
@@ -17,10 +17,11 @@ import {
 
 const tabs = [
   { name: 'תקציב', href: '/', icon: Wallet },
+  { name: 'משכנתא', href: '/mortgage', icon: Home },
+  { name: 'בדיקת נכס', href: '/property-check', icon: Search },
   { name: 'תוכנית עסקית', href: '/business-plan', icon: TrendingUp },
   { name: 'השוואת עסקאות', href: '/deal-comparison', icon: BarChart3 },
-  { name: 'משכנתא', href: '/mortgage', icon: Home },
-  { name: 'צ׳אט AI', href: '/chat', icon: MessageCircle },
+  { name: 'יועץ חכם', href: '/chat', icon: MessageCircle },
   { name: 'אזור אישי', href: '/account', icon: User },
 ];
 
@@ -47,7 +48,11 @@ export function Layout({ children }: { children: ReactNode }) {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
                   {profile?.avatar_url ? (
-                    <img src={profile.avatar_url} alt="" className="w-8 h-8 rounded-full" />
+                    <img
+                      src={profile.avatar_url}
+                      alt={profile?.display_name || 'תמונת פרופיל'}
+                      className="w-8 h-8 rounded-full"
+                    />
                   ) : (
                     <UserCircle className="w-5 h-5" />
                   )}

@@ -14,6 +14,10 @@ import { cn } from '@/lib/utils';
 import { SnapshotsList } from '@/components/SnapshotsList';
 import { ExpertContactCard } from '@/components/ExpertContactCard';
 import { MyActivityCard } from '@/components/MyActivityCard';
+import { JourneyStepper } from '@/components/journey/JourneyStepper';
+import { GoalForm } from '@/components/goal/GoalForm';
+import { GapCard } from '@/components/goal/GapCard';
+import { PrePurchaseChecklist } from '@/components/journey/PrePurchaseChecklist';
 
 interface ToolStatus {
   key: string;
@@ -82,7 +86,11 @@ export default function Account() {
         <CardContent className="p-6">
           <div className="flex items-center gap-4">
             {profile?.avatar_url ? (
-              <img src={profile.avatar_url} alt="" className="w-16 h-16 rounded-full" />
+              <img
+                src={profile.avatar_url}
+                alt={profile?.display_name || 'תמונת פרופיל'}
+                className="w-16 h-16 rounded-full"
+              />
             ) : (
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
                 <User className="w-8 h-8 text-primary" />
@@ -90,7 +98,12 @@ export default function Account() {
             )}
             <div className="flex-1 min-w-0">
               <h1 className="text-xl font-bold truncate">{profile?.display_name || 'משתמש'}</h1>
-              <p className="text-sm text-muted-foreground truncate" dir="ltr">{user?.email}</p>
+              <p
+                className="text-sm text-muted-foreground truncate inline-block max-w-full"
+                style={{ unicodeBidi: 'plaintext' }}
+              >
+                {user?.email}
+              </p>
               <div className="flex gap-2 mt-2">
                 <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
                   {statusLabels[profile?.status ?? 'pending']}
@@ -106,18 +119,25 @@ export default function Account() {
         </CardContent>
       </Card>
 
-      {/* Progress */}
+      {/* Guided journey */}
+      <JourneyStepper />
+
+      {/* Goal + gap */}
+      <GoalForm />
+      <GapCard />
+
+      {/* Tools-completed progress */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <Calendar className="w-4 h-4" />
-            התקדמות במסע רכישת הדירה
+            התקדמות בכלי החישוב
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div>
             <div className="flex items-center justify-between text-sm mb-2">
-              <span className="text-muted-foreground">{completed} מתוך {tools.length} שלבים הושלמו</span>
+              <span className="text-muted-foreground">{completed} מתוך {tools.length} כלים הושלמו</span>
               <span className="font-semibold">{Math.round(progressPercent)}%</span>
             </div>
             <div className="w-full bg-muted rounded-full h-2">
@@ -161,6 +181,9 @@ export default function Account() {
           );
         })}
       </div>
+
+      {/* Pre-purchase checklist */}
+      <PrePurchaseChecklist />
 
       {/* Recent activity — gives the student a sense of their journey */}
       <MyActivityCard />

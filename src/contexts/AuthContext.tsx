@@ -58,6 +58,38 @@ async function fetchRoles(userId: string): Promise<AppRole[]> {
   return data?.map(r => r.role) ?? [];
 }
 
+/**
+ * Idempotent: stamp `schema_version: 1` on any user_data row that doesn't yet
+ * carry one. Future schema changes can gate on this marker.
+ */
+async function migrateSchemaVersions(userId: string): Promise<void> {
+  try {
+    const { data } = await supabase
+      .from('user_data')
+      .select('tool_key, data')
+      .eq('user_id', userId);
+    if (!data) return;
+    const targets = data.filter((row) => {
+      const d = row.data as Record<string, unknown> | null;
+      return d && typeof d === 'object' && d.schema_version === undefined;
+    });
+    if (!targets.length) return;
+    await Promise.all(
+      targets.map((row) =>
+        supabase
+          .from('user_data')
+          .update({
+            data: { ...(row.data as object), schema_version: 1 } as never,
+          })
+          .eq('user_id', userId)
+          .eq('tool_key', row.tool_key),
+      ),
+    );
+  } catch (e) {
+    console.warn('schema_version migration skipped', e);
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -78,7 +110,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(p);
     setRoles(r);
     // Sync data: upload local → cloud, then pull cloud → local
-    syncToCloud(currentUser.id).then(() => syncFromCloud(currentUser.id)).catch(() => {});
+    syncToCloud(currentUser.id)
+      .then(() => syncFromCloud(currentUser.id))
+      .then(() => migrateSchemaVersions(currentUser.id))
+      .catch(() => {});
   };
 
   useEffect(() => {

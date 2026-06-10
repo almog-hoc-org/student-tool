@@ -9,12 +9,20 @@ export interface Snapshot {
   created_at: string;
 }
 
-export async function listSnapshots(toolKey?: string): Promise<Snapshot[]> {
+export async function listSnapshots(
+  toolKeyOrOpts?: string | { toolKey?: string; userId?: string },
+): Promise<Snapshot[]> {
+  const opts =
+    typeof toolKeyOrOpts === 'string'
+      ? { toolKey: toolKeyOrOpts }
+      : (toolKeyOrOpts ?? {});
   let q = supabase
     .from('calculation_snapshots')
     .select('id, tool_key, name, data, notes, created_at')
     .order('created_at', { ascending: false });
-  if (toolKey) q = q.eq('tool_key', toolKey);
+  if (opts.toolKey) q = q.eq('tool_key', opts.toolKey);
+  // Defense-in-depth: RLS already enforces by user, but pass user_id when known.
+  if (opts.userId) q = q.eq('user_id', opts.userId);
   const { data, error } = await q;
   if (error) throw error;
   return (data || []) as Snapshot[];

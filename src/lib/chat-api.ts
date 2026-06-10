@@ -69,6 +69,7 @@ export interface SendMessageResult {
 export async function sendAiMessage(
   message: string,
   conversationId: string | null,
+  opts?: { includeUserContext?: boolean },
 ): Promise<SendMessageResult> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error('Not authenticated');
@@ -78,6 +79,7 @@ export async function sendAiMessage(
       conversation_id: conversationId,
       message,
       create_if_missing: !conversationId,
+      include_user_context: opts?.includeUserContext !== false,
     },
   });
   if (error) throw error;

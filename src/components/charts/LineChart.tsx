@@ -34,8 +34,9 @@ export function LineChart({ data, title, description, xKey, lines }: LineChartPr
           <ResponsiveContainer width="100%" height="100%">
             <RechartsLineChart data={data}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-              <XAxis 
-                dataKey={xKey} 
+              <XAxis
+                dataKey={xKey}
+                reversed
                 className="text-xs"
                 stroke="hsl(var(--muted-foreground))"
               />

@@ -54,7 +54,7 @@ export function FieldWithTooltip({
       
       <div className="relative">
         {prefix && (
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+          <span className="absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
             {prefix}
           </span>
         )}
@@ -63,10 +63,10 @@ export function FieldWithTooltip({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className={`${prefix ? 'pr-8' : ''} ${suffix ? 'pl-8' : ''} ${error ? 'border-destructive' : ''}`}
+          className={`${prefix ? 'ps-8' : ''} ${suffix ? 'pe-8' : ''} ${error ? 'border-destructive' : ''}`}
         />
         {suffix && (
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+          <span className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
             {suffix}
           </span>
         )}

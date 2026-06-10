@@ -18,6 +18,7 @@ import NotFound from "./pages/NotFound";
 // Heavy / less-frequent routes — split into separate chunks.
 const BusinessPlan = lazy(() => import("./pages/BusinessPlan"));
 const MortgageCalculator = lazy(() => import("./pages/MortgageCalculator"));
+const PropertyCheck = lazy(() => import("./pages/PropertyCheck"));
 const AIAdvisor = lazy(() => import("./pages/AIAdvisor"));
 const Chat = lazy(() => import("./pages/Chat"));
 const DealComparison = lazy(() => import("./pages/DealComparison"));
@@ -60,6 +61,7 @@ const App = () => (
                         <Route path="/" element={<BudgetCalculator />} />
                         <Route path="/business-plan" element={<BusinessPlan />} />
                         <Route path="/mortgage" element={<MortgageCalculator />} />
+                        <Route path="/property-check" element={<PropertyCheck />} />
                         <Route path="/advisor" element={<AIAdvisor />} />
                         <Route path="/chat" element={<ErrorBoundary title="הצ׳אט נתקל בשגיאה" description="רענן את העמוד. אם זה חוזר, הודעה בעייתית תבודד במקום להפיל את כל המסך."><Chat /></ErrorBoundary>} />
                         <Route path="/deal-comparison" element={<DealComparison />} />

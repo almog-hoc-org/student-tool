@@ -59,6 +59,8 @@ interface Body {
   message: string;
   create_if_missing?: boolean;
   title?: string;
+  /** When false, skip injecting user calc data / goal into the prompt. Default true. */
+  include_user_context?: boolean;
 }
 
 Deno.serve(async (req: Request) => {
@@ -146,12 +148,25 @@ Deno.serve(async (req: Request) => {
       .limit(HISTORY_LIMIT);
     const orderedHistory = (history || []).reverse();
 
-    const { data: calcRows } = await admin
-      .from("user_data")
-      .select("tool_key, data, updated_at")
-      .eq("user_id", userId);
+    const includeContext = body.include_user_context !== false;
 
-    const calcContext = formatCalcContext(calcRows || []);
+    let calcContext = "";
+    let goalContext = "";
+    if (includeContext) {
+      const [{ data: calcRows }, { data: goalRow }] = await Promise.all([
+        admin
+          .from("user_data")
+          .select("tool_key, data, updated_at")
+          .eq("user_id", userId),
+        admin
+          .from("goals")
+          .select("target_price, target_area, target_date, monthly_saving")
+          .eq("user_id", userId)
+          .maybeSingle(),
+      ]);
+      calcContext = formatCalcContext(calcRows || []);
+      goalContext = formatGoalContext(goalRow);
+    }
 
     // 4. RAG retrieval (if knowledge_chunks table + match_chunks RPC exist)
     let ragContext = "";
@@ -167,6 +182,7 @@ Deno.serve(async (req: Request) => {
     // 5. Build Gemini prompt
     const fullSystem = [
       SYSTEM_PROMPT_HE,
+      goalContext && `\n--- היעד של המשתמש ---\n${goalContext}`,
       calcContext && `\n--- נתוני המשתמש ---\n${calcContext}`,
       ragContext && `\n--- קטעים מתוכן הקורס ---\n${ragContext}`,
     ]
@@ -276,6 +292,16 @@ function formatCalcContext(rows: { tool_key: string; data: any }[]) {
     parts.push(`* ${r.tool_key}: ${JSON.stringify(r.data)}`);
   }
   return parts.join("\n");
+}
+
+function formatGoalContext(row: any): string {
+  if (!row) return "";
+  const parts: string[] = [];
+  if (row.target_price) parts.push(`מחיר יעד: ${row.target_price} ₪`);
+  if (row.target_area) parts.push(`אזור: ${row.target_area}`);
+  if (row.target_date) parts.push(`יעד חתימה: ${row.target_date}`);
+  if (row.monthly_saving) parts.push(`חיסכון חודשי: ${row.monthly_saving} ₪`);
+  return parts.length ? `* ${parts.join(" | ")}` : "";
 }
 
 async function retrieveChunks(

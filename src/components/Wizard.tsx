@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 
 export interface WizardStep {
   title: string;
+  shortLabel?: string;
   description?: string;
   content: ReactNode;
   isValid?: boolean;
@@ -98,6 +99,9 @@ export function Wizard({ steps, onComplete, title, icon }: WizardProps) {
                   {index < currentStep ? <Check className="w-3.5 h-3.5" /> : index + 1}
                 </div>
                 <span className="hidden sm:inline">{step.title}</span>
+                <span className="sm:hidden" title={step.title}>
+                  {step.shortLabel ?? step.title}
+                </span>
               </button>
             ))}
           </div>

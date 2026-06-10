@@ -16,6 +16,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getBudgetResults } from '@/lib/flow';
 import { ExportButton } from '@/components/ExportButton';
 import { InfoTooltip } from '@/components/InfoTooltip';
+import { Badge } from '@/components/ui/badge';
+import { EmptyState } from '@/components/ui/empty-state';
+import { LABELS } from '@/lib/content/labels';
 
 const SCENARIO_COLORS = {
   pessimistic: { bg: 'bg-red-50 dark:bg-red-950/30', border: 'border-red-200 dark:border-red-800', text: 'text-red-600 dark:text-red-400', chart: '#EF4444' },
@@ -300,10 +303,15 @@ export default function BusinessPlan() {
         {/* Input Section */}
         <div className="md:col-span-5 space-y-3 md:sticky md:top-28 md:self-start">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <TrendingUp className="w-6 h-6 text-primary" />
-              תוכנית עסקית
-            </h1>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-2xl font-bold flex items-center gap-2">
+                <TrendingUp className="w-6 h-6 text-primary" />
+                תוכנית עסקית
+              </h1>
+              <Badge variant="secondary" className="text-[10px] bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                {LABELS.common.optionalForInvestors}
+              </Badge>
+            </div>
             <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
               <SaveSnapshotButton
                 toolKey="business_plan"
@@ -610,12 +618,11 @@ export default function BusinessPlan() {
                 key="empty"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="flex flex-col items-center justify-center py-20 text-center"
               >
-                <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mb-4">
-                  <BarChart3 className="w-8 h-8 text-muted-foreground" />
-                </div>
-                <p className="text-muted-foreground text-sm">הזן מחיר רכישה כדי לראות תוצאות</p>
+                <EmptyState
+                  icon={<BarChart3 className="w-6 h-6" />}
+                  description={LABELS.empty.businessPlanNeedsPrice}
+                />
               </motion.div>
             )}
           </AnimatePresence>

@@ -50,7 +50,7 @@ export function SnapshotsList() {
   const refresh = async (cancelled?: { current: boolean }) => {
     try {
       setLoading(true);
-      const data = await listSnapshots();
+      const data = await listSnapshots({ userId: user?.id });
       if (cancelled?.current) return;
       setSnapshots(data);
     } catch (e) {
@@ -65,7 +65,8 @@ export function SnapshotsList() {
     const cancelled = { current: false };
     refresh(cancelled);
     return () => { cancelled.current = true; };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const handleLoad = (s: Snapshot) => {
     save(s.tool_key, s.data as unknown, user?.id);

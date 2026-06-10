@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,6 +26,12 @@ import { ExportButton } from '@/components/ExportButton';
 import { InfoTooltip } from '@/components/InfoTooltip';
 import { SaveSnapshotButton } from '@/components/SaveSnapshotButton';
 import { HomeGreeting } from '@/components/HomeGreeting';
+import { JourneyStepper } from '@/components/journey/JourneyStepper';
+import { GapCard } from '@/components/goal/GapCard';
+import NextStepCard from '@/components/NextStepCard';
+import { useJourney } from '@/hooks/useJourney';
+import { LABELS } from '@/lib/content/labels';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Link } from 'react-router-dom';
 
 const COLORS = {
@@ -195,7 +201,7 @@ function QuickBudgetWizard({
       description: 'זה משפיע על מס רכישה ואחוזי המימון.',
       content: (
         <Select value={values.buyerType} onValueChange={(buyerType: BuyerType) => setValues({ ...values, buyerType })}>
-          <SelectTrigger className="h-12"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-12" aria-label="סוג רוכש"><SelectValue placeholder="בחר…" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="singleApartment">דירה ראשונה (יחידה)</SelectItem>
             <SelectItem value="additionalApartment">דירה נוספת / משקיע</SelectItem>
@@ -295,6 +301,26 @@ export default function BudgetCalculator() {
     if (result) save('budget_results', result, uid);
   }, [result, uid]);
 
+  // Auto-mark budget milestone once we have a meaningful result.
+  const { complete: completeMilestone, isDone } = useJourney();
+  const markedRef = useRef(false);
+  useEffect(() => {
+    if (
+      !markedRef.current &&
+      uid &&
+      result &&
+      result.maxPropertyValue > 0 &&
+      !isDone('budget')
+    ) {
+      markedRef.current = true;
+      completeMilestone('budget', {
+        maxPropertyValue: result.maxPropertyValue,
+      }).catch(() => {
+        markedRef.current = false;
+      });
+    }
+  }, [uid, result, isDone, completeMilestone]);
+
   const handleReset = () => {
     if (!window.confirm('בטוח? כל הנתונים יימחקו')) return;
     setEquity(DEFAULTS.equity); setMonthlyIncome(DEFAULTS.monthlyIncome);
@@ -327,6 +353,8 @@ export default function BudgetCalculator() {
   return (
     <div className="space-y-6">
       <HomeGreeting />
+      <JourneyStepper />
+      <GapCard />
       <div className="md:grid md:grid-cols-5 md:gap-8">
         {/* Input Section */}
         <div className="md:col-span-2 space-y-4 md:sticky md:top-28 md:self-start">
@@ -460,8 +488,8 @@ export default function BudgetCalculator() {
           <div className="space-y-1.5">
             <Label className="text-sm font-medium">סוג רוכש</Label>
             <Select value={buyerType} onValueChange={(v: BuyerType) => setBuyerType(v)}>
-              <SelectTrigger>
-                <SelectValue />
+              <SelectTrigger aria-label="סוג רוכש">
+                <SelectValue placeholder={LABELS.common.selectPlaceholder} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="singleApartment">דירה ראשונה (יחידה)</SelectItem>
@@ -595,6 +623,7 @@ export default function BudgetCalculator() {
                     </Button>
                   </Link>
                 </div>
+                <NextStepCard currentMilestone="budget" />
                 <div className="flex justify-end">
                   <ExportButton
                     title="דוח ניתוח תקציב"
