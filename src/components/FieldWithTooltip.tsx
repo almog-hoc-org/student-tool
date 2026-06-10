@@ -6,7 +6,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { HelpCircle } from 'lucide-react';
+import { Info } from 'lucide-react';
 
 interface FieldWithTooltipProps {
   label: string;
@@ -42,8 +42,12 @@ export function FieldWithTooltip({
         </Label>
         <Tooltip>
           <TooltipTrigger asChild>
-            <button type="button" className="text-muted-foreground hover:text-foreground transition-colors">
-              <HelpCircle className="w-4 h-4" />
+            <button
+              type="button"
+              aria-label="מידע נוסף"
+              className="text-muted-foreground/60 hover:text-foreground transition-colors"
+            >
+              <Info className="w-4 h-4" />
             </button>
           </TooltipTrigger>
           <TooltipContent side="top" className="max-w-[250px] text-right">
