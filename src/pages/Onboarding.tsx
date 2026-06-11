@@ -25,18 +25,18 @@ interface Step {
 const STEPS: Step[] = [
   {
     icon: Sparkles,
-    title: 'ברוך הבא לקורס',
-    body: 'אנחנו פה ללוות אותך לאורך כל הדרך מהחיסכון הראשון ועד מסירת המפתח. הקורס משלב למידה תיאורטית עם כלי חישוב מעשיים — אחרי כל שיעור נסה את הכלי המתאים.',
+    title: 'ברוך הבא להדרך לדירה',
+    body: 'אנחנו פה ללוות אותך מהחיסכון הראשון ועד מסירת המפתח — במסע מסודר של שישה שלבים: יעד, תקציב, תוכנית עסקית, משכנתא, בדיקת נכס, ולקראת רכישה. בכל רגע תראה בדיוק איפה אתה נמצא ומה הצעד הבא.',
   },
   {
     icon: Calculator,
-    title: 'שלושה כלי החישוב המרכזיים',
-    body: 'מחשבון תקציב מגדיר תקרת רכישה אישית. מחשבון משכנתא בודק מסלולים. תוכנית עסקית בודקת כדאיות עסקה ספציפית. הם מסונכרנים — מה שמילאת באחד מוזרם לאחר.',
+    title: 'קודם מבינים, אחר כך מתחייבים',
+    body: 'מתחילים בהגדרת יעד ותקציב — כמה דירה אתה באמת יכול לקנות. אחר כך בונים תוכנית עסקית: איזו דירה, מה ההחזר החודשי ופוטנציאל הרווח. רק אז בונים את המשכנתא — מותאמת לעסקה, לא להפך. הכלים מסונכרנים: מה שמילאת באחד מוזרם לבא.',
   },
   {
     icon: MessageCircle,
-    title: 'הצ׳אט הוא היועץ האישי שלך',
-    body: 'הצ׳אט מאומן על תוכן הקורס ועל הנתונים שלך. כשהוא לא יודע (או שזו שאלה רגישה), תמצא באנר בתחתית הצ׳אט (וכרטיס באזור האישי) לשליחת השאלה לנציג — נחזור אליך תוך 24 שעות.',
+    title: 'היועץ החכם איתך בכל שלב',
+    body: 'הצ׳אט מכיר את תוכן הקורס ואת הנתונים שלך — היעד, התקציב והמשכנתא. וכשצריך מענה אנושי, שולחים את השאלה לנציג ונחזור אליך תוך 24 שעות.',
   },
 ];
 
@@ -56,7 +56,8 @@ export default function Onboarding() {
       if (error) throw error;
       await refreshProfile();
       toast.success('נשמח לראות אותך מתחיל!');
-      navigate('/');
+      // Land on home with the goal dialog open — step 1 of the journey.
+      navigate('/?goal=1');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'שגיאה');
     } finally {
@@ -86,8 +87,8 @@ export default function Onboarding() {
           {isLast && (
             <div className="grid grid-cols-3 gap-2 pt-2">
               <QuickLink to="/" icon={Wallet} label="תקציב" />
-              <QuickLink to="/mortgage" icon={HomeIcon} label="משכנתא" />
               <QuickLink to="/business-plan" icon={TrendingUp} label="עסקה" />
+              <QuickLink to="/mortgage" icon={HomeIcon} label="משכנתא" />
             </div>
           )}
 
@@ -107,7 +108,7 @@ export default function Onboarding() {
               </Button>
             ) : (
               <Button onClick={finish} disabled={finishing} className="gap-1">
-                {finishing ? 'מסיים…' : 'בוא נתחיל'}
+                {finishing ? 'מסיים…' : 'הגדר יעד ונצא לדרך'}
                 <ArrowRight className="w-4 h-4 rotate-180" />
               </Button>
             )}

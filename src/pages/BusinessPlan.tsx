@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -155,8 +156,11 @@ type UpliftMode = 'amount' | 'percent';
 export default function BusinessPlan() {
   const { user } = useAuth();
   const uid = user?.id;
-  const saved = load<typeof BP_DEFAULTS>('business_plan');
+  const saved = load<typeof BP_DEFAULTS & { touched?: boolean }>('business_plan');
   const [editingDeal, setEditingDeal] = useState<EditingDeal | null>(() => load<EditingDeal>('business_plan_editing'));
+  // True only after real user input — prefilled defaults must not complete milestones.
+  const [touched, setTouched] = useState(!!saved?.touched);
+  const touch = () => setTouched(true);
   const [purchasePrice, setPurchasePrice] = useState(saved?.purchasePrice ?? BP_DEFAULTS.purchasePrice);
   const [sideCosts, setSideCosts] = useState(saved?.sideCosts ?? BP_DEFAULTS.sideCosts);
   const [renovationCost, setRenovationCost] = useState(saved?.renovationCost ?? BP_DEFAULTS.renovationCost);
@@ -191,13 +195,13 @@ export default function BusinessPlan() {
       mortgageMonthlyPayment, mortgageInterestRate, mortgageYears, expectedMonthlyRent,
       annualOperatingCosts, holdingPeriodYears, baseAppreciation, manualMode, customRates,
       urbanRenewalUpliftMode, urbanRenewalUpliftValue, manualMortgageAmount,
-      manualMortgageMonthlyPayment, useSideCostPreset, selectedSideCosts,
+      manualMortgageMonthlyPayment, useSideCostPreset, selectedSideCosts, touched,
     }, uid);
   }, [purchasePrice, sideCosts, renovationCost, equityInvested, mortgageAmount,
     mortgageMonthlyPayment, mortgageInterestRate, mortgageYears, expectedMonthlyRent,
     annualOperatingCosts, holdingPeriodYears, baseAppreciation, manualMode, customRates,
     urbanRenewalUpliftMode, urbanRenewalUpliftValue, manualMortgageAmount,
-    manualMortgageMonthlyPayment, useSideCostPreset, selectedSideCosts, uid]);
+    manualMortgageMonthlyPayment, useSideCostPreset, selectedSideCosts, touched, uid]);
 
   const budgetData = getBudgetResults();
 
@@ -230,6 +234,7 @@ export default function BusinessPlan() {
 
   const handleImportBudget = () => {
     if (!budgetData) return;
+    touch();
     setPurchasePrice(budgetData.maxPropertyValue);
     setEquityInvested(budgetData.equity);
     setMortgageAmount(budgetData.maxMortgage);
@@ -298,13 +303,14 @@ export default function BusinessPlan() {
     annualOperatingCosts, holdingPeriodYears, baseAppreciation, customRates,
     effectiveUpliftValue, urbanRenewalUpliftMode, urbanRenewalUpliftValue]);
 
-  // Auto-complete business_plan milestone once we have a meaningful result.
+  // Auto-complete business_plan milestone — only after real user input (not defaults).
   const { complete: completeMilestone, isDone } = useJourney();
   const markedRef = useRef(false);
   useEffect(() => {
     if (
       !markedRef.current &&
       uid &&
+      touched &&
       result &&
       result.totalDealCost > 0 &&
       !isDone('business_plan')
@@ -316,13 +322,13 @@ export default function BusinessPlan() {
         markedRef.current = false;
       });
     }
-  }, [uid, result, purchasePrice, isDone, completeMilestone]);
+  }, [uid, touched, result, purchasePrice, isDone, completeMilestone]);
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div className="space-y-6">
-        {/* Input Section */}
-        <div className="space-y-4">
+        {/* Input Section — onChangeCapture catches every native input edit (dirty flag) */}
+        <div className="space-y-4" onChangeCapture={touch}>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <TrendingUp className="w-6 h-6 text-primary" />
@@ -357,6 +363,11 @@ export default function BusinessPlan() {
                   results: result,
                 })}
               />
+              <Link to="/deal-comparison">
+                <Button variant="ghost" size="sm" className="text-muted-foreground h-8 gap-1">
+                  <BarChart3 className="w-3.5 h-3.5" /> השוואת עסקאות
+                </Button>
+              </Link>
               <Button variant="ghost" size="sm" onClick={handleReset} className="text-muted-foreground h-8 gap-1">
                 <RotateCcw className="w-3.5 h-3.5" /> אפס
               </Button>
@@ -466,7 +477,7 @@ export default function BusinessPlan() {
                     <label key={item.key} className="flex items-center gap-3 rounded-xl border bg-background px-3 py-2 text-sm">
                       <Checkbox
                         checked={(selectedSideCosts as Record<string, boolean>)[item.key]}
-                        onCheckedChange={(checked) => setSelectedSideCosts((current) => ({ ...current, [item.key]: !!checked }))}
+                        onCheckedChange={(checked) => { touch(); setSelectedSideCosts((current) => ({ ...current, [item.key]: !!checked })); }}
                         disabled={!useSideCostPreset}
                       />
                       <span className="flex-1">{item.label}</span>

@@ -39,17 +39,20 @@ const DEFAULTS = {
 export default function PropertyCheck() {
   const { user } = useAuth();
   const uid = user?.id;
-  const saved = load<typeof DEFAULTS>('property_check');
+  const saved = load<typeof DEFAULTS & { touched?: boolean }>('property_check');
 
   const [purchasePrice, setPurchasePrice] = useState(saved?.purchasePrice ?? DEFAULTS.purchasePrice);
   const [buyerType, setBuyerType] = useState<BuyerType>(saved?.buyerType ?? DEFAULTS.buyerType);
   const [equityPercent, setEquityPercent] = useState(saved?.equityPercent ?? DEFAULTS.equityPercent);
   const [area, setArea] = useState(saved?.area ?? DEFAULTS.area);
   const [sqm, setSqm] = useState(saved?.sqm ?? DEFAULTS.sqm);
+  // True only after real user input — prefilled defaults must not complete milestones.
+  const [touched, setTouched] = useState(!!saved?.touched);
+  const touch = () => setTouched(true);
 
   useEffect(() => {
-    save('property_check', { purchasePrice, buyerType, equityPercent, area, sqm }, uid);
-  }, [purchasePrice, buyerType, equityPercent, area, sqm, uid]);
+    save('property_check', { purchasePrice, buyerType, equityPercent, area, sqm, touched }, uid);
+  }, [purchasePrice, buyerType, equityPercent, area, sqm, touched, uid]);
 
   const result: QuickCheckOutput | null = useMemo(() => {
     if (purchasePrice <= 0) return null;
@@ -63,6 +66,7 @@ export default function PropertyCheck() {
     if (
       !markedRef.current &&
       uid &&
+      touched &&
       result &&
       result.purchasePrice > 0 &&
       !isDone('property_check')
@@ -74,7 +78,7 @@ export default function PropertyCheck() {
         markedRef.current = false;
       });
     }
-  }, [uid, result, isDone, completeMilestone]);
+  }, [uid, touched, result, isDone, completeMilestone]);
 
   const pricePerSqm = sqm > 0 ? Math.round(purchasePrice / sqm) : 0;
 
@@ -98,7 +102,7 @@ export default function PropertyCheck() {
               type="number"
               min={0}
               value={purchasePrice ?? ''}
-              onChange={(e) => setPurchasePrice(Number(e.target.value))}
+              onChange={(e) => { touch(); setPurchasePrice(Number(e.target.value)); }}
               placeholder="1,800,000"
               className="text-lg font-semibold h-12"
             />
@@ -109,7 +113,7 @@ export default function PropertyCheck() {
               <Label className="text-xs">אזור</Label>
               <Input
                 value={area}
-                onChange={(e) => setArea(e.target.value)}
+                onChange={(e) => { touch(); setArea(e.target.value); }}
                 placeholder="עיר / שכונה"
               />
             </div>
@@ -119,7 +123,7 @@ export default function PropertyCheck() {
                 type="number"
                 min={0}
                 value={sqm ?? ''}
-                onChange={(e) => setSqm(Number(e.target.value))}
+                onChange={(e) => { touch(); setSqm(Number(e.target.value)); }}
                 placeholder="60"
               />
             </div>
@@ -127,7 +131,7 @@ export default function PropertyCheck() {
 
           <div className="space-y-1.5">
             <Label className="text-xs">סוג רוכש</Label>
-            <Select value={buyerType} onValueChange={(v: BuyerType) => setBuyerType(v)}>
+            <Select value={buyerType} onValueChange={(v: BuyerType) => { touch(); setBuyerType(v); }}>
               <SelectTrigger aria-label="סוג רוכש">
                 <SelectValue placeholder={LABELS.common.selectPlaceholder} />
               </SelectTrigger>
@@ -149,7 +153,7 @@ export default function PropertyCheck() {
               </div>
               <Slider
                 value={[equityPercent]}
-                onValueChange={([v]) => setEquityPercent(v)}
+                onValueChange={([v]) => { touch(); setEquityPercent(v); }}
                 min={20}
                 max={100}
                 step={1}

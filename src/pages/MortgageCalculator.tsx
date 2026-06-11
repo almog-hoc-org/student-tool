@@ -33,7 +33,7 @@ import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { save, load, clear } from '@/lib/storage';
 import { useAuth } from '@/contexts/AuthContext';
-import { getBudgetResults } from '@/lib/flow';
+import { getBudgetResults, getBusinessPlanData } from '@/lib/flow';
 import { ExportButton } from '@/components/ExportButton';
 import { InfoTooltip } from '@/components/InfoTooltip';
 import { LABELS } from '@/lib/content/labels';
@@ -94,32 +94,59 @@ function resolveTrackPrincipals(tracks: MortgageTrack[], totalMortgageAmount: nu
 export default function MortgageCalculator() {
   const { user } = useAuth();
   const uid = user?.id;
-  const savedM = load<{ tracks: MortgageTrack[]; totalMortgageAmount: number; freeCashFlow: number; isOffPlan: boolean; propertyPrice: number; madadRate: number; madadYears: number }>('mortgage');
+  const savedM = load<{ tracks: MortgageTrack[]; totalMortgageAmount: number; freeCashFlow: number; isOffPlan: boolean; propertyPrice: number; madadRate: number; madadYears: number; touched?: boolean }>('mortgage');
   const budgetData = getBudgetResults();
+  // Business-plan numbers (the actual deal) take priority over the budget
+  // ceiling — but only when the student really filled them in.
+  const bpData = (() => {
+    const d = getBusinessPlanData();
+    return d?.touched ? d : null;
+  })();
   const [tracks, setTracks] = useState<MortgageTrack[]>(savedM?.tracks ?? [DEFAULT_TRACK]);
-  const [totalMortgageAmount, setTotalMortgageAmount] = useState(savedM?.totalMortgageAmount ?? budgetData?.maxMortgage ?? DEFAULT_TRACK.principal);
+  const [totalMortgageAmount, setTotalMortgageAmount] = useState(
+    savedM?.totalMortgageAmount ?? bpData?.mortgageAmount ?? budgetData?.maxMortgage ?? DEFAULT_TRACK.principal,
+  );
   const [freeCashFlow, setFreeCashFlow] = useState(savedM?.freeCashFlow ?? budgetData?.freeCashFlow ?? 20000);
   const [isOffPlan, setIsOffPlan] = useState(savedM?.isOffPlan ?? false);
   const [propertyPrice, setPropertyPrice] = useState(savedM?.propertyPrice ?? 1600000);
   const [madadRate, setMadadRate] = useState(savedM?.madadRate ?? MARKET_CONSTANTS.DEFAULT_MADAD_RATE);
   const [madadYears, setMadadYears] = useState(savedM?.madadYears ?? 3);
+  // True only after real user input — prefilled defaults must not complete milestones.
+  const [touched, setTouched] = useState(!!savedM?.touched);
+  const touch = () => setTouched(true);
 
   // Auto-save
   useEffect(() => {
-    save('mortgage', { tracks, totalMortgageAmount, freeCashFlow, monthlyIncome: freeCashFlow, isOffPlan, propertyPrice, madadRate, madadYears }, uid);
-  }, [tracks, totalMortgageAmount, freeCashFlow, isOffPlan, propertyPrice, madadRate, madadYears, uid]);
+    save('mortgage', { tracks, totalMortgageAmount, freeCashFlow, monthlyIncome: freeCashFlow, isOffPlan, propertyPrice, madadRate, madadYears, touched }, uid);
+  }, [tracks, totalMortgageAmount, freeCashFlow, isOffPlan, propertyPrice, madadRate, madadYears, touched, uid]);
 
   const handleImportBudget = () => {
     if (!budgetData) return;
+    touch();
     setTotalMortgageAmount(budgetData.maxMortgage);
     setFreeCashFlow(budgetData.freeCashFlow);
     setTracks([{ ...DEFAULT_TRACK, principal: budgetData.maxMortgage, allocationMode: 'amount', allocationValue: budgetData.maxMortgage }]);
+  };
+
+  const handleImportBusinessPlan = () => {
+    if (!bpData) return;
+    touch();
+    setTotalMortgageAmount(bpData.mortgageAmount);
+    setTracks([{
+      ...DEFAULT_TRACK,
+      principal: bpData.mortgageAmount,
+      annualInterestRate: bpData.mortgageInterestRate,
+      years: bpData.mortgageYears,
+      allocationMode: 'amount',
+      allocationValue: bpData.mortgageAmount,
+    }]);
   };
 
   const handleReset = () => {
     if (!window.confirm('בטוח? כל הנתונים יימחקו')) return;
     setTracks([DEFAULT_TRACK]); setTotalMortgageAmount(DEFAULT_TRACK.principal); setFreeCashFlow(20000); setIsOffPlan(false);
     setPropertyPrice(1600000); setMadadRate(MARKET_CONSTANTS.DEFAULT_MADAD_RATE); setMadadYears(3);
+    setTouched(false);
     clear('mortgage', uid); clear('mortgage_results', uid);
   };
 
@@ -154,13 +181,14 @@ export default function MortgageCalculator() {
     else clear('mortgage_results', uid);
   }, [results, uid]);
 
-  // Auto-mark mortgage milestone once we have a meaningful result.
+  // Auto-mark mortgage milestone — only after real user input (not defaults).
   const { complete: completeMilestone, isDone } = useJourney();
   const markedRef = useRef(false);
   useEffect(() => {
     if (
       !markedRef.current &&
       uid &&
+      touched &&
       results &&
       results.totalMonthlyPayment > 0 &&
       !isDone('mortgage')
@@ -172,13 +200,14 @@ export default function MortgageCalculator() {
         markedRef.current = false;
       });
     }
-  }, [uid, results, isDone, completeMilestone]);
+  }, [uid, touched, results, isDone, completeMilestone]);
 
   const madadResult = isOffPlan && propertyPrice > 0
     ? simulateMadadImpact({ linkedAmount: propertyPrice, annualMadadRate: madadRate, years: madadYears })
     : null;
 
   const addTrack = () => {
+    touch();
     setTracks([...tracks, {
       id: Date.now().toString(),
       name: 'מסלול חדש',
@@ -189,9 +218,11 @@ export default function MortgageCalculator() {
     }]);
   };
 
-  const removeTrack = (id: string) => setTracks(tracks.filter((t) => t.id !== id));
-  const updateTrack = (id: string, updates: Partial<MortgageTrack>) =>
+  const removeTrack = (id: string) => { touch(); setTracks(tracks.filter((t) => t.id !== id)); };
+  const updateTrack = (id: string, updates: Partial<MortgageTrack>) => {
+    touch();
     setTracks(tracks.map((t) => (t.id === id ? { ...t, ...updates } : t)));
+  };
 
   return (
     <div className="space-y-6">
@@ -221,9 +252,14 @@ export default function MortgageCalculator() {
             בנה תמהיל, השווה מסלולים וראה כמה תשלם.
           </p>
 
+          {bpData && (
+            <Button variant="outline" size="sm" onClick={handleImportBusinessPlan} className="w-full gap-1.5 border-primary/30 text-primary">
+              <Import className="w-4 h-4" /> ייבא מהתוכנית העסקית ({formatCurrency(bpData.mortgageAmount)})
+            </Button>
+          )}
           {budgetData && (
-            <Button variant="outline" size="sm" onClick={handleImportBudget} className="w-full gap-1.5 border-primary/30 text-primary">
-              <Import className="w-4 h-4" /> ייבא נתונים ממחשבון התקציב
+            <Button variant="outline" size="sm" onClick={handleImportBudget} className="w-full gap-1.5">
+              <Import className="w-4 h-4" /> ייבא ממחשבון התקציב
             </Button>
           )}
           <div className="text-xs bg-muted/50 p-2.5 rounded-lg">
@@ -245,7 +281,7 @@ export default function MortgageCalculator() {
 
           <div className="space-y-1.5">
             <Label className="text-xs">סך משכנתא כולל</Label>
-            <Input type="number" min="0" value={totalMortgageAmount ?? ''} onChange={(e) => setTotalMortgageAmount(Number(e.target.value))} />
+            <Input type="number" min="0" value={totalMortgageAmount ?? ''} onChange={(e) => { touch(); setTotalMortgageAmount(Number(e.target.value)); }} />
             <p className="text-[11px] text-muted-foreground">זהו הסכום הכולל שצריך להתפזר בין המסלולים. אפשר לחלק באחוזים, בסכומים או כיתרה.</p>
           </div>
 
@@ -329,22 +365,22 @@ export default function MortgageCalculator() {
           <Card className="border shadow-sm">
             <CardContent className="p-3 space-y-3">
               <div className="flex items-center gap-2">
-                <Switch checked={isOffPlan} onCheckedChange={setIsOffPlan} />
+                <Switch checked={isOffPlan} onCheckedChange={(v) => { touch(); setIsOffPlan(v); }} />
                 <Label className="text-xs flex items-center gap-1">רכישה מקבלן (מדד תשומות) <InfoTooltip text={indexLawNote()} /></Label>
               </div>
               {isOffPlan && (
                 <div className="grid grid-cols-3 gap-2">
                   <div>
                     <Label className="text-[10px]">מחיר נכס</Label>
-                    <Input type="number" min="0" className="h-8 text-sm" value={propertyPrice ?? ''} onChange={(e) => setPropertyPrice(Number(e.target.value))} />
+                    <Input type="number" min="0" className="h-8 text-sm" value={propertyPrice ?? ''} onChange={(e) => { touch(); setPropertyPrice(Number(e.target.value)); }} />
                   </div>
                   <div>
                     <Label className="text-[10px]">מדד שנתי %</Label>
-                    <Input type="number" min="0" step="0.1" className="h-8 text-sm" value={madadRate} onChange={(e) => setMadadRate(Number(e.target.value))} />
+                    <Input type="number" min="0" step="0.1" className="h-8 text-sm" value={madadRate} onChange={(e) => { touch(); setMadadRate(Number(e.target.value)); }} />
                   </div>
                   <div>
                     <Label className="text-[10px]">תקופת בנייה צפויה</Label>
-                    <Input type="number" min="1" className="h-8 text-sm" value={madadYears} onChange={(e) => setMadadYears(Number(e.target.value))} />
+                    <Input type="number" min="1" className="h-8 text-sm" value={madadYears} onChange={(e) => { touch(); setMadadYears(Number(e.target.value)); }} />
                   </div>
                   {madadResult && (
                     <div className="col-span-3 text-center p-2 bg-muted/50 rounded-lg">

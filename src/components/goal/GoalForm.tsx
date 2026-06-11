@@ -75,15 +75,10 @@ export function GoalForm({ onSaved, compact = false }: GoalFormProps) {
     }
   };
 
-  return (
-    <Card>
-      <CardHeader className={compact ? 'pb-2' : 'pb-3'}>
-        <CardTitle className="text-base flex items-center gap-2">
-          <Target className="w-4 h-4 text-primary" />
-          {LABELS.goal.title}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
+  // compact — bare form (no card chrome), for embedding in a Dialog that
+  // already provides its own title.
+  const body = (
+    <div className="space-y-3">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label className="text-xs">{LABELS.goal.targetPriceLabel}</Label>
@@ -146,7 +141,20 @@ export function GoalForm({ onSaved, compact = false }: GoalFormProps) {
             {saving ? 'שומר…' : LABELS.common.save}
           </Button>
         </div>
-      </CardContent>
+    </div>
+  );
+
+  if (compact) return body;
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base flex items-center gap-2">
+          <Target className="w-4 h-4 text-primary" />
+          {LABELS.goal.title}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>{body}</CardContent>
     </Card>
   );
 }

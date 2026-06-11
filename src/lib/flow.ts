@@ -47,6 +47,44 @@ export function getBudgetResults(): BudgetResults | null {
   };
 }
 
+export interface BusinessPlanData {
+  purchasePrice: number;
+  equityInvested: number;
+  mortgageAmount: number;
+  mortgageMonthlyPayment: number;
+  mortgageInterestRate: number;
+  mortgageYears: number;
+  touched: boolean;
+}
+
+/**
+ * The journey runs budget → business plan → mortgage; the mortgage builder
+ * should prefer the actual deal numbers from the business plan over the
+ * theoretical budget ceiling.
+ */
+export function getBusinessPlanData(): BusinessPlanData | null {
+  const inputs = load<{
+    purchasePrice?: number;
+    equityInvested?: number;
+    mortgageAmount?: number;
+    mortgageMonthlyPayment?: number;
+    mortgageInterestRate?: number;
+    mortgageYears?: number;
+    touched?: boolean;
+  }>('business_plan');
+  if (!inputs || !inputs.purchasePrice || inputs.purchasePrice <= 0) return null;
+  const equityInvested = inputs.equityInvested ?? 0;
+  return {
+    purchasePrice: inputs.purchasePrice,
+    equityInvested,
+    mortgageAmount: inputs.mortgageAmount ?? Math.max(0, inputs.purchasePrice - equityInvested),
+    mortgageMonthlyPayment: inputs.mortgageMonthlyPayment ?? 0,
+    mortgageInterestRate: inputs.mortgageInterestRate ?? 5,
+    mortgageYears: inputs.mortgageYears ?? 25,
+    touched: !!inputs.touched,
+  };
+}
+
 export function getMortgageResults(): MortgageResults | null {
   const inputs = load<{ tracks?: { principal?: number }[]; monthlyIncome?: number; freeCashFlow?: number }>('mortgage');
   const results = load<{ totalMonthlyPayment: number; weightedAverageInterest: number }>('mortgage_results');

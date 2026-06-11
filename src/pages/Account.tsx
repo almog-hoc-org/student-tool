@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
   User, Wallet, TrendingUp, Home, Sparkles, LogOut, CheckCircle2, Circle,
-  MessageCircle, ArrowLeft, Calendar, Bookmark,
+  MessageCircle, ArrowLeft, Bookmark,
 } from 'lucide-react';
 import { load } from '@/lib/storage';
 import { BudgetOutput } from '@/lib/calculations/budget-calculator';
@@ -70,8 +70,6 @@ export default function Account() {
     },
   ];
 
-  const completed = tools.filter(t => t.done).length;
-  const progressPercent = (completed / tools.length) * 100;
 
   const statusLabels: Record<string, string> = {
     pending: 'ממתין לאישור',
@@ -126,30 +124,6 @@ export default function Account() {
       <GoalForm />
       <GapCard />
 
-      {/* Tools-completed progress */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Calendar className="w-4 h-4" />
-            התקדמות בכלי החישוב
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div>
-            <div className="flex items-center justify-between text-sm mb-2">
-              <span className="text-muted-foreground">{completed} מתוך {tools.length} כלים הושלמו</span>
-              <span className="font-semibold">{Math.round(progressPercent)}%</span>
-            </div>
-            <div className="w-full bg-muted rounded-full h-2">
-              <div
-                className="bg-primary h-2 rounded-full transition-all"
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Tools summary */}
       <div className="space-y-2">
         <h2 className="font-semibold text-sm text-muted-foreground px-1">הנתונים שלי</h2>
@@ -200,32 +174,23 @@ export default function Account() {
         <SnapshotsList />
       </div>
 
-      {/* Quick actions */}
-      <div className="space-y-2">
-        <h2 className="font-semibold text-sm text-muted-foreground px-1">כלים חכמים</h2>
-        <div className="grid grid-cols-2 gap-2">
-          <Link to="/advisor">
-            <Card className="hover:border-primary/50 transition-colors">
-              <CardContent className="p-4 flex flex-col items-center text-center gap-2">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <Sparkles className="w-5 h-5 text-primary" />
-                </div>
-                <p className="font-medium text-sm">תובנות חכמות</p>
-              </CardContent>
-            </Card>
-          </Link>
-          <Link to="/chat">
-            <Card className="hover:border-primary/50 transition-colors">
-              <CardContent className="p-4 flex flex-col items-center text-center gap-2">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <MessageCircle className="w-5 h-5 text-primary" />
-                </div>
-                <p className="font-medium text-sm">צ'אט עם יועץ AI</p>
-              </CardContent>
-            </Card>
-          </Link>
-        </div>
-      </div>
+      {/* AI advisor — single entry point (insights live inside the chat) */}
+      <Link to="/chat" className="block">
+        <Card className="hover:border-primary/50 transition-colors">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+              <Sparkles className="w-5 h-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-sm">יועץ חכם</p>
+              <p className="text-xs text-muted-foreground">
+                צ׳אט + תובנות מהנתונים שלך, במקום אחד
+              </p>
+            </div>
+            <MessageCircle className="w-4 h-4 text-muted-foreground shrink-0" />
+          </CardContent>
+        </Card>
+      </Link>
 
       {/* Settings */}
       <div className="space-y-2 pt-2">

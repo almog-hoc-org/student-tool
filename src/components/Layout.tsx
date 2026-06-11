@@ -3,7 +3,6 @@ import { Link, useLocation } from 'react-router-dom';
 import { Wallet, TrendingUp, Home, MessageCircle, Settings, LogOut, UserCircle, User, BarChart3, Search } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { NotificationCenter } from './NotificationCenter';
-import { StepIndicator } from './StepIndicator';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -15,12 +14,22 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-const tabs = [
+// Desktop top nav shows everything; the mobile bottom bar keeps the 5 core
+// stops (the rest are reachable from the journey stepper and page links).
+const desktopTabs = [
   { name: 'תקציב', href: '/', icon: Wallet },
   { name: 'תוכנית עסקית', href: '/business-plan', icon: TrendingUp },
   { name: 'משכנתא', href: '/mortgage', icon: Home },
   { name: 'בדיקת נכס', href: '/property-check', icon: Search },
   { name: 'השוואת עסקאות', href: '/deal-comparison', icon: BarChart3 },
+  { name: 'יועץ חכם', href: '/chat', icon: MessageCircle },
+  { name: 'אזור אישי', href: '/account', icon: User },
+];
+
+const mobileTabs = [
+  { name: 'תקציב', href: '/', icon: Wallet },
+  { name: 'תוכנית עסקית', href: '/business-plan', icon: TrendingUp },
+  { name: 'משכנתא', href: '/mortgage', icon: Home },
   { name: 'יועץ חכם', href: '/chat', icon: MessageCircle },
   { name: 'אזור אישי', href: '/account', icon: User },
 ];
@@ -90,7 +99,7 @@ export function Layout({ children }: { children: ReactNode }) {
       {/* Desktop top tabs */}
       <div className="hidden md:block border-b border-border bg-background">
         <div className="max-w-5xl mx-auto flex">
-          {tabs.map((tab) => {
+          {desktopTabs.map((tab) => {
             const isActive = currentPath === tab.href;
             return (
               <Link
@@ -111,13 +120,6 @@ export function Layout({ children }: { children: ReactNode }) {
         </div>
       </div>
 
-      {/* Step Indicator */}
-      <div className="border-b border-border bg-background">
-        <div className="max-w-5xl mx-auto">
-          <StepIndicator />
-        </div>
-      </div>
-
       {/* Main Content */}
       <main className="pb-20 md:pb-8 px-4 py-4 sm:px-6">
         <div className="max-w-5xl mx-auto">
@@ -125,24 +127,24 @@ export function Layout({ children }: { children: ReactNode }) {
         </div>
       </main>
 
-      {/* Mobile Bottom Tab Bar */}
+      {/* Mobile Bottom Tab Bar — exactly 5 tabs, fills the viewport width */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-t border-border pb-[env(safe-area-inset-bottom)]">
-        <div className="flex h-16 gap-1 overflow-x-auto px-2 no-scrollbar">
-          {tabs.map((tab) => {
+        <div className="flex h-16 px-1">
+          {mobileTabs.map((tab) => {
             const isActive = currentPath === tab.href;
             return (
               <Link
                 key={tab.href}
                 to={tab.href}
                 className={cn(
-                  'flex min-w-[72px] flex-col items-center justify-center gap-1 py-2 rounded-xl transition-colors',
+                  'flex flex-1 min-w-0 flex-col items-center justify-center gap-1 py-2 rounded-xl transition-colors',
                   isActive
                     ? 'text-primary'
                     : 'text-muted-foreground'
                 )}
               >
                 <tab.icon className={cn('w-5 h-5', isActive && 'scale-110')} />
-                <span className="text-[10px] font-semibold leading-tight text-center">{tab.name}</span>
+                <span className="text-[10px] font-semibold leading-tight text-center truncate w-full px-0.5">{tab.name}</span>
                 {isActive && <div className="w-1.5 h-1.5 rounded-full bg-primary" />}
               </Link>
             );

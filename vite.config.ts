@@ -17,7 +17,9 @@ export default defineConfig(({ mode }) => ({
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
           'vendor-supabase': ['@supabase/supabase-js'],
           'vendor-charts': ['recharts'],
-          'vendor-pdf': ['html2canvas', 'jspdf'],
+          // NOTE: jspdf/html2canvas intentionally NOT listed — they load via
+          // dynamic import in ExportButton; a manual chunk would pull them
+          // back into the initial modulepreload graph.
           'vendor-motion': ['framer-motion'],
         },
       },

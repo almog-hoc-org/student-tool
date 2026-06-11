@@ -26,8 +26,6 @@ import { ExportButton } from '@/components/ExportButton';
 import { InfoTooltip } from '@/components/InfoTooltip';
 import { SaveSnapshotButton } from '@/components/SaveSnapshotButton';
 import { HomeGreeting } from '@/components/HomeGreeting';
-import { JourneyStepper } from '@/components/journey/JourneyStepper';
-import { GapCard } from '@/components/goal/GapCard';
 import NextStepCard from '@/components/NextStepCard';
 import { useJourney } from '@/hooks/useJourney';
 import { LABELS } from '@/lib/content/labels';
@@ -275,7 +273,7 @@ function QuickBudgetWizard({
 export default function BudgetCalculator() {
   const { user } = useAuth();
   const uid = user?.id;
-  const saved = load<typeof DEFAULTS>('budget');
+  const saved = load<typeof DEFAULTS & { touched?: boolean }>('budget');
   const [equity, setEquity] = useState(saved?.equity ?? DEFAULTS.equity);
   const [monthlyIncome, setMonthlyIncome] = useState(saved?.monthlyIncome ?? DEFAULTS.monthlyIncome);
   const [currentRent, setCurrentRent] = useState(saved?.currentRent ?? DEFAULTS.currentRent);
@@ -284,12 +282,16 @@ export default function BudgetCalculator() {
   const [buyerType, setBuyerType] = useState<BuyerType>(saved?.buyerType ?? DEFAULTS.buyerType);
   const [mortgageYears, setMortgageYears] = useState(saved?.mortgageYears ?? DEFAULTS.mortgageYears);
   const [wizardOpen, setWizardOpen] = useState(false);
+  // True only after the user actually edited an input (this session or a past
+  // one) — prefilled defaults must not count as real engagement.
+  const [touched, setTouched] = useState(!!saved?.touched);
+  const touch = () => setTouched(true);
 
   // Auto-save inputs
   useEffect(() => {
-    save('budget', { equity, monthlyIncome, currentRent, livingExpenses, monthlyObligations, buyerType, mortgageYears }, uid);
+    save('budget', { equity, monthlyIncome, currentRent, livingExpenses, monthlyObligations, buyerType, mortgageYears, touched }, uid);
     save('budget_profile', { equity, monthlyIncome, currentRent, livingExpenses, monthlyObligations, buyerType, mortgageYears }, uid);
-  }, [equity, monthlyIncome, currentRent, livingExpenses, monthlyObligations, buyerType, mortgageYears, uid]);
+  }, [equity, monthlyIncome, currentRent, livingExpenses, monthlyObligations, buyerType, mortgageYears, touched, uid]);
 
   const result: BudgetOutput | null = useMemo(() => {
     if (equity <= 0 && monthlyIncome <= 0) return null;
@@ -301,13 +303,14 @@ export default function BudgetCalculator() {
     if (result) save('budget_results', result, uid);
   }, [result, uid]);
 
-  // Auto-mark budget milestone once we have a meaningful result.
+  // Auto-mark budget milestone — only after real user input (not defaults).
   const { complete: completeMilestone, isDone } = useJourney();
   const markedRef = useRef(false);
   useEffect(() => {
     if (
       !markedRef.current &&
       uid &&
+      touched &&
       result &&
       result.maxPropertyValue > 0 &&
       !isDone('budget')
@@ -319,20 +322,22 @@ export default function BudgetCalculator() {
         markedRef.current = false;
       });
     }
-  }, [uid, result, isDone, completeMilestone]);
+  }, [uid, touched, result, isDone, completeMilestone]);
 
   const handleReset = () => {
     if (!window.confirm('בטוח? כל הנתונים יימחקו')) return;
     setEquity(DEFAULTS.equity); setMonthlyIncome(DEFAULTS.monthlyIncome);
     setCurrentRent(DEFAULTS.currentRent); setLivingExpenses(DEFAULTS.livingExpenses);
     setMonthlyObligations(DEFAULTS.monthlyObligations); setBuyerType(DEFAULTS.buyerType);
-    setMortgageYears(DEFAULTS.mortgageYears); clear('budget', uid); clear('budget_profile', uid); clear('budget_results', uid);
+    setMortgageYears(DEFAULTS.mortgageYears); setTouched(false);
+    clear('budget', uid); clear('budget_profile', uid); clear('budget_results', uid);
   };
 
   const freeCashFlow = monthlyIncome - monthlyObligations;
   const obligationsExceedCashFlow = freeCashFlow <= 0 && monthlyIncome > 0;
 
   const applyWizard = (values: BudgetWizardValues) => {
+    touch();
     setEquity(values.equity);
     setMonthlyIncome(values.monthlyIncome);
     setCurrentRent(values.currentRent ?? 0);
@@ -353,8 +358,6 @@ export default function BudgetCalculator() {
   return (
     <div className="space-y-6">
       <HomeGreeting />
-      <JourneyStepper />
-      <GapCard />
       <div className="md:grid md:grid-cols-5 md:gap-8">
         {/* Input Section */}
         <div className="md:col-span-2 space-y-4 md:sticky md:top-28 md:self-start">
@@ -404,13 +407,13 @@ export default function BudgetCalculator() {
             <Input
               type="number" min="0"
               value={equity ?? ''}
-              onChange={(e) => setEquity(Number(e.target.value))}
+              onChange={(e) => { touch(); setEquity(Number(e.target.value)); }}
               placeholder="400,000"
               className="text-lg font-semibold h-12"
             />
             <Slider
               value={[equity]}
-              onValueChange={([v]) => setEquity(v)}
+              onValueChange={([v]) => { touch(); setEquity(v); }}
               min={0}
               max={3000000}
               step={10000}
@@ -428,7 +431,7 @@ export default function BudgetCalculator() {
             <Input
               type="number" min="0"
               value={monthlyIncome ?? ''}
-              onChange={(e) => setMonthlyIncome(Number(e.target.value))}
+              onChange={(e) => { touch(); setMonthlyIncome(Number(e.target.value)); }}
               placeholder="20,000"
             />
           </div>
@@ -439,7 +442,7 @@ export default function BudgetCalculator() {
             <Input
               type="number" min="0"
               value={currentRent ?? ''}
-              onChange={(e) => setCurrentRent(Number(e.target.value))}
+              onChange={(e) => { touch(); setCurrentRent(Number(e.target.value)); }}
               placeholder="0"
             />
             <p className="text-[11px] text-muted-foreground">אם אתם כבר משלמים שכירות או משכנתא — זה נכנס לחישוב התזרים הפנוי.</p>
@@ -451,7 +454,7 @@ export default function BudgetCalculator() {
             <Input
               type="number" min="0"
               value={livingExpenses ?? ''}
-              onChange={(e) => setLivingExpenses(Number(e.target.value))}
+              onChange={(e) => { touch(); setLivingExpenses(Number(e.target.value)); }}
               placeholder="0"
             />
             <p className="text-[11px] text-muted-foreground">אוכל, תחבורה, בילויים וכל מה שלא נכלל בהתחייבויות.</p>
@@ -463,7 +466,7 @@ export default function BudgetCalculator() {
             <Input
               type="number" min="0"
               value={monthlyObligations ?? ''}
-              onChange={(e) => setMonthlyObligations(Number(e.target.value))}
+              onChange={(e) => { touch(); setMonthlyObligations(Number(e.target.value)); }}
               placeholder="0"
             />
             <p className="text-[11px] text-muted-foreground">הלוואות, אשראי, ליסינג וכו׳</p>
@@ -487,7 +490,7 @@ export default function BudgetCalculator() {
           {/* Buyer Type */}
           <div className="space-y-1.5">
             <Label className="text-sm font-medium">סוג רוכש</Label>
-            <Select value={buyerType} onValueChange={(v: BuyerType) => setBuyerType(v)}>
+            <Select value={buyerType} onValueChange={(v: BuyerType) => { touch(); setBuyerType(v); }}>
               <SelectTrigger aria-label="סוג רוכש">
                 <SelectValue placeholder={LABELS.common.selectPlaceholder} />
               </SelectTrigger>
@@ -508,7 +511,7 @@ export default function BudgetCalculator() {
             </div>
             <Slider
               value={[mortgageYears]}
-              onValueChange={([v]) => setMortgageYears(v)}
+              onValueChange={([v]) => { touch(); setMortgageYears(v); }}
               min={15}
               max={30}
               step={1}

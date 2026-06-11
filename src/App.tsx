@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { Layout } from "@/components/Layout";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -19,7 +19,6 @@ import NotFound from "./pages/NotFound";
 const BusinessPlan = lazy(() => import("./pages/BusinessPlan"));
 const MortgageCalculator = lazy(() => import("./pages/MortgageCalculator"));
 const PropertyCheck = lazy(() => import("./pages/PropertyCheck"));
-const AIAdvisor = lazy(() => import("./pages/AIAdvisor"));
 const Chat = lazy(() => import("./pages/Chat"));
 const DealComparison = lazy(() => import("./pages/DealComparison"));
 const Account = lazy(() => import("./pages/Account"));
@@ -62,7 +61,7 @@ const App = () => (
                         <Route path="/business-plan" element={<BusinessPlan />} />
                         <Route path="/mortgage" element={<MortgageCalculator />} />
                         <Route path="/property-check" element={<PropertyCheck />} />
-                        <Route path="/advisor" element={<AIAdvisor />} />
+                        <Route path="/advisor" element={<Navigate to="/chat" replace />} />
                         <Route path="/chat" element={<ErrorBoundary title="הצ׳אט נתקל בשגיאה" description="רענן את העמוד. אם זה חוזר, הודעה בעייתית תבודד במקום להפיל את כל המסך."><Chat /></ErrorBoundary>} />
                         <Route path="/deal-comparison" element={<DealComparison />} />
                         <Route path="/account" element={<Account />} />

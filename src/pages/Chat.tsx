@@ -30,6 +30,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { LABELS } from '@/lib/content/labels';
 import { ErrorState } from '@/components/ui/error-state';
+import { InsightsPanel } from '@/components/InsightsPanel';
 
 const SUGGESTIONS = [
   'מה אני יכול לקנות עם ההון שלי?',
@@ -159,6 +160,9 @@ export default function Chat() {
           </span>
         )}
       </div>
+
+      {/* Local insights from the student's saved data */}
+      <InsightsPanel />
 
       {/* Privacy toggle: include user's data in the prompt */}
       <div className="mb-2 flex items-center gap-2 px-1">

@@ -1,6 +1,5 @@
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
-import { exportToPDF } from '@/lib/export/pdf-generator';
 import { useState } from 'react';
 
 interface PDFSection {
@@ -21,6 +20,8 @@ export function ExportButton({ title, sections, executiveSummary, chartElementId
   const handleExport = async () => {
     setLoading(true);
     try {
+      // jspdf + html2canvas weigh ~590KB — load them only when actually exporting.
+      const { exportToPDF } = await import('@/lib/export/pdf-generator');
       await exportToPDF({ title, sections, executiveSummary, chartElementId });
     } catch (e) {
       console.error('PDF export failed:', e);

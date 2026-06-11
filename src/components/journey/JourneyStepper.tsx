@@ -1,6 +1,6 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Check, Target, Wallet, Home, Search, FileCheck, TrendingUp } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { MILESTONES, type MilestoneKey } from '@/lib/journey';
 import { useJourney } from '@/hooks/useJourney';
 import { LABELS } from '@/lib/content/labels';
@@ -24,13 +24,68 @@ const ROUTES: Record<MilestoneKey, string> = {
   pre_purchase: '/account',
 };
 
-export function JourneyStepper({ variant = 'auto' }: { variant?: 'auto' | 'horizontal' | 'compact' }) {
+interface JourneyStepperProps {
+  variant?: 'full' | 'compact';
+  /** When provided, clicking the goal step opens this instead of navigating. */
+  onGoalClick?: () => void;
+}
+
+/**
+ * compact — bare progress row (dots + current step), meant to live inside
+ * another card (HomeGreeting). full — standalone card with the 6 steps.
+ */
+export function JourneyStepper({ variant = 'full', onGoalClick }: JourneyStepperProps) {
   const { isDone, current, loading, completedCount, total } = useJourney();
+  const navigate = useNavigate();
   if (loading) return null;
   const pct = Math.round((completedCount / total) * 100);
 
+  const stepAction = (m: MilestoneKey) => {
+    if (m === 'goal' && onGoalClick) onGoalClick();
+    else navigate(ROUTES[m]);
+  };
+
+  if (variant === 'compact') {
+    return (
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex gap-1.5 items-center">
+          {MILESTONES.map((m) => {
+            const done = isDone(m);
+            const active = current === m;
+            return (
+              <button
+                key={m}
+                type="button"
+                aria-label={LABELS.journey.steps[m].name}
+                onClick={() => stepAction(m)}
+                className={cn(
+                  'w-2.5 h-2.5 rounded-full transition-colors',
+                  done
+                    ? 'bg-primary'
+                    : active
+                      ? 'bg-primary/40 ring-2 ring-primary/30'
+                      : 'bg-muted-foreground/20',
+                )}
+              />
+            );
+          })}
+        </div>
+        <span className="text-xs text-muted-foreground">
+          {completedCount}/{total} · {LABELS.journey.currentStepPrefix}{' '}
+          <button
+            type="button"
+            onClick={() => stepAction(current)}
+            className="font-semibold text-foreground underline-offset-4 hover:underline"
+          >
+            {LABELS.journey.steps[current].name}
+          </button>
+        </span>
+      </div>
+    );
+  }
+
   return (
-    <Card className="border-primary/20 bg-gradient-to-l from-primary/5 to-transparent">
+    <Card className="border-primary/20">
       <CardContent className="p-4 space-y-3">
         <div className="flex items-center justify-between text-xs">
           <span className="font-semibold text-muted-foreground">
@@ -39,15 +94,16 @@ export function JourneyStepper({ variant = 'auto' }: { variant?: 'auto' | 'horiz
           <span className="font-bold">{completedCount}/{total} · {pct}%</span>
         </div>
 
-        {/* Desktop / wider screens: row of 5 */}
-        <div className={cn('hidden sm:flex items-center gap-1', variant === 'horizontal' ? 'flex sm:flex' : '')}>
-          {MILESTONES.map((m, i) => {
+        {/* Desktop / wider screens: row of steps */}
+        <div className="hidden sm:flex items-center gap-1">
+          {MILESTONES.map((m) => {
             const done = isDone(m);
             const active = current === m;
             const Icon = ICONS[m];
             return (
-              <Link
-                to={ROUTES[m]}
+              <button
+                type="button"
+                onClick={() => stepAction(m)}
                 key={m}
                 className={cn(
                   'flex-1 group flex flex-col items-center gap-1 p-2 rounded-xl transition-colors',
@@ -74,10 +130,7 @@ export function JourneyStepper({ variant = 'auto' }: { variant?: 'auto' | 'horiz
                 >
                   {LABELS.journey.steps[m].name}
                 </span>
-                {i < MILESTONES.length - 1 && (
-                  <span className="sr-only">→</span>
-                )}
-              </Link>
+              </button>
             );
           })}
         </div>
