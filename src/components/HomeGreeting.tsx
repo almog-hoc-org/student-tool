@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useJourney } from '@/hooks/useJourney';
 import { JourneyStepper } from '@/components/journey/JourneyStepper';
 import { GoalForm } from '@/components/goal/GoalForm';
+import { IconChip } from '@/components/ui/icon-chip';
 import { LABELS } from '@/lib/content/labels';
 
 interface ResumeHint {
@@ -100,12 +101,10 @@ export function HomeGreeting() {
 
   return (
     <>
-      <Card className="mb-4">
+      <Card className="mb-4 border-primary/25 bg-primary/[0.04] dark:bg-primary/[0.07]">
         <CardContent className="p-4 space-y-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-              <Sparkles className="w-5 h-5" />
-            </div>
+            <IconChip icon={Sparkles} tone="primary" />
             <div className="flex-1 min-w-0">
               <p className="font-semibold truncate">
                 {greetingFor(profile?.display_name)}

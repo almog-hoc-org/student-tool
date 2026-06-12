@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { MILESTONES, type MilestoneKey } from '@/lib/journey';
 import { useJourney } from '@/hooks/useJourney';
 import { LABELS } from '@/lib/content/labels';
+import { JOURNEY_THEME } from '@/lib/journey-theme';
 import { cn } from '@/lib/utils';
 
 const ICONS: Record<MilestoneKey, React.ComponentType<{ className?: string }>> = {
@@ -61,7 +62,7 @@ export function JourneyStepper({ variant = 'full', onGoalClick }: JourneyStepper
                 className={cn(
                   'w-2.5 h-2.5 rounded-full transition-colors',
                   done
-                    ? 'bg-primary'
+                    ? JOURNEY_THEME[m].done
                     : active
                       ? 'bg-primary/40 ring-2 ring-primary/30'
                       : 'bg-muted-foreground/20',
@@ -114,9 +115,9 @@ export function JourneyStepper({ variant = 'full', onGoalClick }: JourneyStepper
                   className={cn(
                     'w-9 h-9 rounded-full flex items-center justify-center',
                     done
-                      ? 'bg-primary text-primary-foreground'
+                      ? JOURNEY_THEME[m].done
                       : active
-                        ? 'bg-primary/15 text-primary ring-2 ring-primary/30'
+                        ? JOURNEY_THEME[m].active
                         : 'bg-muted text-muted-foreground',
                   )}
                 >
@@ -147,7 +148,7 @@ export function JourneyStepper({ variant = 'full', onGoalClick }: JourneyStepper
                   className={cn(
                     'w-2 h-2 rounded-full transition-colors',
                     done
-                      ? 'bg-primary'
+                      ? JOURNEY_THEME[m].done
                       : active
                         ? 'bg-primary/40 ring-2 ring-primary/30'
                         : 'bg-muted',

@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap");
+/* Fonts load from index.html (<link> with preconnect) — no render-blocking @import here. */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -10,58 +10,63 @@
 
 @layer base {
   :root {
-    --background: 225 15% 96%;
-    --foreground: 230 35% 15%;
+    /* "הדרך לדירה" — emerald + terracotta. Warm paper background,
+       deep-green ink, terracotta CTAs, gold for figures/highlights. */
+    --background: 40 20% 96%;
+    --foreground: 170 30% 13%;
 
     --card: 0 0% 100%;
-    --card-foreground: 230 35% 15%;
+    --card-foreground: 170 30% 13%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 230 35% 15%;
+    --popover-foreground: 170 30% 13%;
 
-    --primary: 230 65% 52%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 160 45% 22%;
+    --primary-foreground: 40 30% 97%;
 
-    --secondary: 230 35% 15%;
-    --secondary-foreground: 225 20% 95%;
+    --secondary: 170 28% 16%;
+    --secondary-foreground: 40 25% 95%;
 
-    --muted: 225 15% 90%;
-    --muted-foreground: 225 15% 42%;
+    --muted: 40 14% 90%;
+    --muted-foreground: 160 8% 40%;
 
-    --accent: 225 20% 95%;
-    --accent-foreground: 230 35% 15%;
+    --accent: 28 55% 93%;
+    --accent-foreground: 24 50% 25%;
 
     --destructive: 0 72% 50%;
     --destructive-foreground: 0 85% 97%;
 
-    --border: 225 15% 89%;
-    --input: 225 15% 89%;
-    --ring: 230 65% 52%;
+    --border: 40 14% 87%;
+    --input: 40 14% 87%;
+    --ring: 160 45% 22%;
 
     --radius: 0.75rem;
 
-    --gold: 38 90% 55%;
-    --gold-light: 38 90% 92%;
+    --gold: 38 85% 50%;
+    --gold-light: 38 85% 92%;
+    --terracotta: 24 65% 47%;
+    --terracotta-foreground: 24 60% 97%;
 
-    --sidebar-background: 230 35% 15%;
-    --sidebar-foreground: 225 20% 92%;
-    --sidebar-primary: 230 65% 55%;
+    --sidebar-background: 170 28% 14%;
+    --sidebar-foreground: 40 20% 92%;
+    --sidebar-primary: 160 40% 40%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 230 30% 22%;
-    --sidebar-accent-foreground: 225 20% 92%;
-    --sidebar-border: 230 25% 24%;
-    --sidebar-ring: 230 65% 55%;
+    --sidebar-accent: 170 22% 20%;
+    --sidebar-accent-foreground: 40 20% 92%;
+    --sidebar-border: 170 20% 22%;
+    --sidebar-ring: 160 40% 40%;
 
-    --chart-1: 152 60% 42%;
-    --chart-2: 38 90% 52%;
+    --chart-1: 160 50% 34%;
+    --chart-2: 38 85% 50%;
     --chart-3: 0 72% 50%;
-    --chart-4: 230 65% 52%;
-    --chart-5: 230 35% 15%;
+    --chart-4: 24 65% 47%;
+    --chart-5: 174 50% 32%;
 
-    --sidebar: 230 35% 15%;
+    --sidebar: 170 28% 14%;
 
     --font-sans: Heebo, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji;
-    --font-serif: Heebo, ui-serif, Georgia, Cambria, Times New Roman, Times, serif;
+    --font-display: 'Frank Ruhl Libre', Heebo, ui-serif, Georgia, serif;
+    --font-serif: 'Frank Ruhl Libre', Heebo, ui-serif, Georgia, Cambria, Times New Roman, Times, serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
 
     --shadow-2xs: 0 1px 2px 0px hsl(0 0% 0% / 0.03);
@@ -78,53 +83,55 @@
   }
 
   .dark {
-    --background: 230 30% 8%;
-    --foreground: 225 20% 92%;
+    --background: 170 20% 7%;
+    --foreground: 40 18% 90%;
 
-    --card: 230 25% 12%;
-    --card-foreground: 225 20% 92%;
+    --card: 170 16% 10%;
+    --card-foreground: 40 18% 90%;
 
-    --popover: 230 25% 14%;
-    --popover-foreground: 225 20% 92%;
+    --popover: 170 16% 12%;
+    --popover-foreground: 40 18% 90%;
 
-    --primary: 230 70% 62%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 160 38% 58%;
+    --primary-foreground: 170 30% 8%;
 
-    --secondary: 225 20% 78%;
-    --secondary-foreground: 230 30% 8%;
+    --secondary: 40 15% 78%;
+    --secondary-foreground: 170 25% 10%;
 
-    --muted: 230 15% 20%;
-    --muted-foreground: 225 12% 62%;
+    --muted: 170 12% 17%;
+    --muted-foreground: 40 10% 60%;
 
-    --accent: 230 20% 16%;
-    --accent-foreground: 225 20% 85%;
+    --accent: 24 30% 17%;
+    --accent-foreground: 28 45% 80%;
 
     --destructive: 0 72% 60%;
     --destructive-foreground: 0 85% 97%;
 
-    --border: 230 15% 18%;
-    --input: 230 15% 18%;
-    --ring: 230 70% 62%;
+    --border: 170 12% 16%;
+    --input: 170 12% 16%;
+    --ring: 160 38% 58%;
 
-    --gold: 38 85% 60%;
-    --gold-light: 38 40% 18%;
+    --gold: 38 80% 58%;
+    --gold-light: 38 35% 16%;
+    --terracotta: 26 60% 56%;
+    --terracotta-foreground: 24 50% 10%;
 
-    --sidebar-background: 230 30% 6%;
-    --sidebar-foreground: 225 20% 92%;
-    --sidebar-primary: 230 70% 62%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 230 22% 15%;
-    --sidebar-accent-foreground: 225 20% 85%;
-    --sidebar-border: 230 20% 17%;
-    --sidebar-ring: 230 70% 62%;
+    --sidebar-background: 170 22% 5%;
+    --sidebar-foreground: 40 18% 90%;
+    --sidebar-primary: 160 38% 58%;
+    --sidebar-primary-foreground: 170 30% 8%;
+    --sidebar-accent: 170 16% 13%;
+    --sidebar-accent-foreground: 40 18% 85%;
+    --sidebar-border: 170 14% 15%;
+    --sidebar-ring: 160 38% 58%;
 
-    --chart-1: 152 60% 52%;
-    --chart-2: 38 85% 58%;
+    --chart-1: 160 45% 50%;
+    --chart-2: 38 80% 56%;
     --chart-3: 0 72% 60%;
-    --chart-4: 230 70% 62%;
-    --chart-5: 225 20% 60%;
+    --chart-4: 26 60% 56%;
+    --chart-5: 174 45% 45%;
 
-    --sidebar: 230 30% 6%;
+    --sidebar: 170 22% 5%;
 
     --shadow-2xs: 0 1px 2px 0px hsl(0 0% 0% / 0.12);
     --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.15);
@@ -145,7 +152,7 @@
     border: 1px solid transparent;
     background-clip: padding-box;
     box-shadow:
-      0 8px 32px -4px hsl(230 65% 52% / 0.10),
+      0 8px 32px -4px hsl(var(--primary) / 0.10),
       0 2px 8px hsl(0 0% 0% / 0.04),
       inset 0 1px 0 hsl(0 0% 100% / 0.6);
   }
@@ -155,34 +162,34 @@
     inset: 0;
     border-radius: inherit;
     padding: 1px;
-    background: linear-gradient(135deg, hsl(38 90% 55% / 0.5), hsl(230 65% 52% / 0.3), hsl(38 90% 55% / 0.2));
+    background: linear-gradient(135deg, hsl(var(--gold) / 0.5), hsl(var(--primary) / 0.3), hsl(var(--gold) / 0.2));
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
     pointer-events: none;
   }
   .dark .glass-card-premium {
-    background: hsl(230 25% 13% / 0.85);
+    background: hsl(170 16% 11% / 0.85);
     box-shadow:
       0 8px 32px -4px hsl(0 0% 0% / 0.4),
       0 2px 8px hsl(0 0% 0% / 0.2),
-      inset 0 1px 0 hsl(230 20% 30% / 0.3);
+      inset 0 1px 0 hsl(170 15% 28% / 0.3);
   }
 
   /* Premium gradient backgrounds */
   .bg-gradient-premium {
-    background: linear-gradient(135deg, hsl(230 30% 94%) 0%, hsl(240 25% 96%) 40%, hsl(225 20% 97%) 100%);
+    background: linear-gradient(135deg, hsl(40 18% 94%) 0%, hsl(160 12% 95%) 40%, hsl(40 22% 97%) 100%);
   }
   .dark .bg-gradient-premium {
-    background: linear-gradient(135deg, hsl(230 30% 10%) 0%, hsl(240 25% 12%) 40%, hsl(230 30% 8%) 100%);
+    background: linear-gradient(135deg, hsl(170 18% 9%) 0%, hsl(170 14% 11%) 40%, hsl(170 20% 7%) 100%);
   }
 
   /* Dark dramatic gradient for hero/CTA sections */
   .bg-gradient-dark-dramatic {
-    background: linear-gradient(160deg, hsl(230 40% 8%) 0%, hsl(230 35% 12%) 40%, hsl(240 30% 6%) 100%);
+    background: linear-gradient(160deg, hsl(170 30% 7%) 0%, hsl(170 25% 11%) 40%, hsl(174 25% 5%) 100%);
   }
   .dark .bg-gradient-dark-dramatic {
-    background: linear-gradient(160deg, hsl(230 40% 4%) 0%, hsl(230 35% 7%) 40%, hsl(240 30% 3%) 100%);
+    background: linear-gradient(160deg, hsl(170 30% 4%) 0%, hsl(170 25% 6%) 40%, hsl(174 25% 3%) 100%);
   }
 
   /* Gold gradient for CTA buttons */
@@ -220,10 +227,10 @@
 
   /* Glow utilities */
   .glow-primary {
-    box-shadow: 0 0 20px hsl(230 65% 52% / 0.2), 0 0 40px hsl(230 65% 52% / 0.1);
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.2), 0 0 40px hsl(var(--primary) / 0.1);
   }
   .dark .glow-primary {
-    box-shadow: 0 0 20px hsl(230 70% 62% / 0.25), 0 0 40px hsl(230 70% 62% / 0.12);
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.25), 0 0 40px hsl(var(--primary) / 0.12);
   }
   .glow-gold {
     box-shadow: 0 0 20px hsl(38 90% 55% / 0.25), 0 0 40px hsl(38 90% 55% / 0.1);
@@ -235,15 +242,15 @@
   /* Mesh gradient background */
   .bg-mesh {
     background-image:
-      radial-gradient(at 20% 30%, hsl(230 65% 52% / 0.08) 0%, transparent 50%),
-      radial-gradient(at 80% 20%, hsl(38 90% 55% / 0.06) 0%, transparent 50%),
-      radial-gradient(at 50% 80%, hsl(260 60% 58% / 0.05) 0%, transparent 50%);
+      radial-gradient(at 20% 30%, hsl(var(--primary) / 0.08) 0%, transparent 50%),
+      radial-gradient(at 80% 20%, hsl(var(--gold) / 0.06) 0%, transparent 50%),
+      radial-gradient(at 50% 80%, hsl(var(--terracotta) / 0.05) 0%, transparent 50%);
   }
   .dark .bg-mesh {
     background-image:
-      radial-gradient(at 20% 30%, hsl(230 70% 62% / 0.1) 0%, transparent 50%),
-      radial-gradient(at 80% 20%, hsl(38 85% 60% / 0.08) 0%, transparent 50%),
-      radial-gradient(at 50% 80%, hsl(260 65% 65% / 0.06) 0%, transparent 50%);
+      radial-gradient(at 20% 30%, hsl(var(--primary) / 0.1) 0%, transparent 50%),
+      radial-gradient(at 80% 20%, hsl(var(--gold) / 0.08) 0%, transparent 50%),
+      radial-gradient(at 50% 80%, hsl(var(--terracotta) / 0.06) 0%, transparent 50%);
   }
 
   /* Traffic Light utilities */
@@ -305,6 +312,20 @@
     @apply bg-background text-foreground;
     direction: rtl;
     text-align: right;
+  }
+
+  /* Display serif for page titles — gives the brand a voice beyond Heebo. */
+  h1, h2 {
+    font-family: var(--font-display);
+  }
+
+  .font-display {
+    font-family: var(--font-display);
+  }
+
+  /* Financial figures: aligned digits everywhere they appear. */
+  .fig {
+    font-variant-numeric: tabular-nums;
   }
 
   /* Better focus states */

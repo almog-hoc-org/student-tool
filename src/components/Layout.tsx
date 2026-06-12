@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Wallet, TrendingUp, Home, MessageCircle, Settings, LogOut, UserCircle, User, BarChart3, Search } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { NotificationCenter } from './NotificationCenter';
+import { Logo } from './Logo';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -46,9 +47,9 @@ export function Layout({ children }: { children: ReactNode }) {
         <div className="px-4 h-14 flex items-center justify-between max-w-5xl mx-auto">
           <Link to="/" className="flex items-center gap-2.5">
             <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center">
-              <Home className="w-[18px] h-[18px] text-primary-foreground" />
+              <Logo className="w-[22px] h-[22px] text-primary-foreground" />
             </div>
-            <span className="font-bold text-base">ארגז הכלים</span>
+            <span className="font-bold text-base font-display">הדרך לדירה</span>
           </Link>
           <div className="flex items-center gap-2">
             <NotificationCenter />

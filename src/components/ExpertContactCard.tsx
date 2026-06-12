@@ -80,7 +80,7 @@ export function ExpertContactCard({ variant = 'card' }: { variant?: 'card' | 'su
           </div>
         </button>
       ) : (
-        <Card className="border-primary/30 bg-gradient-to-l from-primary/5 to-transparent">
+        <Card className="border-primary/30 bg-muted/40">
           <CardContent className="p-4 flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-primary/15 text-primary flex items-center justify-center shrink-0">
               <Headphones className="w-6 h-6" />

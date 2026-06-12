@@ -42,6 +42,7 @@ function AnimatedNumber({ value, prefix = '₪' }: { value: number; prefix?: str
   return (
     <motion.span
       key={value}
+      className="fig font-display"
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
@@ -75,7 +76,7 @@ function KPICard({ title, value, icon: Icon, color, large, tooltip }: {
           </span>
         </div>
         <p className={cn(
-          'font-bold tracking-tight',
+          'font-bold tracking-tight fig',
           large ? 'text-3xl md:text-4xl' : 'text-xl md:text-2xl'
         )}>
           {value}

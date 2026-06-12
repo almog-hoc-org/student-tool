@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Home, Mail, Loader2 } from 'lucide-react';
+import { Mail, Loader2 } from 'lucide-react';
+import { Logo } from '@/components/Logo';
 import { toast } from 'sonner';
 
 export default function Login() {
@@ -59,10 +60,10 @@ export default function Login() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center space-y-3">
           <div className="mx-auto w-14 h-14 bg-primary rounded-2xl flex items-center justify-center">
-            <Home className="w-7 h-7 text-primary-foreground" />
+            <Logo className="w-9 h-9 text-primary-foreground" />
           </div>
-          <CardTitle className="text-2xl">ארגז הכלים</CardTitle>
-          <p className="text-sm text-muted-foreground">הדרך לדירה</p>
+          <CardTitle className="text-2xl font-display">הדרך לדירה</CardTitle>
+          <p className="text-sm text-muted-foreground">המסע שלך לדירה הראשונה</p>
         </CardHeader>
         <CardContent className="space-y-4">
           <Tabs defaultValue="login" className="w-full">

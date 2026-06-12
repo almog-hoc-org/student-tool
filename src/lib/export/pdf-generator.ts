@@ -71,7 +71,7 @@ async function exportHebrewReportAsImage(opts: PDFExportOptions) {
   header.style.justifyContent = 'space-between';
   header.style.alignItems = 'center';
   header.style.marginBottom = '26px';
-  const brand = textNode('div', 'ארגז הכלים - הדרך לדירה');
+  const brand = textNode('div', 'הדרך לדירה');
   brand.style.color = BRAND_ORANGE;
   brand.style.fontWeight = '700';
   const date = textNode('div', new Date().toLocaleDateString('he-IL', { year: 'numeric', month: 'long', day: 'numeric' }));
@@ -181,7 +181,7 @@ async function exportHebrewReportAsImage(opts: PDFExportOptions) {
     }
   }
 
-  const disclaimer = textNode('div', opts.disclaimer || 'המידע המוצג הינו להמחשה בלבד ואינו מהווה ייעוץ פיננסי או משפטי. ארגז הכלים - הדרך לדירה © 2026');
+  const disclaimer = textNode('div', opts.disclaimer || 'המידע המוצג הינו להמחשה בלבד ואינו מהווה ייעוץ פיננסי או משפטי. הדרך לדירה © 2026');
   disclaimer.style.marginTop = '24px';
   disclaimer.style.paddingTop = '14px';
   disclaimer.style.borderTop = '1px solid #e5e7eb';
