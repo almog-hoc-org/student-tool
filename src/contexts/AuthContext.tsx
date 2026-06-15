@@ -151,6 +151,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email,
       password,
       options: {
+        // After the user confirms their email, return them to the app so the
+        // session is picked up and ProtectedRoute routes them to /pending
+        // (instead of landing on the stale Site URL / an error page).
+        emailRedirectTo: `${window.location.origin}/`,
         data: {
           full_name: displayName,
           invite_code: inviteCode || undefined,

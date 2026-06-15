@@ -70,10 +70,21 @@ export default function AdminUsers() {
     });
     if (error) {
       toast.error('שגיאה בעדכון סטטוס');
-    } else {
-      toast.success('סטטוס עודכן');
-      loadUsers();
+      return;
     }
+    toast.success('סטטוס עודכן');
+    // On approval, email the student a welcome + login link (best-effort).
+    if (status === 'approved') {
+      const u = users.find((x) => x.user_id === userId);
+      if (u?.email) {
+        supabase.functions
+          .invoke('notify-email', {
+            body: { kind: 'approved', email: u.email, displayName: u.display_name },
+          })
+          .catch((e) => console.warn('approval email failed', e));
+      }
+    }
+    loadUsers();
   }
 
   async function toggleAdmin(userId: string) {

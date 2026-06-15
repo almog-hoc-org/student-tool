@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -52,6 +53,12 @@ export default function Login() {
       toast.error(error);
     } else {
       toast.success('נרשמת בהצלחה! בדוק את המייל לאימות.');
+      // Notify admins of the pending signup (best-effort; verified server-side).
+      supabase.functions
+        .invoke('notify-email', {
+          body: { kind: 'new_signup', email: regEmail, displayName: regName },
+        })
+        .catch((e) => console.warn('signup notify failed', e));
     }
   };
 

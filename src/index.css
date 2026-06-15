@@ -314,11 +314,9 @@
     text-align: right;
   }
 
-  /* Display serif for page titles — gives the brand a voice beyond Heebo. */
-  h1, h2 {
-    font-family: var(--font-display);
-  }
-
+  /* Heebo is the single UI typeface for uniformity. The display serif
+     (Frank Ruhl Libre) is reserved for the brand wordmark only — opt in
+     with .font-display, never applied globally to headings. */
   .font-display {
     font-family: var(--font-display);
   }
