@@ -42,10 +42,11 @@ import { EmptyState } from '@/components/ui/empty-state';
 import NextStepCard from '@/components/NextStepCard';
 import { useJourney } from '@/hooks/useJourney';
 import { GlossaryLink } from '@/components/GlossaryLink';
+import { CHART, CHART_SERIES } from '@/lib/chart-colors';
 import { Link } from 'react-router-dom';
 
-const TRACK_COLORS = ['#3B82F6', '#8B5CF6', '#22C55E', '#F59E0B'];
-const PI_COLORS = ['#1E293B', '#3B82F6'];
+const TRACK_COLORS = CHART_SERIES;
+const PI_COLORS = [CHART.emeraldDeep, CHART.gold];
 
 const trackTypeLabels: Record<MortgageTrackType, string> = {
   fixedUnlinked: 'קבועה לא צמודה',
@@ -489,8 +490,8 @@ export default function MortgageCalculator() {
                         <YAxis tickFormatter={(v) => `₪${(v / 1000).toFixed(0)}k`} />
                         <Tooltip formatter={(v) => formatCurrency(Number(v))} />
                         <Legend />
-                        <Area type="monotone" dataKey="principalPayment" name="קרן" stackId="1" stroke="#1E293B" fill="#1E293B" fillOpacity={0.7} />
-                        <Area type="monotone" dataKey="interestPayment" name="ריבית" stackId="1" stroke="#3B82F6" fill="#3B82F6" fillOpacity={0.5} />
+                        <Area type="monotone" dataKey="principalPayment" name="קרן" stackId="1" stroke={CHART.emeraldDeep} fill={CHART.emeraldDeep} fillOpacity={0.7} />
+                        <Area type="monotone" dataKey="interestPayment" name="ריבית" stackId="1" stroke={CHART.gold} fill={CHART.gold} fillOpacity={0.5} />
                       </AreaChart>
                     </ResponsiveContainer>
                     </div>
@@ -519,7 +520,7 @@ export default function MortgageCalculator() {
                             <XAxis dataKey="name" />
                             <YAxis tickFormatter={(v) => `₪${(v / 1000).toFixed(1)}k`} />
                             <Tooltip formatter={(v) => formatCurrency(Number(v))} />
-                            <Bar dataKey="payment" name="החזר חודשי" fill="#3B82F6" radius={[6, 6, 0, 0]} />
+                            <Bar dataKey="payment" name="החזר חודשי" fill={CHART.emerald} radius={[6, 6, 0, 0]} />
                           </BarChart>
                         </ResponsiveContainer>
                       </TabsContent>

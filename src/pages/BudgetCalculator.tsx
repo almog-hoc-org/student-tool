@@ -30,12 +30,13 @@ import NextStepCard from '@/components/NextStepCard';
 import { useJourney } from '@/hooks/useJourney';
 import { LABELS } from '@/lib/content/labels';
 import { EmptyState } from '@/components/ui/empty-state';
+import { CHART } from '@/lib/chart-colors';
 import { Link } from 'react-router-dom';
 
 const COLORS = {
-  equity: '#3B82F6',
-  tax: '#EF4444',
-  costs: '#F59E0B',
+  equity: CHART.emerald,
+  tax: CHART.red,
+  costs: CHART.gold,
 };
 
 function AnimatedNumber({ value, prefix = '₪' }: { value: number; prefix?: string }) {
@@ -560,8 +561,9 @@ export default function BudgetCalculator() {
                   <KPICard title="תזרים פנוי" value={formatCurrency(result.freeCashFlow)} icon={Wallet} color="bg-emerald-500" />
                   <KPICard title="שכירות/דיור נוכחי" value={formatCurrency(currentRent)} icon={Home} color="bg-slate-500" />
                   <KPICard title="הוצאות מחיה" value={formatCurrency(livingExpenses)} icon={PiggyBank} color="bg-violet-500" />
-                  <KPICard title="החזר חודשי מרבי" value={formatCurrency(result.maxAffordableMortgagePayment)} icon={CreditCard} color="bg-indigo-500" />
-                  <KPICard title="משכנתא לפי תזרים" value={formatCurrency(result.maxMortgageByCashflow)} icon={Home} color="bg-blue-500" />                  <KPICard title="מס רכישה" value={formatCurrency(result.purchaseTax)} icon={Receipt} color="bg-red-500" />
+                  <KPICard title="החזר חודשי מרבי" value={formatCurrency(result.maxAffordableMortgagePayment)} icon={CreditCard} color="bg-teal-600" />
+                  <KPICard title="משכנתא לפי תזרים" value={formatCurrency(result.maxMortgageByCashflow)} icon={Home} color="bg-teal-700" />
+                  <KPICard title="מס רכישה" value={formatCurrency(result.purchaseTax)} icon={Receipt} color="bg-red-500" />
                   <KPICard title="עלויות נלוות" value={formatCurrency(result.sideCosts)} icon={PiggyBank} color="bg-orange-500" tooltip="עורך דין, שמאי, רישום טאבו, ביטוח, מתווך" />
                 </div>
 

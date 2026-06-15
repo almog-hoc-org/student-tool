@@ -19,13 +19,14 @@ import { ExportButton } from '@/components/ExportButton';
 import { InfoTooltip } from '@/components/InfoTooltip';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LABELS } from '@/lib/content/labels';
+import { CHART } from '@/lib/chart-colors';
 import NextStepCard from '@/components/NextStepCard';
 import { useJourney } from '@/hooks/useJourney';
 
 const SCENARIO_COLORS = {
-  pessimistic: { bg: 'bg-red-50 dark:bg-red-950/30', border: 'border-red-200 dark:border-red-800', text: 'text-red-600 dark:text-red-400', chart: '#EF4444' },
-  average: { bg: 'bg-blue-50 dark:bg-blue-950/30', border: 'border-blue-200 dark:border-blue-800', text: 'text-blue-600 dark:text-blue-400', chart: '#3B82F6' },
-  optimistic: { bg: 'bg-green-50 dark:bg-green-950/30', border: 'border-green-200 dark:border-green-800', text: 'text-green-600 dark:text-green-400', chart: '#22C55E' },
+  pessimistic: { bg: 'bg-red-50 dark:bg-red-950/30', border: 'border-red-200 dark:border-red-800', text: 'text-red-600 dark:text-red-400', chart: CHART.red },
+  average: { bg: 'bg-orange-50 dark:bg-orange-950/30', border: 'border-orange-200 dark:border-orange-800', text: 'text-orange-700 dark:text-orange-400', chart: CHART.terracotta },
+  optimistic: { bg: 'bg-emerald-50 dark:bg-emerald-950/30', border: 'border-emerald-200 dark:border-emerald-800', text: 'text-emerald-700 dark:text-emerald-400', chart: CHART.emerald },
 };
 
 const SCENARIO_HELP: Record<string, string> = {
@@ -589,7 +590,7 @@ export default function BusinessPlan() {
                         />
                       </div>
                       <div>
-                        <Label className="text-[10px] text-blue-500">בינוני %</Label>
+                        <Label className="text-[10px] text-orange-600">בינוני %</Label>
                         <Input
                           type="number" step="0.5" className="h-8 text-sm"
                           value={customRates.average}
@@ -597,7 +598,7 @@ export default function BusinessPlan() {
                         />
                       </div>
                       <div>
-                        <Label className="text-[10px] text-green-500">טוב %</Label>
+                        <Label className="text-[10px] text-emerald-600">טוב %</Label>
                         <Input
                           type="number" step="0.5" className="h-8 text-sm"
                           value={customRates.optimistic}

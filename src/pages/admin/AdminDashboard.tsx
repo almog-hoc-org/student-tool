@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
+import { CHART } from '@/lib/chart-colors';
 import { toast } from 'sonner';
 
 interface Kpis {
@@ -222,7 +223,7 @@ export default function AdminDashboard() {
                   <XAxis dataKey="tool_key" fontSize={12} />
                   <YAxis fontSize={12} />
                   <Tooltip />
-                  <Bar dataKey="count" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="count" fill={CHART.emerald} radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
