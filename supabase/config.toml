@@ -1,1 +1,23 @@
 project_id = "rdbrwoahbqfjqfjaahhp"
+
+[auth]
+site_url = "https://tool.karnafnadlan.com"
+additional_redirect_urls = [
+  "https://tool.karnafnadlan.com",
+  "https://tool.karnafnadlan.com/**",
+]
+
+# Pinned to the project's original values so `config push` doesn't reset them
+# to CLI defaults (notably keep email confirmation ON).
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = true
+secure_password_change = false
+max_frequency = "1m0s"
+otp_length = 8
+otp_expiry = 3600
+
+[auth.email.template.confirmation]
+subject = "אישור הרשמה — הדרך לדירה"
+content_path = "./supabase/templates/confirmation.html"
