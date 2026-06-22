@@ -223,7 +223,7 @@ function QuickBudgetWizard({
             max={30}
             step={1}
           />
-          <div className="flex justify-between text-[11px] text-muted-foreground">
+          <div dir="ltr" className="flex justify-between text-[11px] text-muted-foreground">
             <span>15</span>
             <span>30</span>
           </div>
@@ -421,7 +421,7 @@ export default function BudgetCalculator() {
               step={10000}
               className="mt-1"
             />
-            <div className="flex justify-between text-[10px] text-muted-foreground">
+            <div dir="ltr" className="flex justify-between text-[10px] text-muted-foreground">
               <span>₪0</span>
               <span>₪3,000,000</span>
             </div>
@@ -518,7 +518,7 @@ export default function BudgetCalculator() {
               max={30}
               step={1}
             />
-            <div className="flex justify-between text-[10px] text-muted-foreground">
+            <div dir="ltr" className="flex justify-between text-[10px] text-muted-foreground">
               <span>15 שנים</span>
               <span>30 שנים</span>
             </div>

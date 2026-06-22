@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -10,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, MapPin, ScanLine, Calculator, AlertTriangle } from 'lucide-react';
+import { Search, MapPin, ScanLine, Calculator, AlertTriangle, ArrowLeft } from 'lucide-react';
 import {
   calculateQuickCheck,
   QuickCheckInput,
@@ -37,6 +39,7 @@ const DEFAULTS = {
 };
 
 export default function PropertyCheck() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const uid = user?.id;
   const saved = load<typeof DEFAULTS & { touched?: boolean }>('property_check');
@@ -81,6 +84,27 @@ export default function PropertyCheck() {
   }, [uid, touched, result, isDone, completeMilestone]);
 
   const pricePerSqm = sqm > 0 ? Math.round(purchasePrice / sqm) : 0;
+
+  const continueToBusinessPlan = () => {
+    if (!result) return;
+    touch();
+    const existing = load<Record<string, unknown>>('business_plan') ?? {};
+    save('business_plan', {
+      ...existing,
+      purchasePrice,
+      propertyArea: area,
+      propertySqm: sqm,
+      sideCosts: result.purchaseTax + result.sideCosts,
+      equityInvested: result.equityAmount,
+      mortgageAmount: result.mortgageAmount,
+      mortgageMonthlyPayment: result.estimatedMonthlyPayment,
+      useSideCostPreset: false,
+      manualMortgageAmount: false,
+      manualMortgageMonthlyPayment: false,
+      touched: true,
+    }, uid);
+    navigate('/business-plan');
+  };
 
   return (
     <div className="space-y-6">
@@ -158,7 +182,7 @@ export default function PropertyCheck() {
                 max={100}
                 step={1}
               />
-              <div className="flex justify-between text-[10px] text-muted-foreground">
+              <div dir="ltr" className="flex justify-between text-[10px] text-muted-foreground">
                 <span>20%</span>
                 <span>50%</span>
                 <span>100%</span>
@@ -243,6 +267,10 @@ export default function PropertyCheck() {
                   </CardContent>
                 </Card>
               )}
+
+              <Button onClick={continueToBusinessPlan} className="w-full gap-1.5">
+                המשך לתוכנית עסקית <ArrowLeft className="w-4 h-4" />
+              </Button>
 
               <NextStepCard currentMilestone="property_check" />
             </>

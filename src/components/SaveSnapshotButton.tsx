@@ -34,6 +34,15 @@ interface Props {
   onSaved?: () => void;
 }
 
+function getSaveErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message) return error.message;
+  if (typeof error === 'object' && error && 'message' in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === 'string' && message.trim()) return message;
+  }
+  return 'שגיאה לא ידועה';
+}
+
 export function SaveSnapshotButton({
   toolKey,
   getData,
@@ -99,8 +108,9 @@ export function SaveSnapshotButton({
       }
       onSaved?.();
     } catch (e) {
-      toast.error('שגיאה בשמירה');
-      console.error(e);
+      const message = getSaveErrorMessage(e);
+      toast.error(`שגיאה בשמירה: ${message}`);
+      console.error('save snapshot failed', { toolKey, snapshotId, error: e });
     } finally {
       setSaving(false);
     }

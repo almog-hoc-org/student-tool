@@ -131,6 +131,11 @@ function Field({
 
 const BP_DEFAULTS = {
   purchasePrice: 1200000,
+  propertyArea: '',
+  propertySqm: 0,
+  propertyFloor: '',
+  propertyRooms: '',
+  propertyNotes: '',
   sideCosts: 40000,
   renovationCost: 0,
   equityInvested: 400000,
@@ -163,6 +168,11 @@ export default function BusinessPlan() {
   const [touched, setTouched] = useState(!!saved?.touched);
   const touch = () => setTouched(true);
   const [purchasePrice, setPurchasePrice] = useState(saved?.purchasePrice ?? BP_DEFAULTS.purchasePrice);
+  const [propertyArea, setPropertyArea] = useState(saved?.propertyArea ?? BP_DEFAULTS.propertyArea);
+  const [propertySqm, setPropertySqm] = useState(saved?.propertySqm ?? BP_DEFAULTS.propertySqm);
+  const [propertyFloor, setPropertyFloor] = useState(saved?.propertyFloor ?? BP_DEFAULTS.propertyFloor);
+  const [propertyRooms, setPropertyRooms] = useState(saved?.propertyRooms ?? BP_DEFAULTS.propertyRooms);
+  const [propertyNotes, setPropertyNotes] = useState(saved?.propertyNotes ?? BP_DEFAULTS.propertyNotes);
   const [sideCosts, setSideCosts] = useState(saved?.sideCosts ?? BP_DEFAULTS.sideCosts);
   const [renovationCost, setRenovationCost] = useState(saved?.renovationCost ?? BP_DEFAULTS.renovationCost);
   const [equityInvested, setEquityInvested] = useState(saved?.equityInvested ?? BP_DEFAULTS.equityInvested);
@@ -192,13 +202,15 @@ export default function BusinessPlan() {
   // Auto-save
   useEffect(() => {
     save('business_plan', {
-      purchasePrice, sideCosts, renovationCost, equityInvested, mortgageAmount,
+      purchasePrice, propertyArea, propertySqm, propertyFloor, propertyRooms,
+      propertyNotes, sideCosts, renovationCost, equityInvested, mortgageAmount,
       mortgageMonthlyPayment, mortgageInterestRate, mortgageYears, expectedMonthlyRent,
       annualOperatingCosts, holdingPeriodYears, baseAppreciation, manualMode, customRates,
       urbanRenewalUpliftMode, urbanRenewalUpliftValue, manualMortgageAmount,
       manualMortgageMonthlyPayment, useSideCostPreset, selectedSideCosts, touched,
     }, uid);
-  }, [purchasePrice, sideCosts, renovationCost, equityInvested, mortgageAmount,
+  }, [purchasePrice, propertyArea, propertySqm, propertyFloor, propertyRooms,
+    propertyNotes, sideCosts, renovationCost, equityInvested, mortgageAmount,
     mortgageMonthlyPayment, mortgageInterestRate, mortgageYears, expectedMonthlyRent,
     annualOperatingCosts, holdingPeriodYears, baseAppreciation, manualMode, customRates,
     urbanRenewalUpliftMode, urbanRenewalUpliftValue, manualMortgageAmount,
@@ -224,7 +236,7 @@ export default function BusinessPlan() {
   const autoMortgageAmount = useMemo(() => Math.max(0, purchasePrice - equityInvested), [purchasePrice, equityInvested]);
   const effectiveMortgageAmount = manualMortgageAmount ? mortgageAmount : autoMortgageAmount;
   const autoMortgageMonthlyPayment = useMemo(
-    () => calculateMortgageMonthlyPayment(effectiveMortgageAmount, mortgageInterestRate, mortgageYears),
+    () => Math.round(calculateMortgageMonthlyPayment(effectiveMortgageAmount, mortgageInterestRate, mortgageYears)),
     [effectiveMortgageAmount, mortgageInterestRate, mortgageYears],
   );
   const effectiveMortgageMonthlyPayment = manualMortgageMonthlyPayment ? mortgageMonthlyPayment : autoMortgageMonthlyPayment;
@@ -254,6 +266,11 @@ export default function BusinessPlan() {
   const handleReset = () => {
     if (!window.confirm('בטוח? כל הנתונים יימחקו')) return;
     setPurchasePrice(BP_DEFAULTS.purchasePrice);
+    setPropertyArea(BP_DEFAULTS.propertyArea);
+    setPropertySqm(BP_DEFAULTS.propertySqm);
+    setPropertyFloor(BP_DEFAULTS.propertyFloor);
+    setPropertyRooms(BP_DEFAULTS.propertyRooms);
+    setPropertyNotes(BP_DEFAULTS.propertyNotes);
     setSideCosts(BP_DEFAULTS.sideCosts);
     setRenovationCost(BP_DEFAULTS.renovationCost);
     setEquityInvested(BP_DEFAULTS.equityInvested);
@@ -344,7 +361,7 @@ export default function BusinessPlan() {
                 dialogDescription={editingDeal ? 'העסקה השמורה תתעדכן לפי הנתונים שמופיעים עכשיו.' : 'שמירת העסקה כדי להשוות אותה מול עסקאות אחרות בהמשך.'}
                 nameLabel="שם העסקה"
                 namePlaceholder='לדוגמה: "דירת 3 חדרים בחיפה — רח׳ הרצל"'
-                defaultName={`עסקה ב-${formatCurrency(purchasePrice)} — ${new Date().toLocaleDateString('he-IL')}`}
+                defaultName={`${propertyArea ? `עסקה ב${propertyArea}` : `עסקה ב-${formatCurrency(purchasePrice)}`} — ${new Date().toLocaleDateString('he-IL')}`}
                 snapshotId={editingDeal?.id ?? null}
                 initialName={editingDeal?.name ?? ''}
                 initialNotes={editingDeal?.notes ?? ''}
@@ -354,7 +371,8 @@ export default function BusinessPlan() {
                 }}
                 getData={() => ({
                   inputs: {
-                    purchasePrice, sideCosts, renovationCost, equityInvested,
+                    purchasePrice, propertyArea, propertySqm, propertyFloor,
+                    propertyRooms, propertyNotes, sideCosts, renovationCost, equityInvested,
                     mortgageAmount: effectiveMortgageAmount, mortgageMonthlyPayment: effectiveMortgageMonthlyPayment, mortgageInterestRate,
                     mortgageYears, expectedMonthlyRent, annualOperatingCosts,
                     holdingPeriodYears, baseAppreciation, manualMode, customRates,
@@ -402,8 +420,23 @@ export default function BusinessPlan() {
                     <p className="text-[11px] leading-relaxed text-muted-foreground">נתוני בסיס של הנכס והעסקה לפני מימון ותפעול.</p>
                   </div>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <Field label="אזור / שכונה">
+                      <Input className="h-10" value={propertyArea} onChange={(e) => setPropertyArea(e.target.value)} placeholder="לדוגמה: תל אביב / יד אליהו" />
+                    </Field>
+                    <Field label="שטח (מ״ר)">
+                      <Input className="h-10" type="number" min="0" value={propertySqm || ''} onChange={(e) => setPropertySqm(Number(e.target.value))} />
+                    </Field>
+                    <Field label="קומה">
+                      <Input className="h-10" value={propertyFloor} onChange={(e) => setPropertyFloor(e.target.value)} placeholder="לדוגמה: 3 מתוך 6" />
+                    </Field>
+                    <Field label="חדרים">
+                      <Input className="h-10" value={propertyRooms} onChange={(e) => setPropertyRooms(e.target.value)} placeholder="לדוגמה: 3.5" />
+                    </Field>
                     <Field label="מחיר רכישה" className="sm:col-span-2">
                       <Input className="h-10 text-base font-semibold" type="number" min="0" value={purchasePrice ?? ''} onChange={(e) => setPurchasePrice(Number(e.target.value))} />
+                    </Field>
+                    <Field label="הערות נכס" className="sm:col-span-2">
+                      <Input className="h-10" value={propertyNotes} onChange={(e) => setPropertyNotes(e.target.value)} placeholder="מעלית, מרפסת, חניה, מצב הנכס או כל פרט חשוב" />
                     </Field>
                     <Field label="עלות שיפוץ">
                       <Input className="h-10" type="number" min="0" value={renovationCost ?? ''} onChange={(e) => setRenovationCost(Number(e.target.value))} />
