@@ -8,51 +8,17 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { deleteSnapshot, listSnapshots, type Snapshot } from '@/lib/snapshots';
+import {
+  getDealSnapshotData,
+  getDealSummary,
+  rowsFromDealSnapshot,
+  type DealRow,
+  type DealScenarioFilter,
+} from '@/lib/deals';
 import { formatCurrency } from '@/lib/validation/validators';
 import { cn } from '@/lib/utils';
 import { save } from '@/lib/storage';
 import { toast } from 'sonner';
-
-interface DealRow {
-  id: string;
-  snapshotId: string;
-  selected: boolean;
-  name: string;
-  createdAt: string;
-  scenarioLabel: string;
-  annualAppreciation: number;
-  purchasePrice: number;
-  equityInvested: number;
-  mortgageAmount: number;
-  mortgageMonthlyPayment: number;
-  expectedMonthlyRent: number;
-  monthlyCashflow: number;
-  cocYield: number;
-  irr: number | null;
-  totalProfit: number;
-  propertyValueAtEnd: number;
-  holdingPeriodYears: number;
-  notes: string | null;
-}
-
-type SnapshotData = {
-  inputs?: Record<string, unknown>;
-  results?: {
-    monthlyCashflow?: number;
-    scenarios?: Array<{
-      label?: string;
-      annualAppreciation?: number;
-      propertyValueAtEnd?: number;
-      totalProfit?: number;
-      cocYield?: number;
-      irr?: number | null;
-    }>;
-  };
-};
-
-function asNumber(value: unknown): number {
-  return typeof value === 'number' && Number.isFinite(value) ? value : 0;
-}
 
 function formatPercent(value: number | null | undefined): string {
   if (value === null || value === undefined || Number.isNaN(value)) return '—';
@@ -63,35 +29,6 @@ function getScenarioTone(label: string) {
   if (label.includes('מחמיר')) return 'bg-red-50 text-red-700 border-red-200';
   if (label.includes('טוב') || label.includes('אופטימי')) return 'bg-green-50 text-green-700 border-green-200';
   return 'bg-blue-50 text-blue-700 border-blue-200';
-}
-
-function rowsFromSnapshot(snapshot: Snapshot): DealRow[] {
-  const data = snapshot.data as SnapshotData | null;
-  const inputs = data?.inputs ?? {};
-  const results = data?.results;
-  const scenarios = Array.isArray(results?.scenarios) ? results.scenarios : [];
-
-  return scenarios.map((scenario, index) => ({
-    id: `${snapshot.id}-${index}`,
-    snapshotId: snapshot.id,
-    selected: true,
-    name: snapshot.name,
-    createdAt: snapshot.created_at,
-    scenarioLabel: scenario.label ?? `תרחיש ${index + 1}`,
-    annualAppreciation: asNumber(scenario.annualAppreciation),
-    purchasePrice: asNumber(inputs.purchasePrice),
-    equityInvested: asNumber(inputs.equityInvested),
-    mortgageAmount: asNumber(inputs.mortgageAmount),
-    mortgageMonthlyPayment: asNumber(inputs.mortgageMonthlyPayment),
-    expectedMonthlyRent: asNumber(inputs.expectedMonthlyRent),
-    monthlyCashflow: asNumber(results?.monthlyCashflow),
-    cocYield: asNumber(scenario.cocYield),
-    irr: typeof scenario.irr === 'number' ? scenario.irr : null,
-    totalProfit: asNumber(scenario.totalProfit),
-    propertyValueAtEnd: asNumber(scenario.propertyValueAtEnd),
-    holdingPeriodYears: asNumber(inputs.holdingPeriodYears),
-    notes: snapshot.notes,
-  }));
 }
 
 function bestClass(value: number, best: number, higherIsBetter = true) {
@@ -118,7 +55,7 @@ export default function DealComparison() {
   const navigate = useNavigate();
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [scenarioFilter, setScenarioFilter] = useState<'all' | 'מחמיר' | 'בינוני' | 'טוב'>('all');
+  const [scenarioFilter, setScenarioFilter] = useState<DealScenarioFilter>('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -145,9 +82,15 @@ export default function DealComparison() {
   const rows = useMemo(() => {
     return snapshots
       .filter((snapshot) => selectedIds.has(snapshot.id))
-      .flatMap(rowsFromSnapshot)
+      .flatMap(rowsFromDealSnapshot)
       .filter((row) => scenarioFilter === 'all' || row.scenarioLabel === scenarioFilter);
   }, [snapshots, selectedIds, scenarioFilter]);
+
+  const selectedSummaries = useMemo(() => {
+    return snapshots
+      .filter((snapshot) => selectedIds.has(snapshot.id))
+      .map(getDealSummary);
+  }, [snapshots, selectedIds]);
 
   const best = useMemo(() => ({
     monthlyCashflow: Math.max(...rows.map((r) => r.monthlyCashflow), -Infinity),
@@ -170,7 +113,7 @@ export default function DealComparison() {
   };
 
   const editDeal = (snapshot: Snapshot) => {
-    const data = snapshot.data as SnapshotData | null;
+    const data = getDealSnapshotData(snapshot);
     if (!data?.inputs) {
       toast.error('לא ניתן לערוך את העסקה — חסרים נתוני מקור');
       return;
@@ -274,6 +217,48 @@ export default function DealComparison() {
         </CardContent>
       </Card>
 
+      {!loading && !error && selectedSummaries.length > 0 && (
+        <div className="grid gap-3 md:grid-cols-3">
+          {selectedSummaries.map((deal) => (
+            <Card key={deal.id} className="border-0 shadow-sm">
+              <CardContent className="p-4 space-y-2">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-bold truncate">{deal.name}</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {deal.propertyArea || 'ללא אזור'}{deal.propertySqm ? ` · ${deal.propertySqm} מ״ר` : ''}
+                    </p>
+                  </div>
+                  <Badge variant="outline">{deal.scenarioCount} תרחישים</Badge>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <p className="text-muted-foreground">מחיר</p>
+                    <p className="font-semibold">{formatCurrency(deal.purchasePrice)}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">מחיר למ״ר</p>
+                    <p className="font-semibold">{deal.pricePerSqm ? formatCurrency(deal.pricePerSqm) : '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">תזרים מיטבי</p>
+                    <p className={cn('font-semibold', deal.bestMonthlyCashflow >= 0 ? 'text-green-600' : 'text-red-600')}>
+                      {formatCurrency(deal.bestMonthlyCashflow)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">רווח מיטבי</p>
+                    <p className={cn('font-semibold', deal.bestTotalProfit >= 0 ? 'text-green-600' : 'text-red-600')}>
+                      {formatCurrency(deal.bestTotalProfit)}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
       {loading ? (
         <LoadingState label="טוען עסקאות…" />
       ) : error ? (
@@ -294,7 +279,20 @@ export default function DealComparison() {
           </CardContent>
         </Card>
       ) : rows.length === 0 ? (
-        <Card><CardContent className="p-6 text-center text-muted-foreground">בחר לפחות עסקה אחת או שנה סינון תרחיש.</CardContent></Card>
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-6 text-center space-y-3">
+            <p className="text-sm text-muted-foreground">
+              {selectedIds.size === 0
+                ? 'בחר לפחות עסקה אחת להשוואה.'
+                : `אין תרחישי ${scenarioFilter} בעסקאות שנבחרו.`}
+            </p>
+            {scenarioFilter !== 'all' && (
+              <Button variant="outline" size="sm" onClick={() => setScenarioFilter('all')}>
+                הצג את כל התרחישים
+              </Button>
+            )}
+          </CardContent>
+        </Card>
       ) : (
         <>
         <div className="md:hidden space-y-3">
@@ -305,7 +303,7 @@ export default function DealComparison() {
                   <div className="min-w-0">
                     <h3 className="font-bold truncate">{row.name}</h3>
                     <p className="text-[11px] text-muted-foreground">
-                      נשמר ב-{new Date(row.createdAt).toLocaleDateString('he-IL')} · {row.holdingPeriodYears} שנים
+                      {row.propertyArea || 'ללא אזור'} · נשמר ב-{new Date(row.createdAt).toLocaleDateString('he-IL')} · {row.holdingPeriodYears} שנים
                     </p>
                   </div>
                   <Badge variant="outline" className={cn('shrink-0', getScenarioTone(row.scenarioLabel))}>
@@ -333,6 +331,8 @@ export default function DealComparison() {
 
                 <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs text-muted-foreground border-t pt-3">
                   <div>מחיר רכישה: <span className="font-semibold text-foreground">{formatCurrency(row.purchasePrice)}</span></div>
+                  <div>שטח: <span className="font-semibold text-foreground">{row.propertySqm ? `${row.propertySqm} מ״ר` : '—'}</span></div>
+                  <div>מחיר למ״ר: <span className="font-semibold text-foreground">{row.pricePerSqm ? formatCurrency(row.pricePerSqm) : '—'}</span></div>
                   <div>הון עצמי: <span className="font-semibold text-foreground">{formatCurrency(row.equityInvested)}</span></div>
                   <div>משכנתא: <span className="font-semibold text-foreground">{formatCurrency(row.mortgageAmount)}</span></div>
                   <div>שכ״ד: <span className="font-semibold text-foreground">{formatCurrency(row.expectedMonthlyRent)}</span></div>
@@ -346,10 +346,10 @@ export default function DealComparison() {
         <Card className="hidden md:block border-0 shadow-sm overflow-hidden">
           <CardContent className="p-0">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[1180px] border-collapse text-xs">
+              <table className="w-full min-w-[1320px] border-collapse text-xs">
                 <thead className="bg-muted/80 sticky top-0 z-10">
                   <tr className="text-right">
-                    {['עסקה', 'תרחיש', 'עלייה שנתית', 'מחיר רכישה', 'הון עצמי', 'משכנתא', 'החזר חודשי', 'שכ״ד', 'תזרים חודשי', 'COC', 'IRR', 'רווח כולל', 'שווי בסוף', 'תקופה', 'נשמר', 'פעולות'].map((head) => (
+                    {['עסקה', 'אזור', 'שטח', 'מחיר למ״ר', 'תרחיש', 'עלייה שנתית', 'מחיר רכישה', 'הון עצמי', 'משכנתא', 'החזר חודשי', 'שכ״ד', 'תזרים חודשי', 'COC', 'IRR', 'רווח כולל', 'שווי בסוף', 'תקופה', 'נשמר', 'פעולות'].map((head) => (
                       <th key={head} className="border-b border-l px-3 py-2 font-semibold whitespace-nowrap">{head}</th>
                     ))}
                   </tr>
@@ -358,6 +358,9 @@ export default function DealComparison() {
                   {rows.map((row) => (
                     <tr key={row.id} className="hover:bg-muted/40">
                       <td className="border-b border-l px-3 py-2 font-semibold max-w-[180px] truncate" title={row.notes ?? row.name}>{row.name}</td>
+                      <td className="border-b border-l px-3 py-2 max-w-[140px] truncate">{row.propertyArea || '—'}</td>
+                      <td className="border-b border-l px-3 py-2 whitespace-nowrap">{row.propertySqm ? `${row.propertySqm} מ״ר` : '—'}</td>
+                      <td className="border-b border-l px-3 py-2 whitespace-nowrap">{row.pricePerSqm ? formatCurrency(row.pricePerSqm) : '—'}</td>
                       <td className="border-b border-l px-3 py-2"><Badge variant="outline" className={getScenarioTone(row.scenarioLabel)}>{row.scenarioLabel}</Badge></td>
                       <td className="border-b border-l px-3 py-2 text-center">{row.annualAppreciation}%</td>
                       <td className="border-b border-l px-3 py-2">{formatCurrency(row.purchasePrice)}</td>
