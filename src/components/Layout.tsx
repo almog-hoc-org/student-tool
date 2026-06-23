@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Wallet, TrendingUp, Home, MessageCircle, Settings, LogOut, UserCircle, User, BarChart3, Search } from 'lucide-react';
+import { Wallet, TrendingUp, Home, MessageCircle, Settings, LogOut, UserCircle, User, BarChart3, Search, HelpCircle } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { NotificationCenter } from './NotificationCenter';
 import { Logo } from './Logo';
@@ -24,6 +24,7 @@ const desktopTabs = [
   { name: 'בדיקת נכס', href: '/property-check', icon: Search },
   { name: 'השוואת עסקאות', href: '/deal-comparison', icon: BarChart3 },
   { name: 'יועץ חכם', href: '/chat', icon: MessageCircle },
+  { name: 'מדריך', href: '/guide', icon: HelpCircle },
   { name: 'אזור אישי', href: '/account', icon: User },
 ];
 
@@ -74,6 +75,12 @@ export function Layout({ children }: { children: ReactNode }) {
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
+                  <Link to="/guide" className="gap-2">
+                    <HelpCircle className="w-4 h-4" />
+                    מדריך שימוש
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
                   <Link to="/account" className="gap-2">
                     <User className="w-4 h-4" />
                     האזור שלי
@@ -99,7 +106,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
       {/* Desktop top tabs */}
       <div className="hidden md:block border-b border-border bg-background">
-        <div className="max-w-5xl mx-auto flex">
+        <div className="max-w-5xl mx-auto flex overflow-x-auto no-scrollbar">
           {desktopTabs.map((tab) => {
             const isActive = currentPath === tab.href;
             return (
@@ -107,7 +114,7 @@ export function Layout({ children }: { children: ReactNode }) {
                 key={tab.href}
                 to={tab.href}
                 className={cn(
-                  'flex items-center gap-2 px-6 py-3 text-sm font-medium border-b-2 transition-colors',
+                  'flex shrink-0 items-center gap-2 px-3 py-3 text-sm font-medium border-b-2 transition-colors lg:px-5',
                   isActive
                     ? 'border-primary text-primary'
                     : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -128,7 +135,7 @@ export function Layout({ children }: { children: ReactNode }) {
         </div>
       </main>
 
-      {/* Mobile Bottom Tab Bar — exactly 5 tabs, fills the viewport width */}
+      {/* Mobile Bottom Tab Bar - exactly 5 tabs, fills the viewport width */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-t border-border pb-[env(safe-area-inset-bottom)]">
         <div className="flex h-16 px-1">
           {mobileTabs.map((tab) => {
