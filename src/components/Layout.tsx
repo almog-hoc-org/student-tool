@@ -53,6 +53,11 @@ export function Layout({ children }: { children: ReactNode }) {
             <span className="font-bold text-base font-display">הדרך לדירה</span>
           </Link>
           <div className="flex items-center gap-2">
+            <Button asChild variant="ghost" size="icon" className="rounded-full" title="מדריך שימוש">
+              <Link to="/guide" aria-label="מדריך שימוש">
+                <HelpCircle className="w-5 h-5" />
+              </Link>
+            </Button>
             <NotificationCenter />
             <ThemeToggle />
             <DropdownMenu>
