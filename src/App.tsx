@@ -29,6 +29,7 @@ const AdminInbox = lazy(() => import("./pages/admin/AdminInbox"));
 const AdminBroadcasts = lazy(() => import("./pages/admin/AdminBroadcasts"));
 const AdminKnowledge = lazy(() => import("./pages/admin/AdminKnowledge"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
+const UsageGuide = lazy(() => import("./pages/UsageGuide"));
 
 const queryClient = new QueryClient({});
 
@@ -66,6 +67,7 @@ const App = () => (
                         <Route path="/deal-comparison" element={<DealComparison />} />
                         <Route path="/account" element={<Account />} />
                         <Route path="/onboarding" element={<Onboarding />} />
+                        <Route path="/guide" element={<UsageGuide />} />
                         <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
                         <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
                         <Route path="/admin/codes" element={<AdminRoute><AdminInviteCodes /></AdminRoute>} />
