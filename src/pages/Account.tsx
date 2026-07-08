@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,14 @@ interface ToolStatus {
 
 export default function Account() {
   const { user, profile, signOut, isAdmin } = useAuth();
+  const location = useLocation();
+
+  // גלילה לעוגן (למשל /account#pre-purchase מתוך שלב המסע)
+  useEffect(() => {
+    if (location.hash) {
+      document.getElementById(location.hash.slice(1))?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [location.hash]);
 
   const budget = load<{ equity: number; monthlyIncome: number }>('budget');
   const budgetResults = load<BudgetOutput>('budget_results');
@@ -157,7 +166,9 @@ export default function Account() {
       </div>
 
       {/* Pre-purchase checklist */}
-      <PrePurchaseChecklist />
+      <div id="pre-purchase">
+        <PrePurchaseChecklist />
+      </div>
 
       {/* Recent activity — gives the student a sense of their journey */}
       <MyActivityCard />

@@ -1,4 +1,5 @@
 import { calculatePurchaseTax, BuyerType } from './purchase-tax';
+import { BOI_LIMITS, BUDGET_DEFAULT_ANNUAL_RATE } from '@/lib/constants/regulations';
 
 export interface BudgetInput {
   equity: number;
@@ -8,7 +9,14 @@ export interface BudgetInput {
   monthlyObligations: number;
   buyerType: BuyerType;
   mortgageYears: number;
+  /** ריבית שנתית להערכה. ברירת מחדל: BUDGET_DEFAULT_ANNUAL_RATE */
+  interestRate?: number;
 }
+
+export type BudgetWarningCode =
+  | 'DTI_CAPPED'          // ההחזר הוגבל ל-40% מההכנסה הפנויה (בנק ישראל)
+  | 'EQUITY_LIMITED'      // ההון העצמי הוא החסם (ולא כושר ההחזר)
+  | 'NEGATIVE_CASHFLOW';  // התזרים הפנוי שלילי
 
 export interface BudgetOutput {
   maxPropertyValue: number;
@@ -23,6 +31,13 @@ export interface BudgetOutput {
   maxPropertyByEquity: number;
   recommendedPropertyValue: number;
   dtiPercent: number;
+  /** תקרת ההחזר לפי כלל 40% של בנק ישראל */
+  dtiCapAmount: number;
+  /** מה הגביל את ההחזר: כלל ה-DTI או התזרים בפועל */
+  paymentCapSource: 'dti' | 'cashflow';
+  /** שיעור המימון המקסימלי לפי סוג הרוכש (בנק ישראל) */
+  maxLtv: number;
+  warnings: BudgetWarningCode[];
   equityBreakdown: {
     netEquity: number;
     tax: number;
@@ -30,15 +45,22 @@ export interface BudgetOutput {
   };
 }
 
-const DEFAULT_INTEREST_RATE = 5.0;
-const MIN_EQUITY_SHARE = 0.25;
-
 function getSideCostsRate(buyerType: BuyerType): number {
   switch (buyerType) {
     case 'singleApartment': return 0.035;
     case 'additionalApartment': return 0.04;
     case 'foreignResident': return 0.05;
     default: return 0.035;
+  }
+}
+
+/** מגבלת מימון (LTV) לפי סוג רוכש — הוראות בנק ישראל */
+export function getMaxLtv(buyerType: BuyerType): number {
+  switch (buyerType) {
+    case 'singleApartment': return BOI_LIMITS.LTV_FIRST_HOME;
+    case 'additionalApartment': return BOI_LIMITS.LTV_INVESTOR;
+    case 'foreignResident': return BOI_LIMITS.LTV_INVESTOR;
+    default: return BOI_LIMITS.LTV_FIRST_HOME;
   }
 }
 
@@ -59,13 +81,31 @@ function calculateMonthlyPayment(principal: number, annualRate: number, years: n
 }
 
 export function calculateBudget(input: BudgetInput): BudgetOutput {
-  const { equity, monthlyIncome, currentRent = 0, livingExpenses = 0, monthlyObligations, buyerType, mortgageYears } = input;
+  const {
+    equity, monthlyIncome, currentRent = 0, livingExpenses = 0,
+    monthlyObligations, buyerType, mortgageYears,
+    interestRate = BUDGET_DEFAULT_ANNUAL_RATE,
+  } = input;
+
+  const warnings: BudgetWarningCode[] = [];
 
   const freeCashFlow = monthlyIncome - currentRent - livingExpenses - monthlyObligations;
-  const maxAffordableMortgagePayment = Math.max(0, freeCashFlow);
-  const maxMortgageByCashflow = maxMortgageFromPayment(maxAffordableMortgagePayment, DEFAULT_INTEREST_RATE, mortgageYears);
+
+  // כלל בנק ישראל: החזר חודשי עד 40% מההכנסה הפנויה (הכנסה פחות התחייבויות קבועות)
+  const disposableIncome = Math.max(0, monthlyIncome - monthlyObligations);
+  const dtiCapAmount = BOI_LIMITS.MAX_DTI * disposableIncome;
+
+  const maxAffordableMortgagePayment = Math.max(0, Math.min(freeCashFlow, dtiCapAmount));
+  const paymentCapSource: 'dti' | 'cashflow' =
+    dtiCapAmount <= Math.max(0, freeCashFlow) ? 'dti' : 'cashflow';
+
+  if (freeCashFlow < 0) warnings.push('NEGATIVE_CASHFLOW');
+  if (paymentCapSource === 'dti' && freeCashFlow > dtiCapAmount) warnings.push('DTI_CAPPED');
+
+  const maxMortgageByCashflow = maxMortgageFromPayment(maxAffordableMortgagePayment, interestRate, mortgageYears);
   const sideCostsRate = getSideCostsRate(buyerType);
-  const requiredEquityShare = MIN_EQUITY_SHARE;
+  const maxLtv = getMaxLtv(buyerType);
+  const requiredEquityShare = 1 - maxLtv;
 
   const canAfford = (propertyValue: number) => {
     const tax = calculatePurchaseTax({ purchasePrice: propertyValue, buyerType }).totalTax;
@@ -104,10 +144,16 @@ export function calculateBudget(input: BudgetInput): BudgetOutput {
   const sideCosts = Math.round(maxPropertyValue * sideCostsRate);
   const netEquity = Math.max(0, equity - purchaseTax - sideCosts);
   const mortgageNeeded = Math.max(0, maxPropertyValue - netEquity);
-  const maxMortgage = Math.min(mortgageNeeded, maxMortgageByCashflow, maxPropertyValue * (1 - requiredEquityShare));
-  const monthlyPayment = calculateMonthlyPayment(maxMortgage, DEFAULT_INTEREST_RATE, mortgageYears);
-  const dtiPercent = maxAffordableMortgagePayment > 0 ? (monthlyPayment / maxAffordableMortgagePayment) * 100 : 0;
+  const maxMortgage = Math.min(mortgageNeeded, maxMortgageByCashflow, maxPropertyValue * maxLtv);
+  const monthlyPayment = calculateMonthlyPayment(maxMortgage, interestRate, mortgageYears);
+  const dtiPercent = disposableIncome > 0 ? (monthlyPayment / disposableIncome) * 100 : 0;
   const recommendedPropertyValue = Math.max(0, Math.round(maxPropertyValue * 0.9 / 1000) * 1000);
+
+  // ההון העצמי הוא החסם כשהמשכנתא המותרת לא מנוצלת במלואה
+  if (maxPropertyValue > 0 && mortgageNeeded < maxMortgageByCashflow - 1000
+      && netEquity <= maxPropertyValue * requiredEquityShare + 1000) {
+    warnings.push('EQUITY_LIMITED');
+  }
 
   return {
     maxPropertyValue,
@@ -122,6 +168,10 @@ export function calculateBudget(input: BudgetInput): BudgetOutput {
     maxPropertyByEquity: Math.round(equity / requiredEquityShare),
     recommendedPropertyValue,
     dtiPercent,
+    dtiCapAmount: Math.round(dtiCapAmount),
+    paymentCapSource,
+    maxLtv,
+    warnings,
     equityBreakdown: {
       netEquity: Math.max(0, Math.round(netEquity)),
       tax: Math.round(purchaseTax),

@@ -31,6 +31,18 @@ export async function loadAllFromCloud(userId: string): Promise<Record<string, u
   return result;
 }
 
+export type CloudEntry = { data: unknown; updatedAt: string };
+
+export async function loadAllFromCloudWithMeta(userId: string): Promise<Record<string, CloudEntry>> {
+  const { data } = await supabase
+    .from('user_data')
+    .select('tool_key, data, updated_at')
+    .eq('user_id', userId);
+  const result: Record<string, CloudEntry> = {};
+  data?.forEach(row => { result[row.tool_key] = { data: row.data, updatedAt: row.updated_at }; });
+  return result;
+}
+
 export async function logUsageEvent(userId: string, toolKey: string, eventType: string = 'save'): Promise<void> {
   await supabase
     .from('usage_events')

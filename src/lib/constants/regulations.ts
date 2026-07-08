@@ -15,3 +15,15 @@ export function indexLawNote(): string {
 
 export const PURCHASE_TAX_FREEZE_RANGE = '2025–2027';
 export const FIRST_HOME_EXEMPTION_CEILING = 1_978_745;
+
+// מגבלות בנק ישראל על משכנתאות (הוראות ניהול בנקאי תקין 329)
+export const BOI_LIMITS = {
+  MAX_DTI: 0.40,          // החזר חודשי מקסימלי מתוך ההכנסה הפנויה
+  MAX_PRIME_SHARE: 0.66,  // חלק הפריים המקסימלי בתמהיל
+  LTV_FIRST_HOME: 0.75,   // מימון מקסימלי - דירה יחידה
+  LTV_UPGRADE: 0.70,      // מימון מקסימלי - משפרי דיור
+  LTV_INVESTOR: 0.50,     // מימון מקסימלי - דירה נוספת / משקיע
+} as const;
+
+// הנחת ריבית ממוצעת למחשבון התקציב (מוצגת למשתמש וניתנת לשינוי)
+export const BUDGET_DEFAULT_ANNUAL_RATE = 5.0;

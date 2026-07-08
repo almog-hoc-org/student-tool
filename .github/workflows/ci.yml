@@ -24,6 +24,9 @@ jobs:
         run: bun run lint
         continue-on-error: true
 
+      - name: Test
+        run: bun run test
+
       - name: Type check + build
         env:
           VITE_SUPABASE_URL: https://placeholder.supabase.co

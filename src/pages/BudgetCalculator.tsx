@@ -15,7 +15,10 @@ import {
 } from '@/components/ui/dialog';
 import { Wallet, Home, CreditCard, Receipt, PiggyBank, ArrowLeft, RotateCcw } from 'lucide-react';
 import { calculateBudget, BudgetOutput } from '@/lib/calculations/budget-calculator';
+import { BUDGET_DEFAULT_ANNUAL_RATE } from '@/lib/constants/regulations';
 import { BuyerType } from '@/lib/calculations/purchase-tax';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Info } from 'lucide-react';
 import { formatCurrency } from '@/lib/validation/validators';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { cn } from '@/lib/utils';
@@ -87,7 +90,13 @@ function KPICard({ title, value, icon: Icon, color, large, tooltip }: {
   );
 }
 
-const DEFAULTS = { equity: 400000, monthlyIncome: 20000, currentRent: 0, livingExpenses: 0, monthlyObligations: 0, buyerType: 'singleApartment' as BuyerType, mortgageYears: 25 };
+const DEFAULTS = { equity: 400000, monthlyIncome: 20000, currentRent: 0, livingExpenses: 0, monthlyObligations: 0, buyerType: 'singleApartment' as BuyerType, mortgageYears: 25, interestRate: BUDGET_DEFAULT_ANNUAL_RATE };
+
+const BUYER_EQUITY_NOTE: Record<BuyerType, string> = {
+  singleApartment: 'דירה יחידה: מימון עד 75% — נדרש הון עצמי של לפחות 25%',
+  additionalApartment: 'דירה נוספת / משקיע: מימון עד 50% — נדרש הון עצמי של לפחות 50%',
+  foreignResident: 'תושב חוץ: מימון עד 50% — נדרש הון עצמי של לפחות 50%',
+};
 
 interface BudgetWizardValues {
   equity: number;
@@ -283,6 +292,7 @@ export default function BudgetCalculator() {
   const [monthlyObligations, setMonthlyObligations] = useState(saved?.monthlyObligations ?? DEFAULTS.monthlyObligations);
   const [buyerType, setBuyerType] = useState<BuyerType>(saved?.buyerType ?? DEFAULTS.buyerType);
   const [mortgageYears, setMortgageYears] = useState(saved?.mortgageYears ?? DEFAULTS.mortgageYears);
+  const [interestRate, setInterestRate] = useState(saved?.interestRate ?? DEFAULTS.interestRate);
   const [wizardOpen, setWizardOpen] = useState(false);
   // True only after the user actually edited an input (this session or a past
   // one) — prefilled defaults must not count as real engagement.
@@ -291,14 +301,14 @@ export default function BudgetCalculator() {
 
   // Auto-save inputs
   useEffect(() => {
-    save('budget', { equity, monthlyIncome, currentRent, livingExpenses, monthlyObligations, buyerType, mortgageYears, touched }, uid);
+    save('budget', { equity, monthlyIncome, currentRent, livingExpenses, monthlyObligations, buyerType, mortgageYears, interestRate, touched }, uid);
     save('budget_profile', { equity, monthlyIncome, currentRent, livingExpenses, monthlyObligations, buyerType, mortgageYears }, uid);
-  }, [equity, monthlyIncome, currentRent, livingExpenses, monthlyObligations, buyerType, mortgageYears, touched, uid]);
+  }, [equity, monthlyIncome, currentRent, livingExpenses, monthlyObligations, buyerType, mortgageYears, interestRate, touched, uid]);
 
   const result: BudgetOutput | null = useMemo(() => {
     if (equity <= 0 && monthlyIncome <= 0) return null;
-    return calculateBudget({ equity, monthlyIncome, currentRent, livingExpenses, monthlyObligations, buyerType, mortgageYears });
-  }, [equity, monthlyIncome, currentRent, livingExpenses, monthlyObligations, buyerType, mortgageYears]);
+    return calculateBudget({ equity, monthlyIncome, currentRent, livingExpenses, monthlyObligations, buyerType, mortgageYears, interestRate });
+  }, [equity, monthlyIncome, currentRent, livingExpenses, monthlyObligations, buyerType, mortgageYears, interestRate]);
 
   // Save results for flow
   useEffect(() => {
@@ -331,7 +341,7 @@ export default function BudgetCalculator() {
     setEquity(DEFAULTS.equity); setMonthlyIncome(DEFAULTS.monthlyIncome);
     setCurrentRent(DEFAULTS.currentRent); setLivingExpenses(DEFAULTS.livingExpenses);
     setMonthlyObligations(DEFAULTS.monthlyObligations); setBuyerType(DEFAULTS.buyerType);
-    setMortgageYears(DEFAULTS.mortgageYears); setTouched(false);
+    setMortgageYears(DEFAULTS.mortgageYears); setInterestRate(DEFAULTS.interestRate); setTouched(false);
     clear('budget', uid); clear('budget_profile', uid); clear('budget_results', uid);
   };
 
@@ -502,7 +512,7 @@ export default function BudgetCalculator() {
                 <SelectItem value="foreignResident">תושב חוץ</SelectItem>
               </SelectContent>
             </Select>
-            <p className="text-[11px] text-muted-foreground">משפיע על מס רכישה, אחוז מימון ועלויות נלוות</p>
+            <p className="text-[11px] text-muted-foreground">{BUYER_EQUITY_NOTE[buyerType]}</p>
           </div>
 
           {/* Mortgage Years */}
@@ -521,6 +531,28 @@ export default function BudgetCalculator() {
             <div dir="ltr" className="flex justify-between text-[10px] text-muted-foreground">
               <span>15 שנים</span>
               <span>30 שנים</span>
+            </div>
+          </div>
+
+          {/* Interest rate assumption — visible, not hidden in the math */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium flex items-center gap-1">
+                ריבית משוערת לחישוב
+                <InfoTooltip text="הנחת ריבית ממוצעת להערכת ההחזר. הריבית בפועל תיקבע בתמהיל המשכנתא." />
+              </Label>
+              <span className="text-sm font-bold text-primary fig">{interestRate.toFixed(1)}%</span>
+            </div>
+            <Slider
+              value={[interestRate]}
+              onValueChange={([v]) => { touch(); setInterestRate(v); }}
+              min={3}
+              max={8}
+              step={0.1}
+            />
+            <div dir="ltr" className="flex justify-between text-[10px] text-muted-foreground">
+              <span>3%</span>
+              <span>8%</span>
             </div>
           </div>
         </div>
@@ -543,10 +575,33 @@ export default function BudgetCalculator() {
                       <AnimatedNumber value={result.maxPropertyValue} />
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      לפי הון עצמי של לפחות 25% ותזרים פנוי של {formatCurrency(result.maxAffordableMortgagePayment)} לחודש
+                      לפי מימון של עד {Math.round(result.maxLtv * 100)}% (כללי בנק ישראל), החזר חודשי עד {formatCurrency(result.maxAffordableMortgagePayment)} וריבית משוערת {interestRate.toFixed(1)}%
                     </p>
                   </CardContent>
                 </Card>
+
+                {/* Regulatory explanations — official number + why */}
+                {result.warnings.includes('DTI_CAPPED') && (
+                  <Alert className="border-amber-500/40 bg-amber-500/10 text-amber-900 dark:text-amber-200">
+                    <Info className="h-4 w-4 !text-amber-600" />
+                    <AlertTitle>ההחזר החודשי הוגבל לפי כללי בנק ישראל</AlertTitle>
+                    <AlertDescription className="text-xs leading-6">
+                      התזרים הפנוי שלך ({formatCurrency(result.freeCashFlow)}) גבוה יותר, אבל בנק ישראל מחייב את
+                      הבנקים להגביל את ההחזר החודשי ל-40% מההכנסה הפנויה — במקרה שלך {formatCurrency(result.dtiCapAmount)}.
+                      בנק לא יאשר החזר גבוה מזה, ולכן זה המספר שהמחשבון עובד איתו.
+                    </AlertDescription>
+                  </Alert>
+                )}
+                {result.warnings.includes('EQUITY_LIMITED') && (
+                  <Alert className="border-sky-500/40 bg-sky-500/10 text-sky-900 dark:text-sky-200">
+                    <Info className="h-4 w-4 !text-sky-600" />
+                    <AlertTitle>ההון העצמי הוא מה שמגביל אותך כרגע</AlertTitle>
+                    <AlertDescription className="text-xs leading-6">
+                      כושר ההחזר שלך מאפשר משכנתא גדולה יותר, אבל {BUYER_EQUITY_NOTE[buyerType]}.
+                      הגדלת ההון העצמי תעלה את התקציב יותר מהגדלת ההכנסה.
+                    </AlertDescription>
+                  </Alert>
+                )}
 
                 <Card className="border-0 shadow-sm bg-muted/40">
                   <CardContent className="p-4 text-center">

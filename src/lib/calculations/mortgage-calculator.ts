@@ -6,21 +6,43 @@ import {
   AmortizationRow,
   SensitivityResult,
 } from '@/types/mortgage-calculator';
+import { BOI_LIMITS } from '@/lib/constants/regulations';
 
 // קבועי שוק - בנק ישראל פברואר 2026
 export const MARKET_CONSTANTS = {
   BOI_RATE: 4.0,             // ריבית בנק ישראל
   PRIME_RATE: 5.5,           // פריים = BOI + 1.5%
-  MAX_PRIME_SHARE: 0.66,     // מקסימום 66% מהמשכנתא בפריים
-  MAX_DTI: 0.40,             // יחס החזר/הכנסה מקסימלי
-  LTV_FIRST_HOME: 0.75,     // מינוף מקסימלי - דירה ראשונה
-  LTV_UPGRADE: 0.70,        // מינוף מקסימלי - משפרי דיור
-  LTV_INVESTOR: 0.50,       // מינוף מקסימלי - משקיעים
+  MAX_PRIME_SHARE: BOI_LIMITS.MAX_PRIME_SHARE,
+  MAX_DTI: BOI_LIMITS.MAX_DTI,
+  LTV_FIRST_HOME: BOI_LIMITS.LTV_FIRST_HOME,
+  LTV_UPGRADE: BOI_LIMITS.LTV_UPGRADE,
+  LTV_INVESTOR: BOI_LIMITS.LTV_INVESTOR,
   DEFAULT_MADAD_RATE: 2.5,   // מדד תשומות הבנייה - שנתי
   MADAD_EXEMPT_PORTION: 0.20,
   MADAD_LINKED_PORTION: 0.50,
   MADAD_EFFECTIVE_EXPOSURE: 0.40,
 };
+
+export interface MixValidation {
+  primeShare: number;        // חלק הפריים מתוך סך הקרן (0..1)
+  primeExceedsCap: boolean;  // חריגה מתקרת בנק ישראל (66%)
+}
+
+/**
+ * בדיקת תמהיל מול מגבלות בנק ישראל.
+ * לא חוסם — מיועד להצגת אזהרה בממשק.
+ */
+export function validateMortgageMix(tracks: MortgageTrack[]): MixValidation {
+  const totalPrincipal = tracks.reduce((sum, t) => sum + t.principal, 0);
+  const primePrincipal = tracks
+    .filter(t => t.type === 'prime')
+    .reduce((sum, t) => sum + t.principal, 0);
+  const primeShare = totalPrincipal > 0 ? primePrincipal / totalPrincipal : 0;
+  return {
+    primeShare,
+    primeExceedsCap: primeShare > BOI_LIMITS.MAX_PRIME_SHARE + 1e-9,
+  };
+}
 
 export interface MadadSimulationResult {
   originalTotal: number;

@@ -155,14 +155,16 @@ function chunkText(text: string): string[] {
   return chunks;
 }
 
+// חייב להיות זהה למודל שבו chat-ai מטמיע שאילתות — אחרת האחזור נשבר בשקט
 async function embed(text: string): Promise<number[]> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${GEMINI_KEY}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key=${GEMINI_KEY}`;
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       content: { parts: [{ text }] },
       taskType: 'RETRIEVAL_DOCUMENT',
+      outputDimensionality: 768,
     }),
   });
   if (!res.ok) throw new Error(`Embed failed: ${res.status} ${await res.text()}`);

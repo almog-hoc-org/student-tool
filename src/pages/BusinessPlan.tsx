@@ -10,6 +10,7 @@ import { calculateBusinessPlan, BusinessPlanOutput, ScenarioResult } from '@/lib
 import { calculateMortgageMonthlyPayment } from '@/lib/calculations/mortgage-calculator';
 import { formatCurrency } from '@/lib/validation/validators';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { save, load, clear } from '@/lib/storage';
@@ -56,6 +57,11 @@ function ScenarioCard({ scenario, style, monthlyCashflow }: { scenario: Scenario
             <p className={cn('text-lg font-bold tabular-nums leading-tight break-words', scenario.totalProfit >= 0 ? 'text-green-600' : 'text-red-600')}>
               {formatCurrency(scenario.totalProfit)}
             </p>
+            {scenario.capitalGainsTax > 0 && (
+              <p className="text-[10px] text-muted-foreground">
+                אחרי מס שבח מקורב של {formatCurrency(scenario.capitalGainsTax)} (הערכה, ללא הצמדה)
+              </p>
+            )}
           </div>
           <div className="min-w-0">
             <p className="text-[11px] text-muted-foreground">תזרים חודשי</p>
@@ -153,6 +159,7 @@ const BP_DEFAULTS = {
   urbanRenewalUpliftValue: 0,
   manualMortgageAmount: false,
   manualMortgageMonthlyPayment: false,
+  applyCapitalGainsTax: false,
 };
 
 type EditingDeal = { id: string; name: string; notes?: string | null };
@@ -190,6 +197,7 @@ export default function BusinessPlan() {
   const [urbanRenewalUpliftValue, setUrbanRenewalUpliftValue] = useState(saved?.urbanRenewalUpliftValue ?? BP_DEFAULTS.urbanRenewalUpliftValue);
   const [manualMortgageAmount, setManualMortgageAmount] = useState(saved?.manualMortgageAmount ?? BP_DEFAULTS.manualMortgageAmount);
   const [manualMortgageMonthlyPayment, setManualMortgageMonthlyPayment] = useState(saved?.manualMortgageMonthlyPayment ?? BP_DEFAULTS.manualMortgageMonthlyPayment);
+  const [applyCapitalGainsTax, setApplyCapitalGainsTax] = useState(saved?.applyCapitalGainsTax ?? BP_DEFAULTS.applyCapitalGainsTax);
   const [useSideCostPreset, setUseSideCostPreset] = useState(saved?.useSideCostPreset ?? true);
   const [selectedSideCosts, setSelectedSideCosts] = useState(saved?.selectedSideCosts ?? {
     broker: true,
@@ -207,14 +215,14 @@ export default function BusinessPlan() {
       mortgageMonthlyPayment, mortgageInterestRate, mortgageYears, expectedMonthlyRent,
       annualOperatingCosts, holdingPeriodYears, baseAppreciation, manualMode, customRates,
       urbanRenewalUpliftMode, urbanRenewalUpliftValue, manualMortgageAmount,
-      manualMortgageMonthlyPayment, useSideCostPreset, selectedSideCosts, touched,
+      manualMortgageMonthlyPayment, useSideCostPreset, selectedSideCosts, applyCapitalGainsTax, touched,
     }, uid);
   }, [purchasePrice, propertyArea, propertySqm, propertyFloor, propertyRooms,
     propertyNotes, sideCosts, renovationCost, equityInvested, mortgageAmount,
     mortgageMonthlyPayment, mortgageInterestRate, mortgageYears, expectedMonthlyRent,
     annualOperatingCosts, holdingPeriodYears, baseAppreciation, manualMode, customRates,
     urbanRenewalUpliftMode, urbanRenewalUpliftValue, manualMortgageAmount,
-    manualMortgageMonthlyPayment, useSideCostPreset, selectedSideCosts, touched, uid]);
+    manualMortgageMonthlyPayment, useSideCostPreset, selectedSideCosts, applyCapitalGainsTax, touched, uid]);
 
   const budgetData = getBudgetResults();
 
@@ -288,6 +296,7 @@ export default function BusinessPlan() {
     setUrbanRenewalUpliftValue(BP_DEFAULTS.urbanRenewalUpliftValue);
     setManualMortgageAmount(BP_DEFAULTS.manualMortgageAmount);
     setManualMortgageMonthlyPayment(BP_DEFAULTS.manualMortgageMonthlyPayment);
+    setApplyCapitalGainsTax(BP_DEFAULTS.applyCapitalGainsTax);
     setUseSideCostPreset(true);
     setSelectedSideCosts({ broker: true, mortgageAdvice: true, lawyer: true, appraiser: true, extras: true });
     clear('business_plan', uid);
@@ -312,6 +321,7 @@ export default function BusinessPlan() {
         holdingPeriodYears,
         urbanRenewalUpliftAmount: effectiveUpliftValue,
         urbanRenewalUpliftPercent: urbanRenewalUpliftMode === 'percent' ? urbanRenewalUpliftValue : undefined,
+        applyCapitalGainsTax,
       },
       baseAppreciation,
       customRates,
@@ -319,7 +329,7 @@ export default function BusinessPlan() {
   }, [purchasePrice, sideCosts, renovationCost, equityInvested, effectiveMortgageAmount,
     effectiveMortgageMonthlyPayment, mortgageInterestRate, mortgageYears, expectedMonthlyRent,
     annualOperatingCosts, holdingPeriodYears, baseAppreciation, customRates,
-    effectiveUpliftValue, urbanRenewalUpliftMode, urbanRenewalUpliftValue]);
+    effectiveUpliftValue, urbanRenewalUpliftMode, urbanRenewalUpliftValue, applyCapitalGainsTax]);
 
   // Auto-complete business_plan milestone — only after real user input (not defaults).
   const { complete: completeMilestone, isDone } = useJourney();
@@ -444,6 +454,22 @@ export default function BusinessPlan() {
                     <Field label="תקופת החזקה" hint="בשנים">
                       <Input className="h-10" type="number" min="0" value={holdingPeriodYears ?? ''} onChange={(e) => setHoldingPeriodYears(Number(e.target.value))} />
                     </Field>
+                    <div className="sm:col-span-2 flex items-center justify-between rounded-lg border bg-muted/30 p-3">
+                      <div className="space-y-0.5">
+                        <Label className="text-xs font-medium flex items-center gap-1">
+                          מס שבח במכירה (עסקת השקעה)
+                          <InfoTooltip text="דירה יחידה בדרך כלל פטורה ממס שבח. בעסקת השקעה המס מוערך כ-25% מהרווח — הערכה מקורבת ללא הצמדה למדד." />
+                        </Label>
+                        <p className="text-[10px] leading-relaxed text-muted-foreground">
+                          {applyCapitalGainsTax ? 'מחושב מס מקורב של 25% על הרווח במכירה' : 'כבוי — מתאים לדירה יחידה פטורה'}
+                        </p>
+                      </div>
+                      <Switch
+                        checked={applyCapitalGainsTax}
+                        onCheckedChange={(v) => { touch(); setApplyCapitalGainsTax(v); }}
+                        aria-label="מס שבח במכירה"
+                      />
+                    </div>
                   </div>
                 </div>
 

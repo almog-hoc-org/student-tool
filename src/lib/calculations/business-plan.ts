@@ -14,7 +14,15 @@ export interface BusinessPlanInput {
   holdingPeriodYears: number;
   urbanRenewalUpliftAmount?: number;
   urbanRenewalUpliftPercent?: number;
+  /**
+   * מס שבח מקורב במכירה (25% על הרווח הנומינלי, ללא הצמדה למדד).
+   * ברירת מחדל: לא מחושב — דירה יחידה בדרך כלל פטורה. יש להפעיל לעסקת השקעה.
+   */
+  applyCapitalGainsTax?: boolean;
 }
+
+/** שיעור מס שבח על רווח ריאלי (כאן מקורב: על הרווח הנומינלי) */
+export const CAPITAL_GAINS_TAX_RATE = 0.25;
 
 export interface ScenarioResult {
   label: string;
@@ -28,6 +36,8 @@ export interface ScenarioResult {
   totalEquityReturn: number;
   cocYield: number;
   irr: number | null;
+  /** מס שבח מקורב שנוכה במכירה (0 אם לא הופעל) */
+  capitalGainsTax: number;
   yearlyProjection: { year: number; value: number; equity: number }[];
 }
 
@@ -73,7 +83,17 @@ function calculateScenario(
   const baseValueAtEnd = purchasePrice * Math.pow(1 + appreciationRate / 100, holdingPeriodYears);
   const propertyValueAtEnd = baseValueAtEnd + valueUplift;
   const mortgageBalance = calculateMortgageBalance(mortgageAmount, mortgageInterestRate, mortgageYears, holdingPeriodYears);
-  const exitCosts = propertyValueAtEnd * 0.02;
+  const sellingCosts = propertyValueAtEnd * 0.02;
+
+  // מס שבח מקורב: 25% על הרווח הנומינלי מעל בסיס העלות (רכישה + עלויות נלוות + שיפוץ)
+  let capitalGainsTax = 0;
+  if (input.applyCapitalGainsTax) {
+    const costBasis = purchasePrice + input.sideCosts + input.renovationCost;
+    const taxableGain = Math.max(0, propertyValueAtEnd - sellingCosts - costBasis);
+    capitalGainsTax = taxableGain * CAPITAL_GAINS_TAX_RATE;
+  }
+
+  const exitCosts = sellingCosts + capitalGainsTax;
   const netSaleProceeds = propertyValueAtEnd - exitCosts - mortgageBalance;
   const totalProfit = netSaleProceeds + (annualNetCashflow * holdingPeriodYears) - initialInvestment;
 
@@ -111,6 +131,7 @@ function calculateScenario(
     totalEquityReturn,
     cocYield: annualEquityReturn,
     irr,
+    capitalGainsTax: Math.round(capitalGainsTax),
     yearlyProjection,
   };
 }

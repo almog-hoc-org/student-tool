@@ -9,7 +9,7 @@
 //
 // Optional:
 //   GEMINI_CHAT_MODEL (default: gemini-2.5-flash)
-//   GEMINI_EMBED_MODEL (default: text-embedding-004)
+//   GEMINI_EMBED_MODEL (default: gemini-embedding-001)
 
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";

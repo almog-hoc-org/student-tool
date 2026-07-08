@@ -22,7 +22,7 @@ const ROUTES: Record<MilestoneKey, string> = {
   business_plan: '/business-plan',
   mortgage: '/mortgage',
   property_check: '/property-check',
-  pre_purchase: '/account',
+  pre_purchase: '/account#pre-purchase',
 };
 
 interface JourneyStepperProps {

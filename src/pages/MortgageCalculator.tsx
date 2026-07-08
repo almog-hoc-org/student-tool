@@ -13,7 +13,10 @@ import {
   sensitivityAnalysis,
   MARKET_CONSTANTS,
   simulateMadadImpact,
+  validateMortgageMix,
 } from '@/lib/calculations/mortgage-calculator';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Info } from 'lucide-react';
 import {
   MortgageTrack,
   MortgageCalculatorOutput,
@@ -170,6 +173,7 @@ export default function MortgageCalculator() {
   }, [results, resolvedTracks]);
 
   const totalPrincipal = resolvedTracks.reduce((sum, t) => sum + t.principal, 0);
+  const mixValidation = useMemo(() => validateMortgageMix(resolvedTracks), [resolvedTracks]);
   const dtiRatio =
     results && freeCashFlow > 0 && Number.isFinite(results.totalMonthlyPayment)
       ? results.totalMonthlyPayment / freeCashFlow
@@ -399,6 +403,18 @@ export default function MortgageCalculator() {
         <div className="md:col-span-3 mt-6 md:mt-0 space-y-4">
           {results ? (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+              {/* Bank of Israel prime cap — warning, not a block */}
+              {mixValidation.primeExceedsCap && (
+                <Alert className="border-amber-500/40 bg-amber-500/10 text-amber-900 dark:text-amber-200">
+                  <Info className="h-4 w-4 !text-amber-600" />
+                  <AlertTitle>התמהיל חורג ממגבלת הפריים של בנק ישראל</AlertTitle>
+                  <AlertDescription className="text-xs leading-6">
+                    {Math.round(mixValidation.primeShare * 100)}% מהתמהיל במסלול פריים, ובנק ישראל מגביל
+                    ל-{Math.round(MARKET_CONSTANTS.MAX_PRIME_SHARE * 100)}%. בנק לא יאשר תמהיל כזה —
+                    כדאי להעביר חלק מהסכום למסלול קבוע או משתנה.
+                  </AlertDescription>
+                </Alert>
+              )}
               {/* KPIs */}
               <div className="grid grid-cols-2 gap-3">
                 <KPICard

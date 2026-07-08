@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { syncFromCloud, syncToCloud } from '@/lib/storage';
+import { mergeWithCloud } from '@/lib/storage';
 import type { Database } from '@/integrations/supabase/types';
 
 type AppRole = Database['public']['Enums']['app_role'];
@@ -109,9 +109,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ]);
     setProfile(p);
     setRoles(r);
-    // Sync data: upload local → cloud, then pull cloud → local
-    syncToCloud(currentUser.id)
-      .then(() => syncFromCloud(currentUser.id))
+    // מיזוג דו-כיווני לפי חותמות זמן — מונע דריסת נתונים חדשים ממכשיר אחר
+    mergeWithCloud(currentUser.id)
       .then(() => migrateSchemaVersions(currentUser.id))
       .catch(() => {});
   };
