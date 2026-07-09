@@ -8,6 +8,8 @@
  * presentation.
  */
 
+import { formatCurrency } from './format';
+
 type Primitive = string | number | boolean;
 type Value = Primitive | null | undefined;
 type Blob = Record<string, unknown>;
@@ -36,7 +38,7 @@ const currency = (v: Value): string => {
   if (v == null || v === '') return '—';
   const n = Number(v);
   if (Number.isNaN(n)) return String(v);
-  return `₪${n.toLocaleString('he-IL', { maximumFractionDigits: 0 })}`;
+  return formatCurrency(n);
 };
 const percent = (v: Value): string => {
   if (v == null || v === '') return '—';

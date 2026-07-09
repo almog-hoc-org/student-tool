@@ -19,7 +19,7 @@ const NotFound = () => {
         transition={{ duration: 0.5 }}
         className="text-center space-y-4"
       >
-        <div className="text-8xl font-extrabold text-gradient-primary">404</div>
+        <div className="text-8xl font-extrabold text-gradient-gold">404</div>
         <h1 className="text-2xl font-bold text-foreground">העמוד לא נמצא</h1>
         <p className="text-muted-foreground text-lg">אולי הוא עבר דירה...</p>
         <Button asChild size="lg" className="mt-4">

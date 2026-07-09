@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from "react";
 import { Input } from "@/components/ui/input";
+import { formatCurrency } from "@/lib/format";
 
 interface CurrencyInputProps {
   value: number | string;
@@ -32,7 +33,9 @@ export function CurrencyInput({
   const displayValue = rawValue
     ? focused
       ? formatWithCommas(rawValue)
-      : `₪${formatWithCommas(rawValue)}`
+      : Number.isFinite(Number(rawValue))
+        ? formatCurrency(Number(rawValue))
+        : `₪${formatWithCommas(rawValue)}`
     : "";
 
   const handleChange = useCallback(

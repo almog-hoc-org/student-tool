@@ -66,17 +66,8 @@ export const getValidationMessage = (
   return he.validation[type];
 };
 
-export const formatCurrency = (value: number): string => {
-  return `₪${value.toLocaleString('he-IL', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  })}`;
-};
-
-export const formatPercent = (value: number, decimals: number = 2): string => {
-  // Multiply by 100 since value is typically a decimal (e.g. 0.035 for 3.5%)
-  return `${(value * 100).toFixed(decimals)}%`;
-};
+// הפורמט עבר ל-src/lib/format.ts — re-export לתאימות אתרי ייבוא קיימים
+export { formatCurrency, formatPercent } from '../format';
 
 /** Smart warnings - not blocking, just informational */
 export function getSmartWarnings(fieldName: string, value: number, context?: Record<string, number>): string | null {

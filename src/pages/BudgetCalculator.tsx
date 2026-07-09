@@ -29,7 +29,10 @@ import { ExportButton } from '@/components/ExportButton';
 import { InfoTooltip } from '@/components/InfoTooltip';
 import { SaveSnapshotButton } from '@/components/SaveSnapshotButton';
 import { HomeGreeting } from '@/components/HomeGreeting';
+import { YourNumbersStrip } from '@/components/YourNumbersStrip';
 import NextStepCard from '@/components/NextStepCard';
+import { InsightBanner } from '@/components/InsightBanner';
+import { GlossaryLink } from '@/components/GlossaryLink';
 import { useJourney } from '@/hooks/useJourney';
 import { LABELS } from '@/lib/content/labels';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -370,6 +373,7 @@ export default function BudgetCalculator() {
   return (
     <div className="space-y-6">
       <HomeGreeting />
+      <YourNumbersStrip />
       <div className="md:grid md:grid-cols-5 md:gap-8">
         {/* Input Section */}
         <div className="md:col-span-2 space-y-4 md:sticky md:top-28 md:self-start">
@@ -432,8 +436,8 @@ export default function BudgetCalculator() {
               className="mt-1"
             />
             <div dir="ltr" className="flex justify-between text-[10px] text-muted-foreground">
-              <span>₪0</span>
-              <span>₪3,000,000</span>
+              <span>{formatCurrency(0)}</span>
+              <span>{formatCurrency(3000000)}</span>
             </div>
           </div>
 
@@ -575,7 +579,7 @@ export default function BudgetCalculator() {
                       <AnimatedNumber value={result.maxPropertyValue} />
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      לפי מימון של עד {Math.round(result.maxLtv * 100)}% (כללי בנק ישראל), החזר חודשי עד {formatCurrency(result.maxAffordableMortgagePayment)} וריבית משוערת {interestRate.toFixed(1)}%
+                      לפי <GlossaryLink term="ltv">מימון</GlossaryLink> של עד {Math.round(result.maxLtv * 100)}% (כללי בנק ישראל), החזר חודשי עד {formatCurrency(result.maxAffordableMortgagePayment)} וריבית משוערת {interestRate.toFixed(1)}%
                     </p>
                   </CardContent>
                 </Card>
@@ -684,6 +688,7 @@ export default function BudgetCalculator() {
                     </Button>
                   </Link>
                 </div>
+                <InsightBanner context="budget" refreshKey={result} />
                 <NextStepCard currentMilestone="budget" />
                 <div className="flex justify-end">
                   <ExportButton
@@ -724,14 +729,15 @@ export default function BudgetCalculator() {
                 key="empty"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="flex flex-col items-center justify-center py-20 text-center"
               >
-                <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mb-4">
-                  <Wallet className="w-8 h-8 text-muted-foreground" />
-                </div>
-                <p className="text-muted-foreground text-sm">
-                  הזן הון עצמי, הכנסה והתחייבויות כדי לראות תוצאות
-                </p>
+                <EmptyState
+                  icon={<Wallet className="w-6 h-6" />}
+                  title="בוא נגלה כמה דירה אתה יכול להרשות לעצמך"
+                  description="הזן הון עצמי, הכנסה והתחייבויות — או ענה על 7 שאלות קצרות ונמלא הכל בשבילך."
+                  action={(
+                    <Button onClick={() => setWizardOpen(true)}>שאלון קצר</Button>
+                  )}
+                />
               </motion.div>
             )}
           </AnimatePresence>

@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Wallet, TrendingUp, Home, MessageCircle, Settings, LogOut, UserCircle, User, BarChart3, Search, HelpCircle } from 'lucide-react';
+import { Wallet, TrendingUp, Home, MessageCircle, Settings, LogOut, UserCircle, User, BarChart3, Search, HelpCircle, BookOpen } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { NotificationCenter } from './NotificationCenter';
 import { Logo } from './Logo';
@@ -83,6 +83,12 @@ export function Layout({ children }: { children: ReactNode }) {
                   <Link to="/guide" className="gap-2">
                     <HelpCircle className="w-4 h-4" />
                     מדריך שימוש
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/glossary" className="gap-2">
+                    <BookOpen className="w-4 h-4" />
+                    מילון מושגים
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>

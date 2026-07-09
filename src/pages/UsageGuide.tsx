@@ -156,6 +156,23 @@ export default function UsageGuide() {
         ))}
       </section>
 
+      <section className="rounded-lg border bg-card p-5">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="space-y-1">
+            <h2 className="text-lg font-bold">מונח לא מוכר?</h2>
+            <p className="text-sm leading-7 text-muted-foreground">
+              במילון המושגים תמצאו 40 מונחים בשפה פשוטה — משכנתא, מיסים, תהליך הרכישה והשקעות.
+            </p>
+          </div>
+          <Button asChild variant="outline" className="gap-2">
+            <Link to="/glossary">
+              למילון המושגים
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
+      </section>
+
       <section className="rounded-lg border bg-muted/40 p-5">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="space-y-1">

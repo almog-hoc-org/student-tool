@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { BarChart3, Edit3, Loader2, RefreshCw, Trash2, TrendingUp } from 'lucide-react';
+import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingState } from '@/components/ui/loading-state';
 import { ErrorState } from '@/components/ui/error-state';
 import { Card, CardContent } from '@/components/ui/card';
@@ -268,31 +269,28 @@ export default function DealComparison() {
           retry={load}
         />
       ) : snapshots.length === 0 ? (
-        <Card className="border-0 shadow-sm">
-          <CardContent className="p-8 text-center space-y-3">
-            <TrendingUp className="w-10 h-10 text-muted-foreground mx-auto" />
-            <h3 className="font-semibold">אין עדיין עסקאות להשוואה</h3>
-            <p className="text-sm text-muted-foreground">שמור עסקה מתוך התוכנית העסקית והיא תופיע כאן.</p>
+        <EmptyState
+          icon={<TrendingUp className="w-6 h-6" />}
+          title="אין עדיין עסקאות להשוואה"
+          description="שמור עסקה מתוך התוכנית העסקית והיא תופיע כאן."
+          action={(
             <Button asChild>
               <Link to="/business-plan">עבור לתוכנית עסקית</Link>
             </Button>
-          </CardContent>
-        </Card>
+          )}
+        />
       ) : rows.length === 0 ? (
-        <Card className="border-0 shadow-sm">
-          <CardContent className="p-6 text-center space-y-3">
-            <p className="text-sm text-muted-foreground">
-              {selectedIds.size === 0
-                ? 'בחר לפחות עסקה אחת להשוואה.'
-                : `אין תרחישי ${scenarioFilter} בעסקאות שנבחרו.`}
-            </p>
-            {scenarioFilter !== 'all' && (
-              <Button variant="outline" size="sm" onClick={() => setScenarioFilter('all')}>
-                הצג את כל התרחישים
-              </Button>
-            )}
-          </CardContent>
-        </Card>
+        <EmptyState
+          compact
+          description={selectedIds.size === 0
+            ? 'בחר לפחות עסקה אחת להשוואה.'
+            : `אין תרחישי ${scenarioFilter} בעסקאות שנבחרו.`}
+          action={scenarioFilter !== 'all' ? (
+            <Button variant="outline" size="sm" onClick={() => setScenarioFilter('all')}>
+              הצג את כל התרחישים
+            </Button>
+          ) : undefined}
+        />
       ) : (
         <>
         <div className="md:hidden space-y-3">

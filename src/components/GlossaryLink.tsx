@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Popover,
   PopoverContent,
@@ -50,6 +51,12 @@ export function GlossaryLink({ term, children, className }: GlossaryLinkProps) {
             {entry.long}
           </p>
         </details>
+        <Link
+          to="/glossary"
+          className="block border-t pt-2 text-xs text-primary hover:underline"
+        >
+          לכל מילון המושגים ←
+        </Link>
       </PopoverContent>
     </Popover>
   );

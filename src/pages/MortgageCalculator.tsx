@@ -27,6 +27,7 @@ import {
 import { Plus, Trash2, Home as HomeIcon, Import, RotateCcw, ArrowLeft } from 'lucide-react';
 import { SaveSnapshotButton } from '@/components/SaveSnapshotButton';
 import { formatCurrency } from '@/lib/validation/validators';
+import { formatCompactCurrency } from '@/lib/format';
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
@@ -43,6 +44,7 @@ import { LABELS } from '@/lib/content/labels';
 import { indexLawNote } from '@/lib/constants/regulations';
 import { EmptyState } from '@/components/ui/empty-state';
 import NextStepCard from '@/components/NextStepCard';
+import { InsightBanner } from '@/components/InsightBanner';
 import { useJourney } from '@/hooks/useJourney';
 import { GlossaryLink } from '@/components/GlossaryLink';
 import { CHART, CHART_SERIES } from '@/lib/chart-colors';
@@ -366,6 +368,12 @@ export default function MortgageCalculator() {
             <Plus className="h-4 w-4 ml-1" /> הוסף מסלול
           </Button>
 
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            לא בטוח מה ההבדל? <GlossaryLink term="kalatz">קל"צ</GlossaryLink>,{' '}
+            <GlossaryLink term="prime">פריים</GlossaryLink> ו<GlossaryLink term="variable_rate">ריבית משתנה</GlossaryLink>{' '}
+            — לחיצה על כל מונח תסביר אותו.
+          </p>
+
           {/* Madad */}
           <Card className="border shadow-sm">
             <CardContent className="p-3 space-y-3">
@@ -373,6 +381,9 @@ export default function MortgageCalculator() {
                 <Switch checked={isOffPlan} onCheckedChange={(v) => { touch(); setIsOffPlan(v); }} />
                 <Label className="text-xs flex items-center gap-1">רכישה מקבלן (מדד תשומות) <InfoTooltip text={indexLawNote()} /></Label>
               </div>
+              <p className="text-[11px] text-muted-foreground">
+                קונים מקבלן? כדאי להכיר גם <GlossaryLink term="grace">גרייס</GlossaryLink> ו<GlossaryLink term="madad">הצמדה למדד</GlossaryLink>.
+              </p>
               {isOffPlan && (
                 <div className="grid grid-cols-3 gap-2">
                   <div>
@@ -503,7 +514,7 @@ export default function MortgageCalculator() {
                       <AreaChart data={amortization}>
                         <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                         <XAxis dataKey="year" reversed />
-                        <YAxis tickFormatter={(v) => `₪${(v / 1000).toFixed(0)}k`} />
+                        <YAxis tickFormatter={(v) => formatCompactCurrency(Number(v))} />
                         <Tooltip formatter={(v) => formatCurrency(Number(v))} />
                         <Legend />
                         <Area type="monotone" dataKey="principalPayment" name="קרן" stackId="1" stroke={CHART.emeraldDeep} fill={CHART.emeraldDeep} fillOpacity={0.7} />
@@ -534,7 +545,7 @@ export default function MortgageCalculator() {
                           }))}>
                             <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                             <XAxis dataKey="name" />
-                            <YAxis tickFormatter={(v) => `₪${(v / 1000).toFixed(1)}k`} />
+                            <YAxis tickFormatter={(v) => formatCompactCurrency(Number(v))} />
                             <Tooltip formatter={(v) => formatCurrency(Number(v))} />
                             <Bar dataKey="payment" name="החזר חודשי" fill={CHART.emerald} radius={[6, 6, 0, 0]} />
                           </BarChart>
@@ -608,6 +619,7 @@ export default function MortgageCalculator() {
                 </Card>
               )}
               {/* Next step in the journey */}
+              <InsightBanner context="mortgage" refreshKey={results} />
               <NextStepCard currentMilestone="mortgage" />
 
               {/* CTA + Export */}

@@ -22,6 +22,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { LABELS } from '@/lib/content/labels';
 import { CHART } from '@/lib/chart-colors';
 import NextStepCard from '@/components/NextStepCard';
+import { InsightBanner } from '@/components/InsightBanner';
 import { useJourney } from '@/hooks/useJourney';
 
 const SCENARIO_COLORS = {
@@ -672,6 +673,7 @@ export default function BusinessPlan() {
                 </Card>
 
                 {/* Next step in the journey */}
+                <InsightBanner context="business_plan" refreshKey={result} />
                 <NextStepCard currentMilestone="business_plan" />
 
                 {/* PDF Export */}

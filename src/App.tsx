@@ -1,5 +1,4 @@
 import { lazy, Suspense } from "react";
-import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -30,6 +29,7 @@ const AdminBroadcasts = lazy(() => import("./pages/admin/AdminBroadcasts"));
 const AdminKnowledge = lazy(() => import("./pages/admin/AdminKnowledge"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const UsageGuide = lazy(() => import("./pages/UsageGuide"));
+const Glossary = lazy(() => import("./pages/Glossary"));
 
 const queryClient = new QueryClient({});
 
@@ -44,7 +44,6 @@ function RouteFallback() {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
@@ -68,6 +67,7 @@ const App = () => (
                         <Route path="/account" element={<Account />} />
                         <Route path="/onboarding" element={<Onboarding />} />
                         <Route path="/guide" element={<UsageGuide />} />
+                        <Route path="/glossary" element={<Glossary />} />
                         <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
                         <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
                         <Route path="/admin/codes" element={<AdminRoute><AdminInviteCodes /></AdminRoute>} />

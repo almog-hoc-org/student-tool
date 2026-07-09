@@ -5,13 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
-  User, Wallet, TrendingUp, Home, Sparkles, LogOut, CheckCircle2, Circle,
+  User, Sparkles, LogOut, CheckCircle2, Circle,
   MessageCircle, ArrowLeft, Bookmark,
 } from 'lucide-react';
-import { load } from '@/lib/storage';
-import { BudgetOutput } from '@/lib/calculations/budget-calculator';
-import { formatCurrency } from '@/lib/validation/validators';
 import { cn } from '@/lib/utils';
+import { getToolSummaries } from '@/lib/tool-summaries';
 import { SnapshotsList } from '@/components/SnapshotsList';
 import { ExpertContactCard } from '@/components/ExpertContactCard';
 import { MyActivityCard } from '@/components/MyActivityCard';
@@ -19,15 +17,6 @@ import { JourneyStepper } from '@/components/journey/JourneyStepper';
 import { GoalForm } from '@/components/goal/GoalForm';
 import { GapCard } from '@/components/goal/GapCard';
 import { PrePurchaseChecklist } from '@/components/journey/PrePurchaseChecklist';
-
-interface ToolStatus {
-  key: string;
-  name: string;
-  icon: React.ComponentType<{ className?: string }>;
-  href: string;
-  done: boolean;
-  summary: string | null;
-}
 
 export default function Account() {
   const { user, profile, signOut, isAdmin } = useAuth();
@@ -40,44 +29,7 @@ export default function Account() {
     }
   }, [location.hash]);
 
-  const budget = load<{ equity: number; monthlyIncome: number }>('budget');
-  const budgetResults = load<BudgetOutput>('budget_results');
-  const businessPlan = load<{ purchasePrice: number; expectedMonthlyRent: number }>('business_plan');
-  const mortgage = load<{ tracks: { principal: number }[]; monthlyIncome: number }>('mortgage');
-  const mortgageResults = load<{ totalMonthlyPayment: number; weightedAverageInterest: number }>('mortgage_results');
-
-  const tools: ToolStatus[] = [
-    {
-      key: 'budget',
-      name: 'תקציב',
-      icon: Wallet,
-      href: '/',
-      done: !!budget && !!budgetResults,
-      summary: budgetResults
-        ? `דירה עד ${formatCurrency(budgetResults.maxPropertyValue)}`
-        : null,
-    },
-    {
-      key: 'business_plan',
-      name: 'תוכנית עסקית',
-      icon: TrendingUp,
-      href: '/business-plan',
-      done: !!businessPlan,
-      summary: businessPlan
-        ? `נכס ${formatCurrency(businessPlan.purchasePrice)}, שכירות ${formatCurrency(businessPlan.expectedMonthlyRent)}`
-        : null,
-    },
-    {
-      key: 'mortgage',
-      name: 'משכנתא',
-      icon: Home,
-      href: '/mortgage',
-      done: !!mortgage && !!mortgageResults,
-      summary: mortgageResults
-        ? `החזר ${formatCurrency(mortgageResults.totalMonthlyPayment)}/חודש, ריבית ${mortgageResults.weightedAverageInterest.toFixed(1)}%`
-        : null,
-    },
-  ];
+  const tools = getToolSummaries();
 
 
   const statusLabels: Record<string, string> = {

@@ -2,12 +2,18 @@ import { load } from './storage';
 import { BudgetOutput } from './calculations/budget-calculator';
 import { BusinessPlanOutput } from './calculations/business-plan';
 import { BuyerType } from './calculations/purchase-tax';
+import { formatCurrency } from './format';
+
+export type InsightToolKey = 'budget' | 'business_plan' | 'mortgage';
 
 export interface Insight {
   type: 'warning' | 'recommendation' | 'insight' | 'next_step';
   title: string;
   description: string;
+  /** תווית עברית לתצוגה */
   tool?: string;
+  /** מפתח לסינון לפי עמוד; undefined = תובנה חוצת-כלים */
+  toolKey?: InsightToolKey;
   priority: number; // 1=high, 3=low
 }
 
@@ -30,6 +36,7 @@ interface MortgageData {
   tracks: { type: string; principal: number; annualInterestRate: number; years: number }[];
   monthlyIncome: number;
   propertyPrice: number;
+  freeCashFlow?: number;
 }
 
 interface MortgageResults {
@@ -93,6 +100,7 @@ export function generateInsights(): Insight[] {
         title: 'תזרים פנוי שלילי',
         description: 'ההכנסה נטו לא מכסה את ההתחייבויות — לפני משכנתא צריך לסגור את הפער החודשי.',
         tool: 'תקציב',
+        toolKey: 'budget',
         priority: 1,
       });
     }
@@ -103,6 +111,7 @@ export function generateInsights(): Insight[] {
         title: 'יחס החזר/הכנסה חורג מ-40%',
         description: `יחס ההחזר שלך עומד על ${dti.toFixed(0)}%. הבנקים בדרך כלל לא מאשרים מעל 40%. שקול להגדיל הכנסה או להקטין התחייבויות.`,
         tool: 'תקציב',
+        toolKey: 'budget',
         priority: 1,
       });
     } else if (freeCashFlow > 0 && dti > 33) {
@@ -111,6 +120,7 @@ export function generateInsights(): Insight[] {
         title: 'יחס החזר/הכנסה גבוה',
         description: `יחס ההחזר שלך ${dti.toFixed(0)}%. מומלץ לשאוף ל-33% או פחות כדי לשמור על גמישות פיננסית.`,
         tool: 'תקציב',
+        toolKey: 'budget',
         priority: 2,
       });
     } else if (freeCashFlow > 0) {
@@ -119,6 +129,7 @@ export function generateInsights(): Insight[] {
         title: 'יחס החזר/הכנסה תקין',
         description: `יחס ההחזר שלך ${dti.toFixed(0)}% — יחס בריא שמשאיר מרווח נשימה חודשי.`,
         tool: 'תקציב',
+        toolKey: 'budget',
         priority: 3,
       });
     }
@@ -130,6 +141,7 @@ export function generateInsights(): Insight[] {
         title: 'הון עצמי נמוך ביחס לנכס',
         description: `ההון העצמי מהווה ${(equityRatio * 100).toFixed(0)}% ממחיר הנכס. בהשקעה שנייה צריך 50% הון עצמי, ואפילו בדירה ראשונה מומלץ מעל 30%.`,
         tool: 'תקציב',
+        toolKey: 'budget',
         priority: 2,
       });
     }
@@ -141,6 +153,7 @@ export function generateInsights(): Insight[] {
         title: 'מס רכישה משמעותי',
         description: `מס הרכישה מהווה ${taxPercent.toFixed(0)}% מההון העצמי שלך. זה מצמצם את ההון הזמין לרכישה.`,
         tool: 'תקציב',
+        toolKey: 'budget',
         priority: 3,
       });
     }
@@ -157,24 +170,30 @@ export function generateInsights(): Insight[] {
         insights.push({
           type: 'warning',
           title: 'תזרים מזומנים שלילי',
-          description: `השכירות (${monthlyRent.toLocaleString('he-IL')}₪) לא מכסה את המשכנתא (${monthlyMortgage.toLocaleString('he-IL')}₪). תצטרך לממן ${Math.abs(cashflowGap).toLocaleString('he-IL')}₪ בחודש מכיסך.`,
+          description: `השכירות (${formatCurrency(monthlyRent)}) לא מכסה את המשכנתא (${formatCurrency(monthlyMortgage)}). תצטרך לממן ${formatCurrency(Math.abs(cashflowGap))} בחודש מכיסך.`,
           tool: 'תוכנית עסקית',
+        toolKey: 'business_plan',
+          toolKey: 'business_plan',
           priority: 1,
         });
       } else if (cashflowGap < 500) {
         insights.push({
           type: 'recommendation',
           title: 'תזרים מזומנים צפוף',
-          description: `מרווח של ${cashflowGap.toLocaleString('he-IL')}₪ בלבד בין שכירות למשכנתא. חודש ריק או תיקון עלולים לגרום להפסד.`,
+          description: `מרווח של ${formatCurrency(cashflowGap)} בלבד בין שכירות למשכנתא. חודש ריק או תיקון עלולים לגרום להפסד.`,
           tool: 'תוכנית עסקית',
+        toolKey: 'business_plan',
+          toolKey: 'business_plan',
           priority: 2,
         });
       } else {
         insights.push({
           type: 'insight',
           title: 'תזרים חיובי',
-          description: `מרווח של ${cashflowGap.toLocaleString('he-IL')}₪ בחודש בין שכירות למשכנתא. זה כרית בטחון סבירה.`,
+          description: `מרווח של ${formatCurrency(cashflowGap)} בחודש בין שכירות למשכנתא. זה כרית בטחון סבירה.`,
           tool: 'תוכנית עסקית',
+        toolKey: 'business_plan',
+          toolKey: 'business_plan',
           priority: 3,
         });
       }
@@ -186,6 +205,7 @@ export function generateInsights(): Insight[] {
         title: 'תקופת החזקה קצרה',
         description: `תקופת החזקה של ${businessPlan.holdingPeriodYears} שנים עלולה להיות קצרה מדי — עלויות כניסה ויציאה עלולות לאכול את הרווח.`,
         tool: 'תוכנית עסקית',
+        toolKey: 'business_plan',
         priority: 2,
       });
     }
@@ -200,8 +220,9 @@ export function generateInsights(): Insight[] {
       insights.push({
         type: 'warning',
         title: 'ריבית כוללת גבוהה',
-        description: `סך הריבית (${totalInterest.toLocaleString('he-IL')}₪) מהווה יותר מ-60% מהקרן. שקול לקצר תקופה או לבחור ריבית נמוכה יותר.`,
+        description: `סך הריבית (${formatCurrency(totalInterest)}) מהווה יותר מ-60% מהקרן. שקול לקצר תקופה או לבחור ריבית נמוכה יותר.`,
         tool: 'משכנתא',
+        toolKey: 'mortgage',
         priority: 1,
       });
     }
@@ -214,8 +235,10 @@ export function generateInsights(): Insight[] {
         insights.push({
           type: 'warning',
           title: 'החזר חודשי גבוה ביחס להכנסה',
-          description: `ההחזר החודשי (${payment.toLocaleString('he-IL')}₪) הוא ${(paymentRatio * 100).toFixed(0)}% מההכנסה. מומלץ להישאר מתחת ל-35%.`,
+          description: `ההחזר החודשי (${formatCurrency(payment)}) הוא ${(paymentRatio * 100).toFixed(0)}% מההכנסה. מומלץ להישאר מתחת ל-35%.`,
           tool: 'משכנתא',
+        toolKey: 'mortgage',
+          toolKey: 'mortgage',
           priority: 1,
         });
       }
@@ -228,6 +251,7 @@ export function generateInsights(): Insight[] {
         title: 'ריבית משוקללת גבוהה',
         description: `הריבית המשוקללת ${avgInterest.toFixed(1)}% — גבוהה מהממוצע בשוק. שווה לבדוק הצעות מבנקים נוספים.`,
         tool: 'משכנתא',
+        toolKey: 'mortgage',
         priority: 2,
       });
     }
@@ -239,6 +263,7 @@ export function generateInsights(): Insight[] {
         title: 'מסלול אחד בלבד',
         description: 'פיזור בין מספר מסלולי משכנתא מפחית סיכון. שקול להוסיף מסלול נוסף.',
         tool: 'משכנתא',
+        toolKey: 'mortgage',
         priority: 3,
       });
     }
@@ -252,7 +277,7 @@ export function generateInsights(): Insight[] {
       insights.push({
         type: 'warning',
         title: 'חוסר התאמה בין תקציב לתוכנית',
-        description: `התוכנית העסקית מחשבת נכס ב-${planPrice.toLocaleString('he-IL')}₪ אבל התקציב מראה יכולת עד ${budgetMax.toLocaleString('he-IL')}₪.`,
+        description: `התוכנית העסקית מחשבת נכס ב-${formatCurrency(planPrice)} אבל התקציב מראה יכולת עד ${formatCurrency(budgetMax)}.`,
         priority: 1,
       });
     }
@@ -266,7 +291,7 @@ export function generateInsights(): Insight[] {
       insights.push({
         type: 'insight',
         title: 'פער בין תקציב למשכנתא',
-        description: `מחשבון התקציב מחשב החזר של ${budgetPayment.toLocaleString('he-IL')}₪ ומחשבון המשכנתא ${mortgagePayment.toLocaleString('he-IL')}₪. ודא שהנתונים עקביים.`,
+        description: `מחשבון התקציב מחשב החזר של ${formatCurrency(budgetPayment)} ומחשבון המשכנתא ${formatCurrency(mortgagePayment)}. ודא שהנתונים עקביים.`,
         priority: 2,
       });
     }
