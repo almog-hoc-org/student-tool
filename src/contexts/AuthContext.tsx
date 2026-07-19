@@ -91,6 +91,21 @@ async function migrateSchemaVersions(userId: string): Promise<void> {
   }
 }
 
+// עקיפת auth לצילומי מסך/E2E בפיתוח בלבד: import.meta.env.DEV הוא false
+// סטטי ב-production build, כך שהקוד הזה נמחק לגמרי מהבאנדל האמיתי.
+const E2E_BYPASS = import.meta.env.DEV && import.meta.env.VITE_E2E === '1';
+
+const E2E_PROFILE: Profile = {
+  id: 'e2e-profile',
+  user_id: 'e2e-user',
+  display_name: 'תלמיד בדיקה',
+  avatar_url: null,
+  status: 'approved' as UserStatus,
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+  onboarded_at: new Date().toISOString(),
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -124,6 +139,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    if (E2E_BYPASS) {
+      setUser({ id: 'e2e-user', email: 'e2e@test.local' } as User);
+      setProfile(E2E_PROFILE);
+      setRoles(['student' as AppRole]);
+      setLoading(false);
+      return;
+    }
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);
       setUser(s?.user ?? null);
