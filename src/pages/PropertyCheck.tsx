@@ -27,8 +27,8 @@ import { useJourney } from '@/hooks/useJourney';
 import { LABELS } from '@/lib/content/labels';
 import { GlossaryLink } from '@/components/GlossaryLink';
 import { EmptyState } from '@/components/ui/empty-state';
-import { JourneyStepper } from '@/components/journey/JourneyStepper';
 import NextStepCard from '@/components/NextStepCard';
+import { PropertyAreaNav } from '@/components/PropertyAreaNav';
 import { cn } from '@/lib/utils';
 
 const DEFAULTS = {
@@ -116,7 +116,7 @@ export default function PropertyCheck() {
 
   return (
     <div className="space-y-6">
-      <JourneyStepper />
+      <PropertyAreaNav />
 
       <div className="md:grid md:grid-cols-5 md:gap-8">
         <div className="md:col-span-2 space-y-4 md:sticky md:top-28 md:self-start">

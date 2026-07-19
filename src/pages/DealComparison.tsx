@@ -17,6 +17,7 @@ import {
 } from '@/lib/deals';
 import { formatCurrency } from '@/lib/validation/validators';
 import { cn } from '@/lib/utils';
+import { PropertyAreaNav } from '@/components/PropertyAreaNav';
 import { save } from '@/lib/storage';
 import { toast } from 'sonner';
 
@@ -141,6 +142,7 @@ export default function DealComparison() {
 
   return (
     <div className="space-y-5" dir="rtl">
+      <PropertyAreaNav />
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
