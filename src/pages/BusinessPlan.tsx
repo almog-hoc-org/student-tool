@@ -10,7 +10,7 @@ import { calculateBusinessPlan, BusinessPlanOutput, ScenarioResult } from '@/lib
 import { calculateMortgageMonthlyPayment } from '@/lib/calculations/mortgage-calculator';
 import { calculatePurchaseTax, type BuyerType } from '@/lib/calculations/purchase-tax';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { formatCurrency } from '@/lib/validation/validators';
+import { formatCurrency, numInput } from '@/lib/validation/validators';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -439,7 +439,7 @@ export default function BusinessPlan() {
                       <Input className="h-10" value={propertyArea} onChange={(e) => setPropertyArea(e.target.value)} placeholder="לדוגמה: תל אביב / יד אליהו" />
                     </Field>
                     <Field label="שטח (מ״ר)">
-                      <Input className="h-10" type="number" min="0" value={propertySqm || ''} onChange={(e) => setPropertySqm(Number(e.target.value))} />
+                      <Input className="h-10" type="number" min="0" value={propertySqm || ''} onChange={(e) => setPropertySqm(numInput(e.target.value))} />
                     </Field>
                     <Field label="קומה">
                       <Input className="h-10" value={propertyFloor} onChange={(e) => setPropertyFloor(e.target.value)} placeholder="לדוגמה: 3 מתוך 6" />
@@ -448,16 +448,16 @@ export default function BusinessPlan() {
                       <Input className="h-10" value={propertyRooms} onChange={(e) => setPropertyRooms(e.target.value)} placeholder="לדוגמה: 3.5" />
                     </Field>
                     <Field label="מחיר רכישה" className="sm:col-span-2">
-                      <Input className="h-10 text-base font-semibold" type="number" min="0" value={purchasePrice ?? ''} onChange={(e) => setPurchasePrice(Number(e.target.value))} />
+                      <Input className="h-10 text-base font-semibold" type="number" min="0" value={purchasePrice ?? ''} onChange={(e) => setPurchasePrice(numInput(e.target.value))} />
                     </Field>
                     <Field label="הערות נכס" className="sm:col-span-2">
                       <Input className="h-10" value={propertyNotes} onChange={(e) => setPropertyNotes(e.target.value)} placeholder="מעלית, מרפסת, חניה, מצב הנכס או כל פרט חשוב" />
                     </Field>
                     <Field label="עלות שיפוץ">
-                      <Input className="h-10" type="number" min="0" value={renovationCost ?? ''} onChange={(e) => setRenovationCost(Number(e.target.value))} />
+                      <Input className="h-10" type="number" min="0" value={renovationCost ?? ''} onChange={(e) => setRenovationCost(numInput(e.target.value))} />
                     </Field>
                     <Field label="תקופת החזקה" hint="בשנים">
-                      <Input className="h-10" type="number" min="0" value={holdingPeriodYears ?? ''} onChange={(e) => setHoldingPeriodYears(Number(e.target.value))} />
+                      <Input className="h-10" type="number" min="0" value={holdingPeriodYears ?? ''} onChange={(e) => setHoldingPeriodYears(numInput(e.target.value))} />
                     </Field>
                   </div>
                 </div>
@@ -469,7 +469,7 @@ export default function BusinessPlan() {
                   </div>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <Field label="הון עצמי" className="sm:col-span-2">
-                      <Input className="h-10 text-base font-semibold" type="number" min="0" value={equityInvested ?? ''} onChange={(e) => setEquityInvested(Number(e.target.value))} />
+                      <Input className="h-10 text-base font-semibold" type="number" min="0" value={equityInvested ?? ''} onChange={(e) => setEquityInvested(numInput(e.target.value))} />
                     </Field>
                     <Field
                       label="סכום משכנתא"
@@ -480,7 +480,7 @@ export default function BusinessPlan() {
                         </Button>
                       )}
                     >
-                      <Input className="h-10" type="number" min="0" value={manualMortgageAmount ? mortgageAmount : effectiveMortgageAmount} readOnly={!manualMortgageAmount} onChange={(e) => setMortgageAmount(Number(e.target.value))} />
+                      <Input className="h-10" type="number" min="0" value={manualMortgageAmount ? mortgageAmount : effectiveMortgageAmount} readOnly={!manualMortgageAmount} onChange={(e) => setMortgageAmount(numInput(e.target.value))} />
                     </Field>
                     <Field
                       label="החזר חודשי"
@@ -491,13 +491,13 @@ export default function BusinessPlan() {
                         </Button>
                       )}
                     >
-                      <Input className="h-10" type="number" min="0" value={manualMortgageMonthlyPayment ? mortgageMonthlyPayment : effectiveMortgageMonthlyPayment} readOnly={!manualMortgageMonthlyPayment} onChange={(e) => setMortgageMonthlyPayment(Number(e.target.value))} />
+                      <Input className="h-10" type="number" min="0" value={manualMortgageMonthlyPayment ? mortgageMonthlyPayment : effectiveMortgageMonthlyPayment} readOnly={!manualMortgageMonthlyPayment} onChange={(e) => setMortgageMonthlyPayment(numInput(e.target.value))} />
                     </Field>
                     <Field label="ריבית (%)">
-                      <Input className="h-10" type="number" min="0" step="0.1" value={mortgageInterestRate} onChange={(e) => setMortgageInterestRate(Number(e.target.value))} />
+                      <Input className="h-10" type="number" min="0" step="0.1" value={mortgageInterestRate} onChange={(e) => setMortgageInterestRate(numInput(e.target.value))} />
                     </Field>
                     <Field label="תקופת משכנתא" hint="בשנים">
-                      <Input className="h-10" type="number" min="0" value={mortgageYears ?? ''} onChange={(e) => setMortgageYears(Number(e.target.value))} />
+                      <Input className="h-10" type="number" min="0" value={mortgageYears ?? ''} onChange={(e) => setMortgageYears(numInput(e.target.value))} />
                     </Field>
                   </div>
                 </div>
@@ -562,10 +562,10 @@ export default function BusinessPlan() {
           <InputSection title="3. הכנסות והוצאות" description="שכירות צפויה מול הוצאות תפעול שוטפות.">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Field label="שכ״ד חודשי צפוי">
-                <Input className="h-10" type="number" min="0" value={expectedMonthlyRent ?? ''} onChange={(e) => setExpectedMonthlyRent(Number(e.target.value))} />
+                <Input className="h-10" type="number" min="0" value={expectedMonthlyRent ?? ''} onChange={(e) => setExpectedMonthlyRent(numInput(e.target.value))} />
               </Field>
               <Field label="הוצאות תפעול שנתיות">
-                <Input className="h-10" type="number" min="0" value={annualOperatingCosts ?? ''} onChange={(e) => setAnnualOperatingCosts(Number(e.target.value))} />
+                <Input className="h-10" type="number" min="0" value={annualOperatingCosts ?? ''} onChange={(e) => setAnnualOperatingCosts(numInput(e.target.value))} />
               </Field>
             </div>
           </InputSection>
@@ -584,7 +584,7 @@ export default function BusinessPlan() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label className="text-xs">השבחה צפויה</Label>
-                <Input className="h-10" type="number" min="0" value={urbanRenewalUpliftValue ?? ''} onChange={(e) => setUrbanRenewalUpliftValue(Number(e.target.value))} />
+                <Input className="h-10" type="number" min="0" value={urbanRenewalUpliftValue ?? ''} onChange={(e) => setUrbanRenewalUpliftValue(numInput(e.target.value))} />
                 </div>
                 <div className="flex items-end text-[11px] text-muted-foreground">
                   {urbanRenewalUpliftMode === 'amount' ? 'מוזן כש״ח ומתווסף לשווי הסופי' : 'מוזן כאחוז משווי הרכישה'}
@@ -651,7 +651,7 @@ export default function BusinessPlan() {
                         <Input
                           type="number" step="0.5" className="h-8 text-sm"
                           value={customRates.pessimistic}
-                          onChange={(e) => setCustomRates({ ...customRates, pessimistic: Number(e.target.value) })}
+                          onChange={(e) => setCustomRates({ ...customRates, pessimistic: numInput(e.target.value) })}
                         />
                       </div>
                       <div>
@@ -659,7 +659,7 @@ export default function BusinessPlan() {
                         <Input
                           type="number" step="0.5" className="h-8 text-sm"
                           value={customRates.average}
-                          onChange={(e) => setCustomRates({ ...customRates, average: Number(e.target.value) })}
+                          onChange={(e) => setCustomRates({ ...customRates, average: numInput(e.target.value) })}
                         />
                       </div>
                       <div>
@@ -667,7 +667,7 @@ export default function BusinessPlan() {
                         <Input
                           type="number" step="0.5" className="h-8 text-sm"
                           value={customRates.optimistic}
-                          onChange={(e) => setCustomRates({ ...customRates, optimistic: Number(e.target.value) })}
+                          onChange={(e) => setCustomRates({ ...customRates, optimistic: numInput(e.target.value) })}
                         />
                       </div>
                     </div>

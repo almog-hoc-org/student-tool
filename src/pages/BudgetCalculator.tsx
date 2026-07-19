@@ -16,7 +16,7 @@ import {
 import { Wallet, Home, CreditCard, Receipt, PiggyBank, ArrowLeft, RotateCcw } from 'lucide-react';
 import { calculateBudget, BudgetOutput } from '@/lib/calculations/budget-calculator';
 import { BuyerType } from '@/lib/calculations/purchase-tax';
-import { formatCurrency } from '@/lib/validation/validators';
+import { formatCurrency, numInput } from '@/lib/validation/validators';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -130,7 +130,7 @@ function QuickBudgetWizard({
           type="number"
           min="0"
           value={values.equity || ''}
-          onChange={(e) => setValues({ ...values, equity: Number(e.target.value) })}
+          onChange={(e) => setValues({ ...values, equity: numInput(e.target.value) })}
           className="h-12 text-lg font-semibold"
           placeholder="400000"
           autoFocus
@@ -145,7 +145,7 @@ function QuickBudgetWizard({
           type="number"
           min="0"
           value={values.monthlyIncome || ''}
-          onChange={(e) => setValues({ ...values, monthlyIncome: Number(e.target.value) })}
+          onChange={(e) => setValues({ ...values, monthlyIncome: numInput(e.target.value) })}
           className="h-12 text-lg font-semibold"
           placeholder="20000"
           autoFocus
@@ -160,7 +160,7 @@ function QuickBudgetWizard({
           type="number"
           min="0"
           value={values.currentRent || ''}
-          onChange={(e) => setValues({ ...values, currentRent: Number(e.target.value) })}
+          onChange={(e) => setValues({ ...values, currentRent: numInput(e.target.value) })}
           className="h-12 text-lg font-semibold"
           placeholder="0"
           autoFocus
@@ -175,7 +175,7 @@ function QuickBudgetWizard({
           type="number"
           min="0"
           value={values.livingExpenses || ''}
-          onChange={(e) => setValues({ ...values, livingExpenses: Number(e.target.value) })}
+          onChange={(e) => setValues({ ...values, livingExpenses: numInput(e.target.value) })}
           className="h-12 text-lg font-semibold"
           placeholder="0"
           autoFocus
@@ -190,7 +190,7 @@ function QuickBudgetWizard({
           type="number"
           min="0"
           value={values.monthlyObligations || ''}
-          onChange={(e) => setValues({ ...values, monthlyObligations: Number(e.target.value) })}
+          onChange={(e) => setValues({ ...values, monthlyObligations: numInput(e.target.value) })}
           className="h-12 text-lg font-semibold"
           placeholder="0"
           autoFocus
@@ -410,7 +410,7 @@ export default function BudgetCalculator() {
             <Input
               type="number" min="0"
               value={equity ?? ''}
-              onChange={(e) => { touch(); setEquity(Number(e.target.value)); }}
+              onChange={(e) => { touch(); setEquity(numInput(e.target.value)); }}
               placeholder="400,000"
               className="text-lg font-semibold h-12"
             />
@@ -434,7 +434,7 @@ export default function BudgetCalculator() {
             <Input
               type="number" min="0"
               value={monthlyIncome ?? ''}
-              onChange={(e) => { touch(); setMonthlyIncome(Number(e.target.value)); }}
+              onChange={(e) => { touch(); setMonthlyIncome(numInput(e.target.value)); }}
               placeholder="20,000"
             />
           </div>
@@ -445,7 +445,7 @@ export default function BudgetCalculator() {
             <Input
               type="number" min="0"
               value={currentRent ?? ''}
-              onChange={(e) => { touch(); setCurrentRent(Number(e.target.value)); }}
+              onChange={(e) => { touch(); setCurrentRent(numInput(e.target.value)); }}
               placeholder="0"
             />
             <p className="text-[11px] text-muted-foreground">אם אתם כבר משלמים שכירות או משכנתא — זה נכנס לחישוב התזרים הפנוי.</p>
@@ -457,7 +457,7 @@ export default function BudgetCalculator() {
             <Input
               type="number" min="0"
               value={livingExpenses ?? ''}
-              onChange={(e) => { touch(); setLivingExpenses(Number(e.target.value)); }}
+              onChange={(e) => { touch(); setLivingExpenses(numInput(e.target.value)); }}
               placeholder="0"
             />
             <p className="text-[11px] text-muted-foreground">אוכל, תחבורה, בילויים וכל מה שלא נכלל בהתחייבויות.</p>
@@ -469,7 +469,7 @@ export default function BudgetCalculator() {
             <Input
               type="number" min="0"
               value={monthlyObligations ?? ''}
-              onChange={(e) => { touch(); setMonthlyObligations(Number(e.target.value)); }}
+              onChange={(e) => { touch(); setMonthlyObligations(numInput(e.target.value)); }}
               placeholder="0"
             />
             <p className="text-[11px] text-muted-foreground">הלוואות, אשראי, ליסינג וכו׳</p>

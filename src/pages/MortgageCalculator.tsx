@@ -24,7 +24,7 @@ import {
 } from '@/types/mortgage-calculator';
 import { Plus, Trash2, Home as HomeIcon, Import, RotateCcw, ArrowLeft } from 'lucide-react';
 import { SaveSnapshotButton } from '@/components/SaveSnapshotButton';
-import { formatCurrency } from '@/lib/validation/validators';
+import { formatCurrency, numInput } from '@/lib/validation/validators';
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
@@ -290,7 +290,7 @@ export default function MortgageCalculator() {
 
           <div className="space-y-1.5">
             <Label className="text-xs">סך משכנתא כולל</Label>
-            <Input type="number" min="0" value={totalMortgageAmount ?? ''} onChange={(e) => { touch(); setTotalMortgageAmount(Number(e.target.value)); }} />
+            <Input type="number" min="0" value={totalMortgageAmount ?? ''} onChange={(e) => { touch(); setTotalMortgageAmount(numInput(e.target.value)); }} />
             <p className="text-[11px] text-muted-foreground">זהו הסכום הכולל שצריך להתפזר בין המסלולים. אפשר לחלק באחוזים, בסכומים או כיתרה.</p>
           </div>
 
@@ -335,13 +335,13 @@ export default function MortgageCalculator() {
                   {((track.allocationMode ?? 'amount') === 'amount') && (
                     <div>
                       <Label className="text-[11px]">סכום (₪)</Label>
-                      <Input type="number" min="0" className="h-9" value={track.principal ?? ''} onChange={(e) => updateTrack(track.id, { principal: Number(e.target.value) })} />
+                      <Input type="number" min="0" className="h-9" value={track.principal ?? ''} onChange={(e) => updateTrack(track.id, { principal: numInput(e.target.value) })} />
                     </div>
                   )}
                   {track.allocationMode === 'percent' && (
                     <div>
                       <Label className="text-[11px]">אחוז (%)</Label>
-                      <Input type="number" min="0" max="100" step="0.1" className="h-9" value={track.allocationValue ?? ''} onChange={(e) => updateTrack(track.id, { allocationValue: Number(e.target.value) })} />
+                      <Input type="number" min="0" max="100" step="0.1" className="h-9" value={track.allocationValue ?? ''} onChange={(e) => updateTrack(track.id, { allocationValue: numInput(e.target.value) })} />
                     </div>
                   )}
                   {track.allocationMode === 'remainder' && (
@@ -351,11 +351,11 @@ export default function MortgageCalculator() {
                   )}
                   <div>
                     <Label className="text-[11px]">ריבית (%)</Label>
-                    <Input type="number" min="0" step="0.1" className="h-9" value={track.annualInterestRate ?? ''} onChange={(e) => updateTrack(track.id, { annualInterestRate: Number(e.target.value) })} />
+                    <Input type="number" min="0" step="0.1" className="h-9" value={track.annualInterestRate ?? ''} onChange={(e) => updateTrack(track.id, { annualInterestRate: numInput(e.target.value) })} />
                   </div>
                   <div>
                     <Label className="text-[11px]">שנים</Label>
-                    <Input type="number" min="1" className="h-9" value={track.years ?? ''} onChange={(e) => updateTrack(track.id, { years: Number(e.target.value) })} />
+                    <Input type="number" min="1" className="h-9" value={track.years ?? ''} onChange={(e) => updateTrack(track.id, { years: numInput(e.target.value) })} />
                   </div>
                   <div className="col-span-2 text-[11px] text-muted-foreground flex justify-between">
                     <span>סכום מחושב</span>
@@ -381,15 +381,15 @@ export default function MortgageCalculator() {
                 <div className="grid grid-cols-3 gap-2">
                   <div>
                     <Label className="text-[10px]">מחיר נכס</Label>
-                    <Input type="number" min="0" className="h-8 text-sm" value={propertyPrice ?? ''} onChange={(e) => { touch(); setPropertyPrice(Number(e.target.value)); }} />
+                    <Input type="number" min="0" className="h-8 text-sm" value={propertyPrice ?? ''} onChange={(e) => { touch(); setPropertyPrice(numInput(e.target.value)); }} />
                   </div>
                   <div>
                     <Label className="text-[10px]">מדד שנתי %</Label>
-                    <Input type="number" min="0" step="0.1" className="h-8 text-sm" value={madadRate} onChange={(e) => { touch(); setMadadRate(Number(e.target.value)); }} />
+                    <Input type="number" min="0" step="0.1" className="h-8 text-sm" value={madadRate} onChange={(e) => { touch(); setMadadRate(numInput(e.target.value)); }} />
                   </div>
                   <div>
                     <Label className="text-[10px]">תקופת בנייה צפויה</Label>
-                    <Input type="number" min="1" className="h-8 text-sm" value={madadYears} onChange={(e) => { touch(); setMadadYears(Number(e.target.value)); }} />
+                    <Input type="number" min="1" className="h-8 text-sm" value={madadYears} onChange={(e) => { touch(); setMadadYears(numInput(e.target.value)); }} />
                   </div>
                   {madadResult && (
                     <div className="col-span-3 text-center p-2 bg-muted/50 rounded-lg">
