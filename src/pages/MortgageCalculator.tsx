@@ -42,7 +42,6 @@ import { indexLawNote } from '@/lib/constants/regulations';
 import { EmptyState } from '@/components/ui/empty-state';
 import NextStepCard from '@/components/NextStepCard';
 import { useJourney } from '@/hooks/useJourney';
-import { GlossaryLink } from '@/components/GlossaryLink';
 import { CHART, CHART_SERIES } from '@/lib/chart-colors';
 import { Link } from 'react-router-dom';
 
@@ -109,6 +108,8 @@ export default function MortgageCalculator() {
     savedM?.totalMortgageAmount ?? bpData?.mortgageAmount ?? budgetData?.maxMortgage ?? DEFAULT_TRACK.principal,
   );
   const [freeCashFlow, setFreeCashFlow] = useState(savedM?.freeCashFlow ?? budgetData?.freeCashFlow ?? 20000);
+  // הכנסה חודשית נטו — מגיעה מהתקציב; משמשת לבדיקת תקרת ה-40% של הבנקים
+  const monthlyIncome = budgetData?.monthlyIncome ?? 0;
   const [isOffPlan, setIsOffPlan] = useState(savedM?.isOffPlan ?? false);
   const [propertyPrice, setPropertyPrice] = useState(savedM?.propertyPrice ?? 1600000);
   const [madadRate, setMadadRate] = useState(savedM?.madadRate ?? MARKET_CONSTANTS.DEFAULT_MADAD_RATE);
@@ -119,8 +120,8 @@ export default function MortgageCalculator() {
 
   // Auto-save
   useEffect(() => {
-    save('mortgage', { tracks, totalMortgageAmount, freeCashFlow, monthlyIncome: freeCashFlow, isOffPlan, propertyPrice, madadRate, madadYears, touched }, uid);
-  }, [tracks, totalMortgageAmount, freeCashFlow, isOffPlan, propertyPrice, madadRate, madadYears, touched, uid]);
+    save('mortgage', { tracks, totalMortgageAmount, freeCashFlow, monthlyIncome, isOffPlan, propertyPrice, madadRate, madadYears, touched }, uid);
+  }, [tracks, totalMortgageAmount, freeCashFlow, monthlyIncome, isOffPlan, propertyPrice, madadRate, madadYears, touched, uid]);
 
   const handleImportBudget = () => {
     if (!budgetData) return;
@@ -171,6 +172,12 @@ export default function MortgageCalculator() {
   }, [results, resolvedTracks]);
 
   const totalPrincipal = resolvedTracks.reduce((sum, t) => sum + t.principal, 0);
+  // בדיקות רגולטוריות — לא חוסמות, רק מתריעות
+  const primePrincipal = resolvedTracks.filter((t) => t.type === 'prime').reduce((sum, t) => sum + t.principal, 0);
+  const primeShare = totalPrincipal > 0 ? primePrincipal / totalPrincipal : 0;
+  const primeOverLimit = primeShare > FINANCE.MAX_PRIME_SHARE + 0.001;
+  const incomeDtiPercent = results && monthlyIncome > 0 ? (results.totalMonthlyPayment / monthlyIncome) * 100 : null;
+  const dtiOverLimit = incomeDtiPercent !== null && incomeDtiPercent > FINANCE.MAX_DTI * 100;
   const dtiRatio =
     results && freeCashFlow > 0 && Number.isFinite(results.totalMonthlyPayment)
       ? results.totalMonthlyPayment / freeCashFlow
@@ -405,8 +412,10 @@ export default function MortgageCalculator() {
                 <KPICard
                   title="תשלום חודשי"
                   value={formatCurrency(results.totalMonthlyPayment)}
-                  subtitle={dtiRatio !== null ? `מתוך תזרים פנוי: ${dtiPercent.toFixed(1)}%` : 'אין תזרים פנוי למימון'}
-                  color={dtiRatio && dtiRatio > 1 ? 'text-red-600' : undefined}
+                  subtitle={incomeDtiPercent !== null
+                    ? `יחס החזר מההכנסה: ${incomeDtiPercent.toFixed(1)}%`
+                    : dtiRatio !== null ? `מתוך תזרים פנוי: ${dtiPercent.toFixed(1)}%` : 'אין תזרים פנוי למימון'}
+                  color={dtiOverLimit || (dtiRatio !== null && dtiRatio > 1) ? 'text-red-600' : undefined}
                 />
                 <KPICard
                   title="תזרים פנוי"
@@ -427,14 +436,26 @@ export default function MortgageCalculator() {
                 />
               </div>
 
+              {/* אזהרות רגולטוריות — התמהיל מותר, אבל הבנק כנראה לא יאשר אותו */}
+              {primeOverLimit && (
+                <div className="rounded-xl border border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/40 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
+                  ⚠️ מסלול הפריים הוא {(primeShare * 100).toFixed(0)}% מהתמהיל — מעל תקרת ה-{Math.round(FINANCE.MAX_PRIME_SHARE * 100)}% שמתירות הוראות בנק ישראל. בנק לא יאשר תמהיל כזה.
+                </div>
+              )}
+              {dtiOverLimit && (
+                <div className="rounded-xl border border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/40 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
+                  ⚠️ ההחזר החודשי הוא {incomeDtiPercent!.toFixed(0)}% מההכנסה נטו — הבנקים בדרך כלל לא מאשרים מעל {Math.round(FINANCE.MAX_DTI * 100)}%. שקול להקטין את המשכנתא או להאריך את התקופה.
+                </div>
+              )}
+
               {/* Cash Flow Bar */}
               {dtiRatio !== null ? (
                 <Card className="border-0 shadow-sm">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between text-sm mb-2">
                       <span className="text-muted-foreground flex items-center gap-1">
-                        <GlossaryLink term="dti">החזר מול תזרים פנוי</GlossaryLink>
-                        <InfoTooltip text="כאן רואים אם ההחזר החודשי נשאר בתוך התזרים הפנוי של משק הבית" />
+                        החזר מול תזרים פנוי
+                        <InfoTooltip text="כאן רואים אם ההחזר החודשי נשאר בתוך התזרים הפנוי של משק הבית. זה מדד שונה מיחס ההחזר מההכנסה (DTI) שהבנק בודק." />
                       </span>
                       <span className={cn('font-semibold', results.totalMonthlyPayment <= freeCashFlow ? 'text-green-600' : 'text-red-600')}>
                         {formatCurrency(results.totalMonthlyPayment)} / {formatCurrency(freeCashFlow)}
