@@ -150,7 +150,6 @@ const BP_DEFAULTS = {
   annualOperatingCosts: 8000,
   holdingPeriodYears: 10,
   baseAppreciation: 1,
-  manualMode: true,
   customRates: { pessimistic: 0, average: 1, optimistic: 2 },
   urbanRenewalUpliftMode: 'amount' as const,
   urbanRenewalUpliftValue: 0,
@@ -188,7 +187,6 @@ export default function BusinessPlan() {
   const [annualOperatingCosts, setAnnualOperatingCosts] = useState(saved?.annualOperatingCosts ?? BP_DEFAULTS.annualOperatingCosts);
   const [holdingPeriodYears, setHoldingPeriodYears] = useState(saved?.holdingPeriodYears ?? BP_DEFAULTS.holdingPeriodYears);
   const [baseAppreciation, setBaseAppreciation] = useState(saved?.baseAppreciation ?? BP_DEFAULTS.baseAppreciation);
-  const [manualMode, setManualMode] = useState(saved?.manualMode ?? BP_DEFAULTS.manualMode);
   const [customRates, setCustomRates] = useState(saved?.customRates ?? BP_DEFAULTS.customRates);
   const [urbanRenewalUpliftMode, setUrbanRenewalUpliftMode] = useState<UpliftMode>(saved?.urbanRenewalUpliftMode ?? BP_DEFAULTS.urbanRenewalUpliftMode);
   const [urbanRenewalUpliftValue, setUrbanRenewalUpliftValue] = useState(saved?.urbanRenewalUpliftValue ?? BP_DEFAULTS.urbanRenewalUpliftValue);
@@ -209,14 +207,14 @@ export default function BusinessPlan() {
       purchasePrice, propertyArea, propertySqm, propertyFloor, propertyRooms,
       propertyNotes, buyerType, sideCosts, renovationCost, equityInvested, mortgageAmount,
       mortgageMonthlyPayment, mortgageInterestRate, mortgageYears, expectedMonthlyRent,
-      annualOperatingCosts, holdingPeriodYears, baseAppreciation, manualMode, customRates,
+      annualOperatingCosts, holdingPeriodYears, baseAppreciation, customRates,
       urbanRenewalUpliftMode, urbanRenewalUpliftValue, manualMortgageAmount,
       manualMortgageMonthlyPayment, useSideCostPreset, selectedSideCosts, touched,
     }, uid);
   }, [purchasePrice, propertyArea, propertySqm, propertyFloor, propertyRooms,
     propertyNotes, buyerType, sideCosts, renovationCost, equityInvested, mortgageAmount,
     mortgageMonthlyPayment, mortgageInterestRate, mortgageYears, expectedMonthlyRent,
-    annualOperatingCosts, holdingPeriodYears, baseAppreciation, manualMode, customRates,
+    annualOperatingCosts, holdingPeriodYears, baseAppreciation, customRates,
     urbanRenewalUpliftMode, urbanRenewalUpliftValue, manualMortgageAmount,
     manualMortgageMonthlyPayment, useSideCostPreset, selectedSideCosts, touched, uid]);
 
@@ -296,7 +294,6 @@ export default function BusinessPlan() {
     setAnnualOperatingCosts(BP_DEFAULTS.annualOperatingCosts);
     setHoldingPeriodYears(BP_DEFAULTS.holdingPeriodYears);
     setBaseAppreciation(BP_DEFAULTS.baseAppreciation);
-    setManualMode(BP_DEFAULTS.manualMode);
     setCustomRates(BP_DEFAULTS.customRates);
     setUrbanRenewalUpliftMode(BP_DEFAULTS.urbanRenewalUpliftMode);
     setUrbanRenewalUpliftValue(BP_DEFAULTS.urbanRenewalUpliftValue);
@@ -390,7 +387,7 @@ export default function BusinessPlan() {
                     sideCosts, renovationCost, equityInvested,
                     mortgageAmount: effectiveMortgageAmount, mortgageMonthlyPayment: effectiveMortgageMonthlyPayment, mortgageInterestRate,
                     mortgageYears, expectedMonthlyRent, annualOperatingCosts,
-                    holdingPeriodYears, baseAppreciation, manualMode, customRates,
+                    holdingPeriodYears, baseAppreciation, customRates,
                     urbanRenewalUpliftMode, urbanRenewalUpliftValue, manualMortgageAmount,
                     manualMortgageMonthlyPayment, useSideCostPreset, selectedSideCosts,
                   },

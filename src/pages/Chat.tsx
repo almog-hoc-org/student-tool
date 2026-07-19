@@ -105,14 +105,11 @@ export default function Chat() {
       setInput('');
       setLoading(true);
       try {
-        const res = await sendAiMessage(text.trim(), conversation.id, {
+        await sendAiMessage(text.trim(), conversation.id, {
           includeUserContext: useContext,
         });
         const fresh = await loadMessages(conversation.id);
         setMessages(fresh);
-        if (res.conversation_id !== conversation.id) {
-          setConversation((c) => (c ? { ...c, id: res.conversation_id } : c));
-        }
       } catch (err) {
         toast.error('שגיאה בשליחה. נסה שוב.');
         console.error(err);

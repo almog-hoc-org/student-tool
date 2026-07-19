@@ -8,12 +8,8 @@ export function useInsights() {
   const [loading, setLoading] = useState(false);
 
   const analyze = useCallback(() => {
-    setLoading(true);
-    // Small delay for UX feel
-    setTimeout(() => {
-      setInsights(generateInsights());
-      setLoading(false);
-    }, 500);
+    setInsights(generateInsights());
+    setLoading(false);
   }, []);
 
   return {
