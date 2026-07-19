@@ -1,7 +1,7 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { syncFromCloud, syncToCloud } from '@/lib/storage';
+import { syncOnLogin, syncToCloud, clearAllLocal } from '@/lib/storage';
 import type { Database } from '@/integrations/supabase/types';
 
 type AppRole = Database['public']['Enums']['app_role'];
@@ -42,9 +42,10 @@ export function useAuth() {
 }
 
 async function fetchProfile(userId: string): Promise<Profile | null> {
+  // רשימת עמודות מפורשת — בלי admin_notes, שהן הערות פנימיות של הצוות
   const { data } = await supabase
     .from('profiles')
-    .select('*')
+    .select('id, user_id, display_name, avatar_url, status, created_at, updated_at, onboarded_at')
     .eq('user_id', userId)
     .single();
   return data;
@@ -97,6 +98,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // מזהה המשתמש שכבר סונכרן — מונע ריצה כפולה של הסנכרון
+  // (getSession ו-INITIAL_SESSION יורים שניהם בעלייה)
+  const syncedForUser = useRef<string | null>(null);
+
   const loadUserData = async (currentUser: User | null) => {
     if (!currentUser) {
       setProfile(null);
@@ -109,11 +114,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ]);
     setProfile(p);
     setRoles(r);
-    // Sync data: upload local → cloud, then pull cloud → local
-    syncToCloud(currentUser.id)
-      .then(() => syncFromCloud(currentUser.id))
-      .then(() => migrateSchemaVersions(currentUser.id))
-      .catch(() => {});
+    if (syncedForUser.current !== currentUser.id) {
+      syncedForUser.current = currentUser.id;
+      // סנכרון דו-כיווני לפי זמן עדכון — "החדש מנצח"
+      syncOnLogin(currentUser.id)
+        .then(() => migrateSchemaVersions(currentUser.id))
+        .catch(() => { syncedForUser.current = null; });
+    }
   };
 
   useEffect(() => {
@@ -165,6 +172,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    // דחיפה אחרונה לענן ואז ניקוי מקומי מלא — משתמש אחר באותו דפדפן
+    // לא יראה (או ידרוס) את הנתונים הפיננסיים של המשתמש הקודם
+    if (user) {
+      try { await syncToCloud(user.id); } catch { /* offline — עדיף לנקות בכל זאת */ }
+    }
+    clearAllLocal();
+    syncedForUser.current = null;
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);

@@ -68,13 +68,11 @@ export function UserDrawer({ userId, userLabel, onClose }: Props) {
         if (!error && data) setRows(data as ActivityRow[]);
         setLoading(false);
       });
+    // קריאה דרך RPC — גישת select ישירה ל-admin_notes נחסמת ברמת העמודה
     supabase
-      .from('profiles')
-      .select('admin_notes')
-      .eq('user_id', userId)
-      .maybeSingle()
+      .rpc('admin_get_notes', { _user_id: userId })
       .then(({ data }) => {
-        setNotes(data?.admin_notes ?? '');
+        setNotes((data as string | null) ?? '');
         setNotesDirty(false);
         setNotesLoading(false);
       });
