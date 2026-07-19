@@ -53,3 +53,13 @@ describe("מס רכישה — דירה נוספת (משקיע)", () => {
     expect(totalTax).toBeCloseTo(160_000, 2);
   });
 });
+
+describe("מס רכישה — תושב חוץ", () => {
+  it("משלם בדיוק כמו משקיע — בלי תוספת 2% (באג שתוקן)", () => {
+    for (const price of [1_000_000, 2_500_000, 6_055_070, 9_000_000]) {
+      const foreign = calculatePurchaseTax({ purchasePrice: price, buyerType: "foreignResident" });
+      const investor = calculatePurchaseTax({ purchasePrice: price, buyerType: "additionalApartment" });
+      expect(foreign.totalTax).toBe(investor.totalTax);
+    }
+  });
+});

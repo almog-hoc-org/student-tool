@@ -24,8 +24,7 @@ const ADDITIONAL_APARTMENT_BRACKETS: TaxBracket[] = [
   { upTo: Infinity, rate: 0.10 },
 ];
 
-// תושב חוץ - אינו זכאי להקלת דירה יחידה, משלם כמו משקיע
-const FOREIGN_RESIDENT_EXTRA_RATE = 0.02;
+// תושב חוץ - אינו זכאי להקלת דירה יחידה, משלם כמו משקיע (אותן מדרגות)
 
 export interface PurchaseTaxInput {
   purchasePrice: number;
@@ -45,7 +44,7 @@ export interface PurchaseTaxOutput {
   brackets: PurchaseTaxBracketResult[];
 }
 
-function calculateWithBrackets(price: number, brackets: TaxBracket[], extraRate: number = 0): PurchaseTaxOutput {
+function calculateWithBrackets(price: number, brackets: TaxBracket[]): PurchaseTaxOutput {
   let remaining = price;
   let totalTax = 0;
   let prevLimit = 0;
@@ -55,7 +54,7 @@ function calculateWithBrackets(price: number, brackets: TaxBracket[], extraRate:
     if (remaining <= 0) break;
 
     const bracketSize = bracket.upTo === Infinity ? remaining : Math.min(bracket.upTo - prevLimit, remaining);
-    const rate = bracket.rate + extraRate;
+    const rate = bracket.rate;
     const taxInBracket = bracketSize * rate;
 
     bracketResults.push({
@@ -90,7 +89,7 @@ export function calculatePurchaseTax(input: PurchaseTaxInput): PurchaseTaxOutput
     case 'additionalApartment':
       return calculateWithBrackets(purchasePrice, ADDITIONAL_APARTMENT_BRACKETS);
     case 'foreignResident':
-      return calculateWithBrackets(purchasePrice, ADDITIONAL_APARTMENT_BRACKETS, FOREIGN_RESIDENT_EXTRA_RATE);
+      return calculateWithBrackets(purchasePrice, ADDITIONAL_APARTMENT_BRACKETS);
     default:
       return calculateWithBrackets(purchasePrice, SINGLE_APARTMENT_BRACKETS);
   }
