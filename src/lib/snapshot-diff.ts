@@ -61,8 +61,8 @@ const FIELD_META: Record<string, FieldMeta> = {
     format: (v) => {
       const m: Record<string, string> = {
         singleApartment: 'דירה יחידה',
-        upgradingApartment: 'שיפור דיור',
-        investment: 'דירת השקעה',
+        additionalApartment: 'דירה נוספת / משקיע',
+        foreignResident: 'תושב חוץ',
       };
       return m[String(v)] ?? text(v);
     },
@@ -83,6 +83,7 @@ const FIELD_META: Record<string, FieldMeta> = {
 
   // Business Plan
   purchasePrice: { label: 'מחיר רכישה', format: currency },
+  purchaseTax: { label: 'מס רכישה', format: currency },
   sideCosts: { label: 'עלויות נלוות', format: currency },
   renovationCost: { label: 'עלות שיפוץ', format: currency },
   equityInvested: { label: 'הון מושקע', format: currency },

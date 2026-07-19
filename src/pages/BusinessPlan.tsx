@@ -8,6 +8,8 @@ import { BarChart3, Import, RotateCcw, TrendingUp } from 'lucide-react';
 import { SaveSnapshotButton } from '@/components/SaveSnapshotButton';
 import { calculateBusinessPlan, BusinessPlanOutput, ScenarioResult } from '@/lib/calculations/business-plan';
 import { calculateMortgageMonthlyPayment } from '@/lib/calculations/mortgage-calculator';
+import { calculatePurchaseTax, type BuyerType } from '@/lib/calculations/purchase-tax';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatCurrency } from '@/lib/validation/validators';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
@@ -136,6 +138,7 @@ const BP_DEFAULTS = {
   propertyFloor: '',
   propertyRooms: '',
   propertyNotes: '',
+  buyerType: 'additionalApartment' as BuyerType,
   sideCosts: 40000,
   renovationCost: 0,
   equityInvested: 400000,
@@ -173,6 +176,7 @@ export default function BusinessPlan() {
   const [propertyFloor, setPropertyFloor] = useState(saved?.propertyFloor ?? BP_DEFAULTS.propertyFloor);
   const [propertyRooms, setPropertyRooms] = useState(saved?.propertyRooms ?? BP_DEFAULTS.propertyRooms);
   const [propertyNotes, setPropertyNotes] = useState(saved?.propertyNotes ?? BP_DEFAULTS.propertyNotes);
+  const [buyerType, setBuyerType] = useState<BuyerType>(saved?.buyerType ?? BP_DEFAULTS.buyerType);
   const [sideCosts, setSideCosts] = useState(saved?.sideCosts ?? BP_DEFAULTS.sideCosts);
   const [renovationCost, setRenovationCost] = useState(saved?.renovationCost ?? BP_DEFAULTS.renovationCost);
   const [equityInvested, setEquityInvested] = useState(saved?.equityInvested ?? BP_DEFAULTS.equityInvested);
@@ -203,14 +207,14 @@ export default function BusinessPlan() {
   useEffect(() => {
     save('business_plan', {
       purchasePrice, propertyArea, propertySqm, propertyFloor, propertyRooms,
-      propertyNotes, sideCosts, renovationCost, equityInvested, mortgageAmount,
+      propertyNotes, buyerType, sideCosts, renovationCost, equityInvested, mortgageAmount,
       mortgageMonthlyPayment, mortgageInterestRate, mortgageYears, expectedMonthlyRent,
       annualOperatingCosts, holdingPeriodYears, baseAppreciation, manualMode, customRates,
       urbanRenewalUpliftMode, urbanRenewalUpliftValue, manualMortgageAmount,
       manualMortgageMonthlyPayment, useSideCostPreset, selectedSideCosts, touched,
     }, uid);
   }, [purchasePrice, propertyArea, propertySqm, propertyFloor, propertyRooms,
-    propertyNotes, sideCosts, renovationCost, equityInvested, mortgageAmount,
+    propertyNotes, buyerType, sideCosts, renovationCost, equityInvested, mortgageAmount,
     mortgageMonthlyPayment, mortgageInterestRate, mortgageYears, expectedMonthlyRent,
     annualOperatingCosts, holdingPeriodYears, baseAppreciation, manualMode, customRates,
     urbanRenewalUpliftMode, urbanRenewalUpliftValue, manualMortgageAmount,
@@ -233,6 +237,12 @@ export default function BusinessPlan() {
     }
   }, [sideCostPresetTotal, useSideCostPreset]);
 
+  // מס רכישה — מחושב תמיד לפי סוג הרוכש, שורה נפרדת שאי אפשר לשכוח
+  const purchaseTaxAmount = useMemo(
+    () => Math.round(calculatePurchaseTax({ purchasePrice, buyerType }).totalTax),
+    [purchasePrice, buyerType],
+  );
+
   const autoMortgageAmount = useMemo(() => Math.max(0, purchasePrice - equityInvested), [purchasePrice, equityInvested]);
   const effectiveMortgageAmount = manualMortgageAmount ? mortgageAmount : autoMortgageAmount;
   const autoMortgageMonthlyPayment = useMemo(
@@ -254,8 +264,11 @@ export default function BusinessPlan() {
     setMortgageMonthlyPayment(budgetData.monthlyPayment);
     setManualMortgageAmount(false);
     setManualMortgageMonthlyPayment(false);
-    setSideCosts(budgetData.purchaseTax + budgetData.sideCosts);
+    // מס רכישה מחושב בנפרד לפי סוג הרוכש — לא נכלל בעלויות הנלוות
+    setSideCosts(budgetData.sideCosts);
     setUseSideCostPreset(false);
+    const budgetProfile = load<{ buyerType?: BuyerType }>('budget_profile');
+    if (budgetProfile?.buyerType) setBuyerType(budgetProfile.buyerType);
     // Import interest rate from mortgage results if available
     const mortgageData = load<{ weightedAverageInterest?: number }>('mortgage_results');
     if (mortgageData?.weightedAverageInterest) {
@@ -271,6 +284,7 @@ export default function BusinessPlan() {
     setPropertyFloor(BP_DEFAULTS.propertyFloor);
     setPropertyRooms(BP_DEFAULTS.propertyRooms);
     setPropertyNotes(BP_DEFAULTS.propertyNotes);
+    setBuyerType(BP_DEFAULTS.buyerType);
     setSideCosts(BP_DEFAULTS.sideCosts);
     setRenovationCost(BP_DEFAULTS.renovationCost);
     setEquityInvested(BP_DEFAULTS.equityInvested);
@@ -300,7 +314,7 @@ export default function BusinessPlan() {
     return calculateBusinessPlan(
       {
         purchasePrice,
-        sideCosts,
+        sideCosts: sideCosts + purchaseTaxAmount,
         renovationCost,
         equityInvested,
         mortgageAmount: effectiveMortgageAmount,
@@ -372,7 +386,8 @@ export default function BusinessPlan() {
                 getData={() => ({
                   inputs: {
                     purchasePrice, propertyArea, propertySqm, propertyFloor,
-                    propertyRooms, propertyNotes, sideCosts, renovationCost, equityInvested,
+                    propertyRooms, propertyNotes, buyerType, purchaseTax: purchaseTaxAmount,
+                    sideCosts, renovationCost, equityInvested,
                     mortgageAmount: effectiveMortgageAmount, mortgageMonthlyPayment: effectiveMortgageMonthlyPayment, mortgageInterestRate,
                     mortgageYears, expectedMonthlyRent, annualOperatingCosts,
                     holdingPeriodYears, baseAppreciation, manualMode, customRates,
@@ -493,12 +508,29 @@ export default function BusinessPlan() {
               <CardContent className="p-4 space-y-3">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">עלויות נלוות</p>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">מס רכישה ועלויות נלוות</p>
                     <p className="text-[11px] text-muted-foreground">סמן מה לכלול בחישוב.</p>
                   </div>
                   <Button type="button" variant="outline" size="sm" onClick={() => setUseSideCostPreset((v) => !v)}>
                     {useSideCostPreset ? 'עריכה ידנית' : 'חזור לחישוב'}
                   </Button>
+                </div>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:items-end">
+                  <div>
+                    <Label className="text-xs">סוג רוכש (קובע את מס הרכישה)</Label>
+                    <Select value={buyerType} onValueChange={(v: BuyerType) => { touch(); setBuyerType(v); }}>
+                      <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="additionalApartment">דירה נוספת / משקיע</SelectItem>
+                        <SelectItem value="singleApartment">דירה יחידה</SelectItem>
+                        <SelectItem value="foreignResident">תושב חוץ</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="rounded-xl border bg-background px-3 py-2 flex items-center justify-between">
+                    <span className="text-sm">מס רכישה</span>
+                    <span className="text-sm font-bold tabular-nums">{formatCurrency(purchaseTaxAmount)}</span>
+                  </div>
                 </div>
                 <div className="grid grid-cols-1 gap-2">
                   {[
@@ -520,8 +552,8 @@ export default function BusinessPlan() {
                   ))}
                 </div>
                 <div className="rounded-xl bg-background px-3 py-2 flex items-center justify-between">
-                  <span className="text-sm font-medium">סה״כ עלויות נלוות</span>
-                  <span className="text-lg font-bold tabular-nums">{formatCurrency(sideCosts)}</span>
+                  <span className="text-sm font-medium">סה״כ מס + עלויות נלוות</span>
+                  <span className="text-lg font-bold tabular-nums">{formatCurrency(sideCosts + purchaseTaxAmount)}</span>
                 </div>
               </CardContent>
             </Card>

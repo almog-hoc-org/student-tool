@@ -95,7 +95,9 @@ export default function PropertyCheck() {
       purchasePrice,
       propertyArea: area,
       propertySqm: sqm,
-      sideCosts: result.purchaseTax + result.sideCosts,
+      // מס רכישה מחושב בתוכנית העסקית לפי סוג הרוכש — מעבירים אותו בנפרד
+      buyerType,
+      sideCosts: result.sideCosts,
       equityInvested: result.equityAmount,
       mortgageAmount: result.mortgageAmount,
       mortgageMonthlyPayment: result.estimatedMonthlyPayment,
