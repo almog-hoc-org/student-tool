@@ -57,6 +57,7 @@ export default function DealComparison() {
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [scenarioFilter, setScenarioFilter] = useState<DealScenarioFilter>('all');
+  const [showAllColumns, setShowAllColumns] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -347,11 +348,21 @@ export default function DealComparison() {
 
         <Card className="hidden md:block border-0 shadow-sm overflow-hidden">
           <CardContent className="p-0">
+            <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/40">
+              <p className="text-xs text-muted-foreground">
+                {showAllColumns ? 'כל העמודות מוצגות' : 'מוצגות העמודות העיקריות בלבד'}
+              </p>
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setShowAllColumns((v) => !v)}>
+                {showAllColumns ? 'פחות עמודות' : 'עוד עמודות'}
+              </Button>
+            </div>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[1320px] border-collapse text-xs">
+              <table className={cn('w-full border-collapse text-xs', showAllColumns && 'min-w-[1320px]')}>
                 <thead className="bg-muted/80 sticky top-0 z-10">
                   <tr className="text-right">
-                    {['עסקה', 'אזור', 'שטח', 'מחיר למ״ר', 'תרחיש', 'עלייה שנתית', 'מחיר רכישה', 'הון עצמי', 'משכנתא', 'החזר חודשי', 'שכ״ד', 'תזרים חודשי', 'COC', 'IRR', 'רווח כולל', 'שווי בסוף', 'תקופה', 'נשמר', 'פעולות'].map((head) => (
+                    {['עסקה', 'תרחיש', 'מחיר רכישה', 'הון עצמי', 'תזרים חודשי',
+                      ...(showAllColumns ? ['אזור', 'שטח', 'מחיר למ״ר', 'עלייה שנתית', 'משכנתא', 'החזר חודשי', 'שכ״ד', 'COC', 'שווי בסוף', 'תקופה', 'נשמר'] : []),
+                      'IRR', 'רווח כולל', 'פעולות'].map((head) => (
                       <th key={head} className="border-b border-l px-3 py-2 font-semibold whitespace-nowrap">{head}</th>
                     ))}
                   </tr>
@@ -360,23 +371,27 @@ export default function DealComparison() {
                   {rows.map((row) => (
                     <tr key={row.id} className="hover:bg-muted/40">
                       <td className="border-b border-l px-3 py-2 font-semibold max-w-[180px] truncate" title={row.notes ?? row.name}>{row.name}</td>
-                      <td className="border-b border-l px-3 py-2 max-w-[140px] truncate">{row.propertyArea || '—'}</td>
-                      <td className="border-b border-l px-3 py-2 whitespace-nowrap">{row.propertySqm ? `${row.propertySqm} מ״ר` : '—'}</td>
-                      <td className="border-b border-l px-3 py-2 whitespace-nowrap">{row.pricePerSqm ? formatCurrency(row.pricePerSqm) : '—'}</td>
                       <td className="border-b border-l px-3 py-2"><Badge variant="outline" className={getScenarioTone(row.scenarioLabel)}>{row.scenarioLabel}</Badge></td>
-                      <td className="border-b border-l px-3 py-2 text-center">{row.annualAppreciation}%</td>
                       <td className="border-b border-l px-3 py-2">{formatCurrency(row.purchasePrice)}</td>
                       <td className="border-b border-l px-3 py-2">{formatCurrency(row.equityInvested)}</td>
-                      <td className="border-b border-l px-3 py-2">{formatCurrency(row.mortgageAmount)}</td>
-                      <td className="border-b border-l px-3 py-2">{formatCurrency(row.mortgageMonthlyPayment)}</td>
-                      <td className="border-b border-l px-3 py-2">{formatCurrency(row.expectedMonthlyRent)}</td>
                       <td className={cn('border-b border-l px-3 py-2', row.monthlyCashflow >= 0 ? 'text-green-600' : 'text-red-600', bestClass(row.monthlyCashflow, best.monthlyCashflow))}>{formatCurrency(row.monthlyCashflow)}</td>
-                      <td className={cn('border-b border-l px-3 py-2', bestClass(row.cocYield, best.cocYield))}>{formatPercent(row.cocYield)}</td>
+                      {showAllColumns && (
+                        <>
+                          <td className="border-b border-l px-3 py-2 max-w-[140px] truncate">{row.propertyArea || '—'}</td>
+                          <td className="border-b border-l px-3 py-2 whitespace-nowrap">{row.propertySqm ? `${row.propertySqm} מ״ר` : '—'}</td>
+                          <td className="border-b border-l px-3 py-2 whitespace-nowrap">{row.pricePerSqm ? formatCurrency(row.pricePerSqm) : '—'}</td>
+                          <td className="border-b border-l px-3 py-2 text-center">{row.annualAppreciation}%</td>
+                          <td className="border-b border-l px-3 py-2">{formatCurrency(row.mortgageAmount)}</td>
+                          <td className="border-b border-l px-3 py-2">{formatCurrency(row.mortgageMonthlyPayment)}</td>
+                          <td className="border-b border-l px-3 py-2">{formatCurrency(row.expectedMonthlyRent)}</td>
+                          <td className={cn('border-b border-l px-3 py-2', bestClass(row.cocYield, best.cocYield))}>{formatPercent(row.cocYield)}</td>
+                          <td className="border-b border-l px-3 py-2">{formatCurrency(row.propertyValueAtEnd)}</td>
+                          <td className="border-b border-l px-3 py-2 text-center">{row.holdingPeriodYears} שנים</td>
+                          <td className="border-b border-l px-3 py-2 whitespace-nowrap">{new Date(row.createdAt).toLocaleDateString('he-IL')}</td>
+                        </>
+                      )}
                       <td className={cn('border-b border-l px-3 py-2', bestClass(row.irr ?? -Infinity, best.irr))}>{formatPercent(row.irr)}</td>
                       <td className={cn('border-b border-l px-3 py-2', row.totalProfit >= 0 ? 'text-green-600' : 'text-red-600', bestClass(row.totalProfit, best.totalProfit))}>{formatCurrency(row.totalProfit)}</td>
-                      <td className="border-b border-l px-3 py-2">{formatCurrency(row.propertyValueAtEnd)}</td>
-                      <td className="border-b border-l px-3 py-2 text-center">{row.holdingPeriodYears} שנים</td>
-                      <td className="border-b border-l px-3 py-2 whitespace-nowrap">{new Date(row.createdAt).toLocaleDateString('he-IL')}</td>
                       <td className="border-b px-3 py-2 whitespace-nowrap">
                         {snapshotsById.get(row.snapshotId) && (
                           <div className="flex gap-1">
