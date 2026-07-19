@@ -39,10 +39,10 @@ const ICONS = {
 };
 
 const KIND_COLORS = {
-  usage: 'bg-blue-500/10 text-blue-600',
-  message: 'bg-emerald-500/10 text-emerald-600',
-  snapshot: 'bg-amber-500/10 text-amber-600',
-  notification: 'bg-purple-500/10 text-purple-600',
+  usage: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+  message: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+  snapshot: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+  notification: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
 };
 
 export function UserDrawer({ userId, userLabel, onClose }: Props) {
