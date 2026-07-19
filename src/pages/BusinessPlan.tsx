@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { BarChart3, Import, RotateCcw, TrendingUp } from 'lucide-react';
+import { BarChart3, ChevronDown, Import, RotateCcw, TrendingUp } from 'lucide-react';
 import { SaveSnapshotButton } from '@/components/SaveSnapshotButton';
 import { calculateBusinessPlan, BusinessPlanOutput, ScenarioResult } from '@/lib/calculations/business-plan';
 import { calculateMortgageMonthlyPayment } from '@/lib/calculations/mortgage-calculator';
@@ -12,6 +12,7 @@ import { calculatePurchaseTax, type BuyerType } from '@/lib/calculations/purchas
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatCurrency, numInput } from '@/lib/validation/validators';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { save, load, clear } from '@/lib/storage';
@@ -428,76 +429,42 @@ export default function BusinessPlan() {
               <CardContent className="p-3 space-y-4">
                 <div className="space-y-3">
                   <div className="space-y-1">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">1. פרטי עסקה</p>
-                    <p className="text-[11px] leading-relaxed text-muted-foreground">נתוני בסיס של הנכס והעסקה לפני מימון ותפעול.</p>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">1. הנכס</p>
+                    <p className="text-[11px] leading-relaxed text-muted-foreground">מה קונים ובכמה. שאר הפרטים — רק אם בא לך לתעד.</p>
                   </div>
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <Field label="אזור / שכונה">
-                      <Input className="h-10" value={propertyArea} onChange={(e) => setPropertyArea(e.target.value)} placeholder="לדוגמה: תל אביב / יד אליהו" />
-                    </Field>
-                    <Field label="שטח (מ״ר)">
-                      <Input className="h-10" type="number" min="0" value={propertySqm || ''} onChange={(e) => setPropertySqm(numInput(e.target.value))} />
-                    </Field>
-                    <Field label="קומה">
-                      <Input className="h-10" value={propertyFloor} onChange={(e) => setPropertyFloor(e.target.value)} placeholder="לדוגמה: 3 מתוך 6" />
-                    </Field>
-                    <Field label="חדרים">
-                      <Input className="h-10" value={propertyRooms} onChange={(e) => setPropertyRooms(e.target.value)} placeholder="לדוגמה: 3.5" />
-                    </Field>
-                    <Field label="מחיר רכישה" className="sm:col-span-2">
+                  <div className="grid grid-cols-1 gap-3">
+                    <Field label="מחיר רכישה">
                       <Input className="h-10 text-base font-semibold" type="number" min="0" value={purchasePrice ?? ''} onChange={(e) => setPurchasePrice(numInput(e.target.value))} />
                     </Field>
-                    <Field label="הערות נכס" className="sm:col-span-2">
-                      <Input className="h-10" value={propertyNotes} onChange={(e) => setPropertyNotes(e.target.value)} placeholder="מעלית, מרפסת, חניה, מצב הנכס או כל פרט חשוב" />
-                    </Field>
-                    <Field label="עלות שיפוץ">
-                      <Input className="h-10" type="number" min="0" value={renovationCost ?? ''} onChange={(e) => setRenovationCost(numInput(e.target.value))} />
-                    </Field>
-                    <Field label="תקופת החזקה" hint="בשנים">
-                      <Input className="h-10" type="number" min="0" value={holdingPeriodYears ?? ''} onChange={(e) => setHoldingPeriodYears(numInput(e.target.value))} />
-                    </Field>
                   </div>
+                  <Collapsible>
+                    <CollapsibleTrigger asChild>
+                      <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs text-muted-foreground gap-1">
+                        <ChevronDown className="w-3.5 h-3.5" /> פרטים נוספים על הנכס (לא חובה)
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 pt-2">
+                        <Field label="אזור / שכונה">
+                          <Input className="h-10" value={propertyArea} onChange={(e) => setPropertyArea(e.target.value)} placeholder="לדוגמה: תל אביב / יד אליהו" />
+                        </Field>
+                        <Field label="שטח (מ״ר)">
+                          <Input className="h-10" type="number" min="0" value={propertySqm || ''} onChange={(e) => setPropertySqm(numInput(e.target.value))} />
+                        </Field>
+                        <Field label="קומה">
+                          <Input className="h-10" value={propertyFloor} onChange={(e) => setPropertyFloor(e.target.value)} placeholder="לדוגמה: 3 מתוך 6" />
+                        </Field>
+                        <Field label="חדרים">
+                          <Input className="h-10" value={propertyRooms} onChange={(e) => setPropertyRooms(e.target.value)} placeholder="לדוגמה: 3.5" />
+                        </Field>
+                        <Field label="הערות נכס" className="sm:col-span-2">
+                          <Input className="h-10" value={propertyNotes} onChange={(e) => setPropertyNotes(e.target.value)} placeholder="מעלית, מרפסת, חניה, מצב הנכס או כל פרט חשוב" />
+                        </Field>
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
                 </div>
 
-                <div className="border-t pt-4 space-y-3">
-                  <div className="space-y-1">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">2. מימון</p>
-                    <p className="text-[11px] leading-relaxed text-muted-foreground">הון עצמי, סכום משכנתא והחזר חודשי.</p>
-                  </div>
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <Field label="הון עצמי" className="sm:col-span-2">
-                      <Input className="h-10 text-base font-semibold" type="number" min="0" value={equityInvested ?? ''} onChange={(e) => setEquityInvested(numInput(e.target.value))} />
-                    </Field>
-                    <Field
-                      label="סכום משכנתא"
-                      hint={!manualMortgageAmount ? 'מחושב כשווי נכס פחות ההון העצמי' : undefined}
-                      action={(
-                        <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-[11px]" onClick={() => setManualMortgageAmount((v) => !v)}>
-                          {manualMortgageAmount ? 'אוטומטי' : 'עריכה ידנית'}
-                        </Button>
-                      )}
-                    >
-                      <Input className="h-10" type="number" min="0" value={manualMortgageAmount ? mortgageAmount : effectiveMortgageAmount} readOnly={!manualMortgageAmount} onChange={(e) => setMortgageAmount(numInput(e.target.value))} />
-                    </Field>
-                    <Field
-                      label="החזר חודשי"
-                      hint={!manualMortgageMonthlyPayment ? 'מחושב לפי הסכום, הריבית והתקופה' : undefined}
-                      action={(
-                        <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-[11px]" onClick={() => setManualMortgageMonthlyPayment((v) => !v)}>
-                          {manualMortgageMonthlyPayment ? 'אוטומטי' : 'עריכה ידנית'}
-                        </Button>
-                      )}
-                    >
-                      <Input className="h-10" type="number" min="0" value={manualMortgageMonthlyPayment ? mortgageMonthlyPayment : effectiveMortgageMonthlyPayment} readOnly={!manualMortgageMonthlyPayment} onChange={(e) => setMortgageMonthlyPayment(numInput(e.target.value))} />
-                    </Field>
-                    <Field label="ריבית (%)">
-                      <Input className="h-10" type="number" min="0" step="0.1" value={mortgageInterestRate} onChange={(e) => setMortgageInterestRate(numInput(e.target.value))} />
-                    </Field>
-                    <Field label="תקופת משכנתא" hint="בשנים">
-                      <Input className="h-10" type="number" min="0" value={mortgageYears ?? ''} onChange={(e) => setMortgageYears(numInput(e.target.value))} />
-                    </Field>
-                  </div>
-                </div>
               </CardContent>
             </Card>
 
@@ -505,8 +472,8 @@ export default function BusinessPlan() {
               <CardContent className="p-4 space-y-3">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">מס רכישה ועלויות נלוות</p>
-                    <p className="text-[11px] text-muted-foreground">סמן מה לכלול בחישוב.</p>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">2. עלויות רכישה</p>
+                    <p className="text-[11px] text-muted-foreground">מס רכישה, עלויות נלוות ושיפוץ — כל מה שמתווסף למחיר הדירה.</p>
                   </div>
                   <Button type="button" variant="outline" size="sm" onClick={() => setUseSideCostPreset((v) => !v)}>
                     {useSideCostPreset ? 'עריכה ידנית' : 'חזור לחישוב'}
@@ -548,15 +515,63 @@ export default function BusinessPlan() {
                     </label>
                   ))}
                 </div>
+                <div>
+                  <Label className="text-xs">עלות שיפוץ (אם מתוכנן)</Label>
+                  <Input className="h-10" type="number" min="0" value={renovationCost ?? ''} onChange={(e) => setRenovationCost(numInput(e.target.value))} />
+                </div>
                 <div className="rounded-xl bg-background px-3 py-2 flex items-center justify-between">
                   <span className="text-sm font-medium">סה״כ מס + עלויות נלוות</span>
                   <span className="text-lg font-bold tabular-nums">{formatCurrency(sideCosts + purchaseTaxAmount)}</span>
                 </div>
               </CardContent>
             </Card>
+
+            <Card className="border-0 shadow-sm bg-background/80">
+              <CardContent className="p-3 space-y-4">
+                <div className="border-t pt-4 space-y-3">
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">3. מימון</p>
+                    <p className="text-[11px] leading-relaxed text-muted-foreground">כמה מההון שלך נכנס, כמה משכנתא צריך, ומה ההחזר החודשי.</p>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <Field label="הון עצמי" className="sm:col-span-2">
+                      <Input className="h-10 text-base font-semibold" type="number" min="0" value={equityInvested ?? ''} onChange={(e) => setEquityInvested(numInput(e.target.value))} />
+                    </Field>
+                    <Field
+                      label="סכום משכנתא"
+                      hint={!manualMortgageAmount ? 'מחושב כשווי נכס פחות ההון העצמי' : undefined}
+                      action={(
+                        <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-[11px]" onClick={() => setManualMortgageAmount((v) => !v)}>
+                          {manualMortgageAmount ? 'אוטומטי' : 'עריכה ידנית'}
+                        </Button>
+                      )}
+                    >
+                      <Input className="h-10" type="number" min="0" value={manualMortgageAmount ? mortgageAmount : effectiveMortgageAmount} readOnly={!manualMortgageAmount} onChange={(e) => setMortgageAmount(numInput(e.target.value))} />
+                    </Field>
+                    <Field
+                      label="החזר חודשי"
+                      hint={!manualMortgageMonthlyPayment ? 'מחושב לפי הסכום, הריבית והתקופה' : undefined}
+                      action={(
+                        <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-[11px]" onClick={() => setManualMortgageMonthlyPayment((v) => !v)}>
+                          {manualMortgageMonthlyPayment ? 'אוטומטי' : 'עריכה ידנית'}
+                        </Button>
+                      )}
+                    >
+                      <Input className="h-10" type="number" min="0" value={manualMortgageMonthlyPayment ? mortgageMonthlyPayment : effectiveMortgageMonthlyPayment} readOnly={!manualMortgageMonthlyPayment} onChange={(e) => setMortgageMonthlyPayment(numInput(e.target.value))} />
+                    </Field>
+                    <Field label="ריבית (%)">
+                      <Input className="h-10" type="number" min="0" step="0.1" value={mortgageInterestRate} onChange={(e) => setMortgageInterestRate(numInput(e.target.value))} />
+                    </Field>
+                    <Field label="תקופת משכנתא" hint="בשנים">
+                      <Input className="h-10" type="number" min="0" value={mortgageYears ?? ''} onChange={(e) => setMortgageYears(numInput(e.target.value))} />
+                    </Field>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
-          <InputSection title="3. הכנסות והוצאות" description="שכירות צפויה מול הוצאות תפעול שוטפות.">
+          <InputSection title="4. הכנסה ותפעול" description="כמה שכירות ייכנס בחודש, וכמה עולה להחזיק את הנכס בשנה.">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Field label="שכ״ד חודשי צפוי">
                 <Input className="h-10" type="number" min="0" value={expectedMonthlyRent ?? ''} onChange={(e) => setExpectedMonthlyRent(numInput(e.target.value))} />
@@ -571,8 +586,8 @@ export default function BusinessPlan() {
             <CardContent className="p-4 space-y-3">
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">השבחה מתחדשות עירונית</p>
-                  <p className="text-[11px] text-muted-foreground">אפשר להזין השבחה בש״ח או באחוזים; היא תיכנס לחישוב התרחישים והיציאה.</p>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">5. תחזית ומכירה</p>
+                  <p className="text-[11px] text-muted-foreground">כמה שנים מחזיקים את הנכס, ואם צפויה השבחה (למשל מהתחדשות עירונית).</p>
                 </div>
                 <Button type="button" variant="outline" size="sm" onClick={() => setUrbanRenewalUpliftMode((m) => m === 'amount' ? 'percent' : 'amount')}>
                   {urbanRenewalUpliftMode === 'amount' ? 'לעבור לאחוזים' : 'לעבור לש״ח'}
@@ -580,7 +595,14 @@ export default function BusinessPlan() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label className="text-xs">השבחה צפויה</Label>
+                  <Label className="text-xs">תקופת החזקה (שנים)</Label>
+                  <Input className="h-10" type="number" min="0" value={holdingPeriodYears ?? ''} onChange={(e) => setHoldingPeriodYears(numInput(e.target.value))} />
+                </div>
+                <div className="flex items-end text-[11px] text-muted-foreground">
+                  כמה שנים מתכננים להחזיק לפני מכירה
+                </div>
+                <div>
+                  <Label className="text-xs">השבחה צפויה (לא חובה)</Label>
                 <Input className="h-10" type="number" min="0" value={urbanRenewalUpliftValue ?? ''} onChange={(e) => setUrbanRenewalUpliftValue(numInput(e.target.value))} />
                 </div>
                 <div className="flex items-end text-[11px] text-muted-foreground">
