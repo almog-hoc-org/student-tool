@@ -1,6 +1,6 @@
 import { calculatePurchaseTax, BuyerType } from './purchase-tax';
 import { quickSideCostsEstimate } from './side-costs';
-import { FINANCE } from '@/lib/constants/financial';
+import { FINANCE, getMaxLtv, getMinEquityShare } from '@/lib/constants/financial';
 import { monthlyPayment, principalFromPayment } from './annuity';
 
 export interface BudgetInput {
@@ -34,7 +34,6 @@ export interface BudgetOutput {
 }
 
 const DEFAULT_INTEREST_RATE = FINANCE.DEFAULT_MORTGAGE_RATE;
-const MIN_EQUITY_SHARE = 0.25;
 
 
 const maxMortgageFromPayment = principalFromPayment;
@@ -44,9 +43,14 @@ export function calculateBudget(input: BudgetInput): BudgetOutput {
   const { equity, monthlyIncome, currentRent = 0, livingExpenses = 0, monthlyObligations, buyerType, mortgageYears } = input;
 
   const freeCashFlow = monthlyIncome - currentRent - livingExpenses - monthlyObligations;
-  const maxAffordableMortgagePayment = Math.max(0, freeCashFlow);
+  // תקרת החזר: כלל הבנקים (40% מההכנסה נטו, בניכוי התחייבויות קיימות),
+  // ולא יותר מהתזרים הפנוי בפועל.
+  const maxPaymentByDti = FINANCE.MAX_DTI * monthlyIncome - monthlyObligations;
+  const maxAffordableMortgagePayment = Math.max(0, Math.min(maxPaymentByDti, freeCashFlow));
   const maxMortgageByCashflow = maxMortgageFromPayment(maxAffordableMortgagePayment, DEFAULT_INTEREST_RATE, mortgageYears);
-  const requiredEquityShare = MIN_EQUITY_SHARE;
+  // תקרת מימון (LTV) לפי סוג הרוכש: דירה יחידה 75%, דירה נוספת/תושב חוץ 50%
+  const maxLtv = getMaxLtv(buyerType);
+  const requiredEquityShare = getMinEquityShare(buyerType);
 
   const canAfford = (propertyValue: number) => {
     const tax = calculatePurchaseTax({ purchasePrice: propertyValue, buyerType }).totalTax;
@@ -58,6 +62,7 @@ export function calculateBudget(input: BudgetInput): BudgetOutput {
     return (
       availableAfterCosts >= minimumEquityNeeded
       && mortgageNeeded <= maxMortgageByCashflow
+      && mortgageNeeded <= propertyValue * maxLtv
     );
   };
 
@@ -85,16 +90,17 @@ export function calculateBudget(input: BudgetInput): BudgetOutput {
   const sideCosts = quickSideCostsEstimate(maxPropertyValue).totalSideCosts;
   const netEquity = Math.max(0, equity - purchaseTax - sideCosts);
   const mortgageNeeded = Math.max(0, maxPropertyValue - netEquity);
-  const maxMortgage = Math.min(mortgageNeeded, maxMortgageByCashflow, maxPropertyValue * (1 - requiredEquityShare));
-  const monthlyPayment = calculateMonthlyPayment(maxMortgage, DEFAULT_INTEREST_RATE, mortgageYears);
-  const dtiPercent = maxAffordableMortgagePayment > 0 ? (monthlyPayment / maxAffordableMortgagePayment) * 100 : 0;
+  const maxMortgage = Math.min(mortgageNeeded, maxMortgageByCashflow, maxPropertyValue * maxLtv);
+  const payment = calculateMonthlyPayment(maxMortgage, DEFAULT_INTEREST_RATE, mortgageYears);
+  // יחס החזר מההכנסה (DTI) — כמו שהבנק מודד: החזר חודשי חלקי הכנסה נטו
+  const dtiPercent = monthlyIncome > 0 ? (payment / monthlyIncome) * 100 : 0;
   const recommendedPropertyValue = Math.max(0, Math.round(maxPropertyValue * 0.9 / 1000) * 1000);
 
   return {
     maxPropertyValue,
     maxMortgage: Math.round(maxMortgage),
     maxMortgageByCashflow: Math.round(maxMortgageByCashflow),
-    monthlyPayment: Math.round(monthlyPayment),
+    monthlyPayment: Math.round(payment),
     purchaseTax: Math.round(purchaseTax),
     sideCosts,
     netEquityForProperty: Math.max(0, Math.round(netEquity)),

@@ -29,6 +29,7 @@ import { HomeGreeting } from '@/components/HomeGreeting';
 import NextStepCard from '@/components/NextStepCard';
 import { useJourney } from '@/hooks/useJourney';
 import { LABELS } from '@/lib/content/labels';
+import { getMinEquityShare } from '@/lib/constants/financial';
 import { EmptyState } from '@/components/ui/empty-state';
 import { CHART } from '@/lib/chart-colors';
 import { Link } from 'react-router-dom';
@@ -543,7 +544,7 @@ export default function BudgetCalculator() {
                       <AnimatedNumber value={result.maxPropertyValue} />
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      לפי הון עצמי של לפחות 25% ותזרים פנוי של {formatCurrency(result.maxAffordableMortgagePayment)} לחודש
+                      לפי הון עצמי של לפחות {Math.round(getMinEquityShare(buyerType) * 100)}% (תקרת המימון החוקית) והחזר חודשי של עד {formatCurrency(result.maxAffordableMortgagePayment)}
                     </p>
                   </CardContent>
                 </Card>
