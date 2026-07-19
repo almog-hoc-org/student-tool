@@ -1,7 +1,12 @@
 // מודול עלויות נלוות מפורט - נדל"ן ישראלי
-// מע"מ מעודכן: 18% מ-1 בינואר 2025
+// מקור האמת היחיד לעלויות נלוות בכל המחשבונים. מס רכישה מחושב תמיד בנפרד (purchase-tax.ts).
 
-const VAT_RATE = 0.18;
+import { FINANCE } from '@/lib/constants/financial';
+
+const VAT_RATE = FINANCE.VAT_RATE;
+
+// אגרת רישום בטאבו — סכום קבוע (אגרות בפועל הן מאות שקלים, לא אחוז מהמחיר)
+export const TABU_REGISTRATION_FEE = 800;
 
 export interface SideCostsInput {
   purchasePrice: number;
@@ -77,11 +82,11 @@ export function calculateSideCosts(input: SideCostsInput): SideCostsOutput {
     description: 'נדרש לצורך משכנתא',
   });
 
-  // אגרות רישום טאבו — ~0.5%
+  // אגרות רישום טאבו — אגרה קבועה
   items.push({
     name: 'אגרות רישום (טאבו)',
-    amount: Math.round(input.purchasePrice * 0.005),
-    description: '~0.5% ממחיר הנכס',
+    amount: TABU_REGISTRATION_FEE,
+    description: 'אגרת רישום — סכום קבוע',
   });
 
   // ריהוט ראשוני
@@ -106,6 +111,14 @@ export function calculateSideCosts(input: SideCostsInput): SideCostsOutput {
   const totalSideCosts = items.reduce((sum, item) => sum + item.amount, 0);
 
   return { items, totalSideCosts };
+}
+
+/**
+ * אומדן מהיר של עלויות נלוות לפי ברירות המחדל — משמש את כל המחשבונים
+ * (תקציב, תוכנית עסקית, בדיקת נכס) כדי שאותו נכס יקבל אותו מספר בכל כלי.
+ */
+export function quickSideCostsEstimate(purchasePrice: number): SideCostsOutput {
+  return calculateSideCosts(getDefaultSideCostsInput(purchasePrice));
 }
 
 export function getDefaultSideCostsInput(purchasePrice: number): SideCostsInput {

@@ -1,4 +1,5 @@
 import { calculatePurchaseTax, BuyerType } from './purchase-tax';
+import { quickSideCostsEstimate } from './side-costs';
 import { FINANCE } from '@/lib/constants/financial';
 import { monthlyPayment, principalFromPayment } from './annuity';
 
@@ -35,14 +36,6 @@ export interface BudgetOutput {
 const DEFAULT_INTEREST_RATE = FINANCE.DEFAULT_MORTGAGE_RATE;
 const MIN_EQUITY_SHARE = 0.25;
 
-function getSideCostsRate(buyerType: BuyerType): number {
-  switch (buyerType) {
-    case 'singleApartment': return 0.035;
-    case 'additionalApartment': return 0.04;
-    case 'foreignResident': return 0.05;
-    default: return 0.035;
-  }
-}
 
 const maxMortgageFromPayment = principalFromPayment;
 const calculateMonthlyPayment = monthlyPayment;
@@ -53,12 +46,11 @@ export function calculateBudget(input: BudgetInput): BudgetOutput {
   const freeCashFlow = monthlyIncome - currentRent - livingExpenses - monthlyObligations;
   const maxAffordableMortgagePayment = Math.max(0, freeCashFlow);
   const maxMortgageByCashflow = maxMortgageFromPayment(maxAffordableMortgagePayment, DEFAULT_INTEREST_RATE, mortgageYears);
-  const sideCostsRate = getSideCostsRate(buyerType);
   const requiredEquityShare = MIN_EQUITY_SHARE;
 
   const canAfford = (propertyValue: number) => {
     const tax = calculatePurchaseTax({ purchasePrice: propertyValue, buyerType }).totalTax;
-    const sideCosts = propertyValue * sideCostsRate;
+    const sideCosts = quickSideCostsEstimate(propertyValue).totalSideCosts;
     const availableAfterCosts = equity - tax - sideCosts;
     const minimumEquityNeeded = propertyValue * requiredEquityShare;
     const mortgageNeeded = Math.max(0, propertyValue - availableAfterCosts);
@@ -90,7 +82,7 @@ export function calculateBudget(input: BudgetInput): BudgetOutput {
 
   const maxPropertyValue = Math.max(0, Math.round(bestProperty / 1000) * 1000);
   const purchaseTax = calculatePurchaseTax({ purchasePrice: maxPropertyValue, buyerType }).totalTax;
-  const sideCosts = Math.round(maxPropertyValue * sideCostsRate);
+  const sideCosts = quickSideCostsEstimate(maxPropertyValue).totalSideCosts;
   const netEquity = Math.max(0, equity - purchaseTax - sideCosts);
   const mortgageNeeded = Math.max(0, maxPropertyValue - netEquity);
   const maxMortgage = Math.min(mortgageNeeded, maxMortgageByCashflow, maxPropertyValue * (1 - requiredEquityShare));
