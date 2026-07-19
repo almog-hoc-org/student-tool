@@ -1,4 +1,6 @@
 import { calculatePurchaseTax, BuyerType } from './purchase-tax';
+import { FINANCE } from '@/lib/constants/financial';
+import { monthlyPayment, principalFromPayment } from './annuity';
 
 export interface BudgetInput {
   equity: number;
@@ -30,7 +32,7 @@ export interface BudgetOutput {
   };
 }
 
-const DEFAULT_INTEREST_RATE = 5.0;
+const DEFAULT_INTEREST_RATE = FINANCE.DEFAULT_MORTGAGE_RATE;
 const MIN_EQUITY_SHARE = 0.25;
 
 function getSideCostsRate(buyerType: BuyerType): number {
@@ -42,21 +44,8 @@ function getSideCostsRate(buyerType: BuyerType): number {
   }
 }
 
-function maxMortgageFromPayment(monthlyPayment: number, annualRate: number, years: number): number {
-  if (monthlyPayment <= 0 || years <= 0) return 0;
-  const r = annualRate / 100 / 12;
-  const n = years * 12;
-  if (r === 0) return monthlyPayment * n;
-  return monthlyPayment * (1 - Math.pow(1 + r, -n)) / r;
-}
-
-function calculateMonthlyPayment(principal: number, annualRate: number, years: number): number {
-  if (principal <= 0 || years <= 0) return 0;
-  const r = annualRate / 100 / 12;
-  const n = years * 12;
-  if (r === 0) return principal / n;
-  return (principal * r) / (1 - Math.pow(1 + r, -n));
-}
+const maxMortgageFromPayment = principalFromPayment;
+const calculateMonthlyPayment = monthlyPayment;
 
 export function calculateBudget(input: BudgetInput): BudgetOutput {
   const { equity, monthlyIncome, currentRent = 0, livingExpenses = 0, monthlyObligations, buyerType, mortgageYears } = input;

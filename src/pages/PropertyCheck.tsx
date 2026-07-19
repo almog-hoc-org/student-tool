@@ -19,6 +19,7 @@ import {
   QuickCheckOutput,
 } from '@/lib/calculations/quick-property-check';
 import { BuyerType } from '@/lib/calculations/purchase-tax';
+import { FINANCE } from '@/lib/constants/financial';
 import { formatCurrency } from '@/lib/validation/validators';
 import { useAuth } from '@/contexts/AuthContext';
 import { save, load } from '@/lib/storage';
@@ -233,7 +234,7 @@ export default function PropertyCheck() {
                   icon={Calculator}
                   title="החזר חודשי משוער"
                   value={formatCurrency(result.estimatedMonthlyPayment)}
-                  sub="4.5% · 25 שנה"
+                  sub={`${FINANCE.DEFAULT_MORTGAGE_RATE}% · 25 שנה`}
                 />
               </div>
 

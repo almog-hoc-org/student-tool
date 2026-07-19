@@ -6,20 +6,22 @@ import {
   AmortizationRow,
   SensitivityResult,
 } from '@/types/mortgage-calculator';
+import { FINANCE, LTV_LIMITS } from '@/lib/constants/financial';
+import { monthlyPayment } from './annuity';
 
-// קבועי שוק - בנק ישראל פברואר 2026
+// קבועי שוק — מקור האמת הוא constants/financial.ts
 export const MARKET_CONSTANTS = {
-  BOI_RATE: 4.0,             // ריבית בנק ישראל
-  PRIME_RATE: 5.5,           // פריים = BOI + 1.5%
-  MAX_PRIME_SHARE: 0.66,     // מקסימום 66% מהמשכנתא בפריים
-  MAX_DTI: 0.40,             // יחס החזר/הכנסה מקסימלי
-  LTV_FIRST_HOME: 0.75,     // מינוף מקסימלי - דירה ראשונה
-  LTV_UPGRADE: 0.70,        // מינוף מקסימלי - משפרי דיור
-  LTV_INVESTOR: 0.50,       // מינוף מקסימלי - משקיעים
-  DEFAULT_MADAD_RATE: 2.5,   // מדד תשומות הבנייה - שנתי
-  MADAD_EXEMPT_PORTION: 0.20,
-  MADAD_LINKED_PORTION: 0.50,
-  MADAD_EFFECTIVE_EXPOSURE: 0.40,
+  BOI_RATE: FINANCE.BOI_RATE,
+  PRIME_RATE: FINANCE.PRIME_RATE,
+  MAX_PRIME_SHARE: FINANCE.MAX_PRIME_SHARE,
+  MAX_DTI: FINANCE.MAX_DTI,
+  LTV_FIRST_HOME: LTV_LIMITS.firstHome,
+  LTV_UPGRADE: LTV_LIMITS.upgrade,
+  LTV_INVESTOR: LTV_LIMITS.investor,
+  DEFAULT_MADAD_RATE: FINANCE.DEFAULT_MADAD_RATE,
+  MADAD_EXEMPT_PORTION: FINANCE.MADAD_EXEMPT_PORTION,
+  MADAD_LINKED_PORTION: FINANCE.MADAD_LINKED_PORTION,
+  MADAD_EFFECTIVE_EXPOSURE: FINANCE.MADAD_EFFECTIVE_EXPOSURE,
 };
 
 export interface MadadSimulationResult {
@@ -55,33 +57,19 @@ export function simulateMadadImpact(params: {
 }
 
 export function calculateMortgageMonthlyPayment(principal: number, annualInterestRate: number, years: number): number {
-  const r = annualInterestRate / 100 / 12;
-  const n = years * 12;
-  if (principal <= 0 || years <= 0) return 0;
-  if (r === 0) return principal / n;
-  return (principal * r) / (1 - Math.pow(1 + r, -n));
+  return monthlyPayment(principal, annualInterestRate, years);
 }
 
 export function calculateMortgageTrack(
   track: MortgageTrack
 ): MortgageTrackResult {
-  const P = track.principal;
-  const r = track.annualInterestRate / 100 / 12;
-  const n = track.years * 12;
-
-  let monthlyPayment: number;
-  if (r === 0) {
-    monthlyPayment = P / n;
-  } else {
-    monthlyPayment = (P * r) / (1 - Math.pow(1 + r, -n));
-  }
-
-  const totalPaid = monthlyPayment * n;
-  const totalInterestPaid = totalPaid - P;
+  const payment = monthlyPayment(track.principal, track.annualInterestRate, track.years);
+  const totalPaid = payment * track.years * 12;
+  const totalInterestPaid = payment > 0 ? totalPaid - track.principal : 0;
 
   return {
     trackId: track.id,
-    monthlyPayment,
+    monthlyPayment: payment,
     totalInterestPaid,
   };
 }

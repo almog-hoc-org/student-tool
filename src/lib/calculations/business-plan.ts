@@ -1,4 +1,5 @@
 import { calculateRentalIRR } from './irr';
+import { remainingBalance } from './annuity';
 
 export interface BusinessPlanInput {
   purchasePrice: number;
@@ -39,16 +40,8 @@ export interface BusinessPlanOutput {
   scenarios: [ScenarioResult, ScenarioResult, ScenarioResult];
 }
 
-function calculateMortgageBalance(principal: number, annualRate: number, years: number, afterYears: number): number {
-  if (principal <= 0 || years <= 0) return 0;
-  const r = annualRate / 100 / 12;
-  const n = years * 12;
-  const k = afterYears * 12;
-  if (r === 0) return principal * (1 - k / n);
-  const fn = Math.pow(1 + r, n);
-  const fk = Math.pow(1 + r, k);
-  return principal * (fn - fk) / (fn - 1);
-}
+// יתרת משכנתא — מימוש משותף עם clamp ל-0 (תקופת החזקה ארוכה מתקופת ההלוואה)
+const calculateMortgageBalance = remainingBalance;
 
 function getUrbanRenewalUplift(input: BusinessPlanInput): number {
   if (input.urbanRenewalUpliftAmount && input.urbanRenewalUpliftAmount > 0) {

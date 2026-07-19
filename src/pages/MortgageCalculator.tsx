@@ -14,6 +14,7 @@ import {
   MARKET_CONSTANTS,
   simulateMadadImpact,
 } from '@/lib/calculations/mortgage-calculator';
+import { FINANCE } from '@/lib/constants/financial';
 import {
   MortgageTrack,
   MortgageCalculatorOutput,
@@ -67,7 +68,7 @@ function KPICard({ title, value, subtitle, color }: { title: string; value: stri
   );
 }
 
-const DEFAULT_TRACK: MortgageTrack = { id: '1', name: 'קבועה לא צמודה', type: 'fixedUnlinked', principal: 800000, annualInterestRate: 5.5, years: 25 };
+const DEFAULT_TRACK: MortgageTrack = { id: '1', name: 'קבועה לא צמודה', type: 'fixedUnlinked', principal: 800000, annualInterestRate: FINANCE.DEFAULT_MORTGAGE_RATE, years: 25 };
 
 function resolveTrackPrincipals(tracks: MortgageTrack[], totalMortgageAmount: number): MortgageTrack[] {
   const usesAllocation = tracks.some((t) => t.allocationMode && t.allocationMode !== 'amount');
@@ -214,7 +215,7 @@ export default function MortgageCalculator() {
       name: 'מסלול חדש',
       type: 'fixedUnlinked',
       principal: 0,
-      annualInterestRate: 5.5,
+      annualInterestRate: FINANCE.DEFAULT_MORTGAGE_RATE,
       years: 25,
     }]);
   };
