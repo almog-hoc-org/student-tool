@@ -1,0 +1,49 @@
+name: Supabase Diagnose
+
+# אבחון מצב הפונקציה chat-ai בסביבה החיה — הרצה ידנית בלבד.
+# מדפיס: מטא-דאטה של הפונקציה (כולל verify_jwt), ותגובות חיות מה-endpoint.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PROJECT_REF: rdbrwoahbqfjqfjaahhp
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Function metadata (Management API)
+        run: |
+          echo "=== chat-ai metadata ==="
+          curl -sS -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            "https://api.supabase.com/v1/projects/$PROJECT_REF/functions/chat-ai" | python3 -m json.tool || true
+
+      - name: Read anon key from repo .env
+        id: anon
+        run: |
+          ANON=$(grep '^VITE_SUPABASE_PUBLISHABLE_KEY' .env | cut -d'"' -f2)
+          echo "anon=$ANON" >> "$GITHUB_OUTPUT"
+          echo "anon key length: ${#ANON}"
+
+      - name: Probe function endpoint
+        run: |
+          URL="https://$PROJECT_REF.supabase.co/functions/v1/chat-ai"
+          echo "=== 1. No Authorization header ==="
+          curl -sS -o /tmp/r1 -w "HTTP %{http_code}\n" -X POST "$URL" -H "Content-Type: application/json" -d '{}' || true
+          cat /tmp/r1; echo
+          echo "=== 2. Bearer = anon key ==="
+          curl -sS -o /tmp/r2 -w "HTTP %{http_code}\n" -X POST "$URL" \
+            -H "Authorization: Bearer ${{ steps.anon.outputs.anon }}" \
+            -H "apikey: ${{ steps.anon.outputs.anon }}" \
+            -H "Content-Type: application/json" -d '{"message":"ping"}' || true
+          cat /tmp/r2; echo
+          echo "=== 3. OPTIONS (CORS preflight) ==="
+          curl -sS -o /tmp/r3 -w "HTTP %{http_code}\n" -X OPTIONS "$URL" || true
+          cat /tmp/r3; echo
+
+      - name: Functions list (CLI)
+        run: |
+          npx --yes supabase@latest functions list --project-ref "$PROJECT_REF" || true
