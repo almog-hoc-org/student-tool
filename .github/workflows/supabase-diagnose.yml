@@ -54,3 +54,18 @@ jobs:
           curl -sS -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
             "https://api.supabase.com/v1/projects/$PROJECT_REF/secrets" \
             | python3 -c "import json,sys; [print('-', s['name']) for s in json.load(sys.stdin)]" || true
+
+      - name: Recent function logs (console + סטטוסים של בקשות אמיתיות)
+        run: |
+          echo "=== function_edge_logs (status codes) ==="
+          SQL_EDGE="select cast(timestamp as string) as ts, response.status_code, request.method from function_edge_logs cross join unnest(metadata) as m cross join unnest(m.response) as response cross join unnest(m.request) as request order by timestamp desc limit 40"
+          curl -sS -G -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            --data-urlencode "sql=$SQL_EDGE" \
+            "https://api.supabase.com/v1/projects/$PROJECT_REF/analytics/endpoints/logs.all" \
+            | python3 -m json.tool | head -120 || true
+          echo "=== function_logs (console output) ==="
+          SQL_FN="select cast(timestamp as string) as ts, event_message from function_logs order by timestamp desc limit 40"
+          curl -sS -G -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            --data-urlencode "sql=$SQL_FN" \
+            "https://api.supabase.com/v1/projects/$PROJECT_REF/analytics/endpoints/logs.all" \
+            | python3 -m json.tool | head -160 || true
