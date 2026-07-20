@@ -130,14 +130,24 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // 2. Insert user message
-    const { error: userMsgErr } = await admin.from("messages").insert({
-      conversation_id: conversationId,
-      role: "user",
-      content: body.message.trim(),
-      author_id: userId,
-    });
+    // 2. Insert user message (נמחקת אם המודל נכשל — כדי שלא תישאר
+    // הודעה יתומה שמזהמת את ההיסטוריה ואת הקונטקסט של השיחות הבאות)
+    const { data: userMsg, error: userMsgErr } = await admin
+      .from("messages")
+      .insert({
+        conversation_id: conversationId,
+        role: "user",
+        content: body.message.trim(),
+        author_id: userId,
+      })
+      .select("id")
+      .single();
     if (userMsgErr) return json({ error: userMsgErr.message }, 500);
+    const rollbackUserMsg = async () => {
+      if (userMsg?.id) {
+        await admin.from("messages").delete().eq("id", userMsg.id);
+      }
+    };
 
     // 3. Load history (last N) + user calc context
     const { data: history } = await admin
@@ -196,29 +206,36 @@ Deno.serve(async (req: Request) => {
 
     const geminiUrl =
       `https://generativelanguage.googleapis.com/v1beta/models/${CHAT_MODEL}:generateContent?key=${apiKey}`;
-    const geminiResp = await fetch(geminiUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: fullSystem }] },
-        contents,
-        // Enable Google Search grounding so the model can pull authoritative
-        // external sources when the course content is insufficient.
-        tools: [{ google_search: {} }],
-        generationConfig: {
-          temperature: 0.5,
-          maxOutputTokens: 4096,
-          // gemini-2.5-flash defaults to "thinking" which silently consumes
-          // the output budget and produces truncated answers. Keep a tiny
-          // budget for light planning but bound it so it can't starve the
-          // final response.
-          thinkingConfig: { thinkingBudget: 512 },
-        },
-      }),
-    });
+    let geminiResp: Response;
+    try {
+      geminiResp = await fetch(geminiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: fullSystem }] },
+          contents,
+          // Enable Google Search grounding so the model can pull authoritative
+          // external sources when the course content is insufficient.
+          tools: [{ google_search: {} }],
+          generationConfig: {
+            temperature: 0.5,
+            maxOutputTokens: 4096,
+            // gemini-2.5-flash defaults to "thinking" which silently consumes
+            // the output budget and produces truncated answers. Keep a tiny
+            // budget for light planning but bound it so it can't starve the
+            // final response.
+            thinkingConfig: { thinkingBudget: 512 },
+          },
+        }),
+      });
+    } catch (fetchErr) {
+      await rollbackUserMsg();
+      return json({ error: "Gemini unreachable", detail: String(fetchErr) }, 502);
+    }
 
     if (!geminiResp.ok) {
       const errText = await geminiResp.text();
+      await rollbackUserMsg();
       return json({ error: "Gemini error", detail: errText }, 502);
     }
 

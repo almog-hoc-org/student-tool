@@ -4,12 +4,16 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { BarChart3, Import, RotateCcw, TrendingUp } from 'lucide-react';
+import { BarChart3, ChevronDown, Import, RotateCcw, TrendingUp } from 'lucide-react';
 import { SaveSnapshotButton } from '@/components/SaveSnapshotButton';
-import { calculateBusinessPlan, BusinessPlanOutput, ScenarioResult } from '@/lib/calculations/business-plan';
+import { calculateBusinessPlan, BUSINESS_PLAN_ENGINE_VERSION, BusinessPlanOutput, ScenarioResult } from '@/lib/calculations/business-plan';
 import { calculateMortgageMonthlyPayment } from '@/lib/calculations/mortgage-calculator';
-import { formatCurrency } from '@/lib/validation/validators';
+import { calculatePurchaseTax, type BuyerType } from '@/lib/calculations/purchase-tax';
+import { businessPlanSideCostsPreset } from '@/lib/calculations/side-costs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { formatCurrency, numInput } from '@/lib/validation/validators';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { save, load, clear } from '@/lib/storage';
@@ -136,6 +140,7 @@ const BP_DEFAULTS = {
   propertyFloor: '',
   propertyRooms: '',
   propertyNotes: '',
+  buyerType: 'additionalApartment' as BuyerType,
   sideCosts: 40000,
   renovationCost: 0,
   equityInvested: 400000,
@@ -147,10 +152,10 @@ const BP_DEFAULTS = {
   annualOperatingCosts: 8000,
   holdingPeriodYears: 10,
   baseAppreciation: 1,
-  manualMode: true,
   customRates: { pessimistic: 0, average: 1, optimistic: 2 },
   urbanRenewalUpliftMode: 'amount' as const,
   urbanRenewalUpliftValue: 0,
+  listingUrl: '',
   manualMortgageAmount: false,
   manualMortgageMonthlyPayment: false,
 };
@@ -173,6 +178,8 @@ export default function BusinessPlan() {
   const [propertyFloor, setPropertyFloor] = useState(saved?.propertyFloor ?? BP_DEFAULTS.propertyFloor);
   const [propertyRooms, setPropertyRooms] = useState(saved?.propertyRooms ?? BP_DEFAULTS.propertyRooms);
   const [propertyNotes, setPropertyNotes] = useState(saved?.propertyNotes ?? BP_DEFAULTS.propertyNotes);
+  const [buyerType, setBuyerType] = useState<BuyerType>(saved?.buyerType ?? BP_DEFAULTS.buyerType);
+  const [listingUrl, setListingUrl] = useState(saved?.listingUrl ?? BP_DEFAULTS.listingUrl);
   const [sideCosts, setSideCosts] = useState(saved?.sideCosts ?? BP_DEFAULTS.sideCosts);
   const [renovationCost, setRenovationCost] = useState(saved?.renovationCost ?? BP_DEFAULTS.renovationCost);
   const [equityInvested, setEquityInvested] = useState(saved?.equityInvested ?? BP_DEFAULTS.equityInvested);
@@ -184,7 +191,6 @@ export default function BusinessPlan() {
   const [annualOperatingCosts, setAnnualOperatingCosts] = useState(saved?.annualOperatingCosts ?? BP_DEFAULTS.annualOperatingCosts);
   const [holdingPeriodYears, setHoldingPeriodYears] = useState(saved?.holdingPeriodYears ?? BP_DEFAULTS.holdingPeriodYears);
   const [baseAppreciation, setBaseAppreciation] = useState(saved?.baseAppreciation ?? BP_DEFAULTS.baseAppreciation);
-  const [manualMode, setManualMode] = useState(saved?.manualMode ?? BP_DEFAULTS.manualMode);
   const [customRates, setCustomRates] = useState(saved?.customRates ?? BP_DEFAULTS.customRates);
   const [urbanRenewalUpliftMode, setUrbanRenewalUpliftMode] = useState<UpliftMode>(saved?.urbanRenewalUpliftMode ?? BP_DEFAULTS.urbanRenewalUpliftMode);
   const [urbanRenewalUpliftValue, setUrbanRenewalUpliftValue] = useState(saved?.urbanRenewalUpliftValue ?? BP_DEFAULTS.urbanRenewalUpliftValue);
@@ -203,35 +209,37 @@ export default function BusinessPlan() {
   useEffect(() => {
     save('business_plan', {
       purchasePrice, propertyArea, propertySqm, propertyFloor, propertyRooms,
-      propertyNotes, sideCosts, renovationCost, equityInvested, mortgageAmount,
+      propertyNotes, buyerType, sideCosts, renovationCost, equityInvested, mortgageAmount,
       mortgageMonthlyPayment, mortgageInterestRate, mortgageYears, expectedMonthlyRent,
-      annualOperatingCosts, holdingPeriodYears, baseAppreciation, manualMode, customRates,
-      urbanRenewalUpliftMode, urbanRenewalUpliftValue, manualMortgageAmount,
+      annualOperatingCosts, holdingPeriodYears, baseAppreciation, customRates,
+      urbanRenewalUpliftMode, urbanRenewalUpliftValue, listingUrl, manualMortgageAmount,
       manualMortgageMonthlyPayment, useSideCostPreset, selectedSideCosts, touched,
     }, uid);
   }, [purchasePrice, propertyArea, propertySqm, propertyFloor, propertyRooms,
-    propertyNotes, sideCosts, renovationCost, equityInvested, mortgageAmount,
+    propertyNotes, buyerType, sideCosts, renovationCost, equityInvested, mortgageAmount,
     mortgageMonthlyPayment, mortgageInterestRate, mortgageYears, expectedMonthlyRent,
-    annualOperatingCosts, holdingPeriodYears, baseAppreciation, manualMode, customRates,
-    urbanRenewalUpliftMode, urbanRenewalUpliftValue, manualMortgageAmount,
+    annualOperatingCosts, holdingPeriodYears, baseAppreciation, customRates,
+    urbanRenewalUpliftMode, urbanRenewalUpliftValue, listingUrl, manualMortgageAmount,
     manualMortgageMonthlyPayment, useSideCostPreset, selectedSideCosts, touched, uid]);
 
   const budgetData = getBudgetResults();
 
-  const sideCostPresetTotal = useMemo(() => {
-    const broker = selectedSideCosts.broker ? purchasePrice * 0.02 : 0;
-    const mortgageAdvice = selectedSideCosts.mortgageAdvice ? 7000 : 0;
-    const lawyer = selectedSideCosts.lawyer ? purchasePrice * 0.01 : 0;
-    const appraiser = selectedSideCosts.appraiser ? 2000 : 0;
-    const extras = selectedSideCosts.extras ? 5000 : 0;
-    return broker + mortgageAdvice + lawyer + appraiser + extras;
-  }, [purchasePrice, selectedSideCosts]);
+  const sideCostPresetTotal = useMemo(
+    () => businessPlanSideCostsPreset(purchasePrice, selectedSideCosts),
+    [purchasePrice, selectedSideCosts],
+  );
 
   useEffect(() => {
     if (useSideCostPreset) {
       setSideCosts(Math.round(sideCostPresetTotal));
     }
   }, [sideCostPresetTotal, useSideCostPreset]);
+
+  // מס רכישה — מחושב תמיד לפי סוג הרוכש, שורה נפרדת שאי אפשר לשכוח
+  const purchaseTaxAmount = useMemo(
+    () => Math.round(calculatePurchaseTax({ purchasePrice, buyerType }).totalTax),
+    [purchasePrice, buyerType],
+  );
 
   const autoMortgageAmount = useMemo(() => Math.max(0, purchasePrice - equityInvested), [purchasePrice, equityInvested]);
   const effectiveMortgageAmount = manualMortgageAmount ? mortgageAmount : autoMortgageAmount;
@@ -254,8 +262,11 @@ export default function BusinessPlan() {
     setMortgageMonthlyPayment(budgetData.monthlyPayment);
     setManualMortgageAmount(false);
     setManualMortgageMonthlyPayment(false);
-    setSideCosts(budgetData.purchaseTax + budgetData.sideCosts);
+    // מס רכישה מחושב בנפרד לפי סוג הרוכש — לא נכלל בעלויות הנלוות
+    setSideCosts(budgetData.sideCosts);
     setUseSideCostPreset(false);
+    const budgetProfile = load<{ buyerType?: BuyerType }>('budget_profile');
+    if (budgetProfile?.buyerType) setBuyerType(budgetProfile.buyerType);
     // Import interest rate from mortgage results if available
     const mortgageData = load<{ weightedAverageInterest?: number }>('mortgage_results');
     if (mortgageData?.weightedAverageInterest) {
@@ -271,6 +282,7 @@ export default function BusinessPlan() {
     setPropertyFloor(BP_DEFAULTS.propertyFloor);
     setPropertyRooms(BP_DEFAULTS.propertyRooms);
     setPropertyNotes(BP_DEFAULTS.propertyNotes);
+    setBuyerType(BP_DEFAULTS.buyerType);
     setSideCosts(BP_DEFAULTS.sideCosts);
     setRenovationCost(BP_DEFAULTS.renovationCost);
     setEquityInvested(BP_DEFAULTS.equityInvested);
@@ -282,10 +294,10 @@ export default function BusinessPlan() {
     setAnnualOperatingCosts(BP_DEFAULTS.annualOperatingCosts);
     setHoldingPeriodYears(BP_DEFAULTS.holdingPeriodYears);
     setBaseAppreciation(BP_DEFAULTS.baseAppreciation);
-    setManualMode(BP_DEFAULTS.manualMode);
     setCustomRates(BP_DEFAULTS.customRates);
     setUrbanRenewalUpliftMode(BP_DEFAULTS.urbanRenewalUpliftMode);
     setUrbanRenewalUpliftValue(BP_DEFAULTS.urbanRenewalUpliftValue);
+    setListingUrl(BP_DEFAULTS.listingUrl);
     setManualMortgageAmount(BP_DEFAULTS.manualMortgageAmount);
     setManualMortgageMonthlyPayment(BP_DEFAULTS.manualMortgageMonthlyPayment);
     setUseSideCostPreset(true);
@@ -300,7 +312,7 @@ export default function BusinessPlan() {
     return calculateBusinessPlan(
       {
         purchasePrice,
-        sideCosts,
+        sideCosts: sideCosts + purchaseTaxAmount,
         renovationCost,
         equityInvested,
         mortgageAmount: effectiveMortgageAmount,
@@ -372,14 +384,16 @@ export default function BusinessPlan() {
                 getData={() => ({
                   inputs: {
                     purchasePrice, propertyArea, propertySqm, propertyFloor,
-                    propertyRooms, propertyNotes, sideCosts, renovationCost, equityInvested,
+                    propertyRooms, propertyNotes, buyerType, purchaseTax: purchaseTaxAmount,
+                    sideCosts, renovationCost, equityInvested,
                     mortgageAmount: effectiveMortgageAmount, mortgageMonthlyPayment: effectiveMortgageMonthlyPayment, mortgageInterestRate,
                     mortgageYears, expectedMonthlyRent, annualOperatingCosts,
-                    holdingPeriodYears, baseAppreciation, manualMode, customRates,
-                    urbanRenewalUpliftMode, urbanRenewalUpliftValue, manualMortgageAmount,
+                    holdingPeriodYears, baseAppreciation, customRates,
+                    urbanRenewalUpliftMode, urbanRenewalUpliftValue, listingUrl, manualMortgageAmount,
                     manualMortgageMonthlyPayment, useSideCostPreset, selectedSideCosts,
                   },
                   results: result,
+                  engineVersion: BUSINESS_PLAN_ENGINE_VERSION,
                 })}
               />
               <Link to="/deal-comparison">
@@ -416,76 +430,45 @@ export default function BusinessPlan() {
               <CardContent className="p-3 space-y-4">
                 <div className="space-y-3">
                   <div className="space-y-1">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">1. פרטי עסקה</p>
-                    <p className="text-[11px] leading-relaxed text-muted-foreground">נתוני בסיס של הנכס והעסקה לפני מימון ותפעול.</p>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">1. הנכס</p>
+                    <p className="text-[11px] leading-relaxed text-muted-foreground">מה קונים ובכמה. שאר הפרטים — רק אם בא לך לתעד.</p>
                   </div>
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <Field label="אזור / שכונה">
-                      <Input className="h-10" value={propertyArea} onChange={(e) => setPropertyArea(e.target.value)} placeholder="לדוגמה: תל אביב / יד אליהו" />
-                    </Field>
-                    <Field label="שטח (מ״ר)">
-                      <Input className="h-10" type="number" min="0" value={propertySqm || ''} onChange={(e) => setPropertySqm(Number(e.target.value))} />
-                    </Field>
-                    <Field label="קומה">
-                      <Input className="h-10" value={propertyFloor} onChange={(e) => setPropertyFloor(e.target.value)} placeholder="לדוגמה: 3 מתוך 6" />
-                    </Field>
-                    <Field label="חדרים">
-                      <Input className="h-10" value={propertyRooms} onChange={(e) => setPropertyRooms(e.target.value)} placeholder="לדוגמה: 3.5" />
-                    </Field>
-                    <Field label="מחיר רכישה" className="sm:col-span-2">
-                      <Input className="h-10 text-base font-semibold" type="number" min="0" value={purchasePrice ?? ''} onChange={(e) => setPurchasePrice(Number(e.target.value))} />
-                    </Field>
-                    <Field label="הערות נכס" className="sm:col-span-2">
-                      <Input className="h-10" value={propertyNotes} onChange={(e) => setPropertyNotes(e.target.value)} placeholder="מעלית, מרפסת, חניה, מצב הנכס או כל פרט חשוב" />
-                    </Field>
-                    <Field label="עלות שיפוץ">
-                      <Input className="h-10" type="number" min="0" value={renovationCost ?? ''} onChange={(e) => setRenovationCost(Number(e.target.value))} />
-                    </Field>
-                    <Field label="תקופת החזקה" hint="בשנים">
-                      <Input className="h-10" type="number" min="0" value={holdingPeriodYears ?? ''} onChange={(e) => setHoldingPeriodYears(Number(e.target.value))} />
+                  <div className="grid grid-cols-1 gap-3">
+                    <Field label="מחיר רכישה">
+                      <Input className="h-10 text-base font-semibold" type="number" min="0" value={purchasePrice ?? ''} onChange={(e) => setPurchasePrice(numInput(e.target.value))} />
                     </Field>
                   </div>
+                  <Collapsible>
+                    <CollapsibleTrigger asChild>
+                      <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs text-muted-foreground gap-1">
+                        <ChevronDown className="w-3.5 h-3.5" /> פרטים נוספים על הנכס (לא חובה)
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 pt-2">
+                        <Field label="אזור / שכונה">
+                          <Input className="h-10" value={propertyArea} onChange={(e) => setPropertyArea(e.target.value)} placeholder="לדוגמה: תל אביב / יד אליהו" />
+                        </Field>
+                        <Field label="שטח (מ״ר)">
+                          <Input className="h-10" type="number" min="0" value={propertySqm || ''} onChange={(e) => setPropertySqm(numInput(e.target.value))} />
+                        </Field>
+                        <Field label="קומה">
+                          <Input className="h-10" value={propertyFloor} onChange={(e) => setPropertyFloor(e.target.value)} placeholder="לדוגמה: 3 מתוך 6" />
+                        </Field>
+                        <Field label="חדרים">
+                          <Input className="h-10" value={propertyRooms} onChange={(e) => setPropertyRooms(e.target.value)} placeholder="לדוגמה: 3.5" />
+                        </Field>
+                        <Field label="הערות נכס" className="sm:col-span-2">
+                          <Input className="h-10" value={propertyNotes} onChange={(e) => setPropertyNotes(e.target.value)} placeholder="מעלית, מרפסת, חניה, מצב הנכס או כל פרט חשוב" />
+                        </Field>
+                        <Field label="קישור למודעה" className="sm:col-span-2">
+                          <Input className="h-10" dir="ltr" value={listingUrl} onChange={(e) => setListingUrl(e.target.value)} placeholder="https://…" />
+                        </Field>
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
                 </div>
 
-                <div className="border-t pt-4 space-y-3">
-                  <div className="space-y-1">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">2. מימון</p>
-                    <p className="text-[11px] leading-relaxed text-muted-foreground">הון עצמי, סכום משכנתא והחזר חודשי.</p>
-                  </div>
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <Field label="הון עצמי" className="sm:col-span-2">
-                      <Input className="h-10 text-base font-semibold" type="number" min="0" value={equityInvested ?? ''} onChange={(e) => setEquityInvested(Number(e.target.value))} />
-                    </Field>
-                    <Field
-                      label="סכום משכנתא"
-                      hint={!manualMortgageAmount ? 'מחושב כשווי נכס פחות ההון העצמי' : undefined}
-                      action={(
-                        <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-[11px]" onClick={() => setManualMortgageAmount((v) => !v)}>
-                          {manualMortgageAmount ? 'אוטומטי' : 'עריכה ידנית'}
-                        </Button>
-                      )}
-                    >
-                      <Input className="h-10" type="number" min="0" value={manualMortgageAmount ? mortgageAmount : effectiveMortgageAmount} readOnly={!manualMortgageAmount} onChange={(e) => setMortgageAmount(Number(e.target.value))} />
-                    </Field>
-                    <Field
-                      label="החזר חודשי"
-                      hint={!manualMortgageMonthlyPayment ? 'מחושב לפי הסכום, הריבית והתקופה' : undefined}
-                      action={(
-                        <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-[11px]" onClick={() => setManualMortgageMonthlyPayment((v) => !v)}>
-                          {manualMortgageMonthlyPayment ? 'אוטומטי' : 'עריכה ידנית'}
-                        </Button>
-                      )}
-                    >
-                      <Input className="h-10" type="number" min="0" value={manualMortgageMonthlyPayment ? mortgageMonthlyPayment : effectiveMortgageMonthlyPayment} readOnly={!manualMortgageMonthlyPayment} onChange={(e) => setMortgageMonthlyPayment(Number(e.target.value))} />
-                    </Field>
-                    <Field label="ריבית (%)">
-                      <Input className="h-10" type="number" min="0" step="0.1" value={mortgageInterestRate} onChange={(e) => setMortgageInterestRate(Number(e.target.value))} />
-                    </Field>
-                    <Field label="תקופת משכנתא" hint="בשנים">
-                      <Input className="h-10" type="number" min="0" value={mortgageYears ?? ''} onChange={(e) => setMortgageYears(Number(e.target.value))} />
-                    </Field>
-                  </div>
-                </div>
               </CardContent>
             </Card>
 
@@ -493,12 +476,29 @@ export default function BusinessPlan() {
               <CardContent className="p-4 space-y-3">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">עלויות נלוות</p>
-                    <p className="text-[11px] text-muted-foreground">סמן מה לכלול בחישוב.</p>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">2. עלויות רכישה</p>
+                    <p className="text-[11px] text-muted-foreground">מס רכישה, עלויות נלוות ושיפוץ — כל מה שמתווסף למחיר הדירה.</p>
                   </div>
                   <Button type="button" variant="outline" size="sm" onClick={() => setUseSideCostPreset((v) => !v)}>
                     {useSideCostPreset ? 'עריכה ידנית' : 'חזור לחישוב'}
                   </Button>
+                </div>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:items-end">
+                  <div>
+                    <Label className="text-xs">סוג רוכש (קובע את מס הרכישה)</Label>
+                    <Select value={buyerType} onValueChange={(v: BuyerType) => { touch(); setBuyerType(v); }}>
+                      <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="additionalApartment">דירה נוספת / משקיע</SelectItem>
+                        <SelectItem value="singleApartment">דירה יחידה</SelectItem>
+                        <SelectItem value="foreignResident">תושב חוץ</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="rounded-xl border bg-background px-3 py-2 flex items-center justify-between">
+                    <span className="text-sm">מס רכישה</span>
+                    <span className="text-sm font-bold tabular-nums">{formatCurrency(purchaseTaxAmount)}</span>
+                  </div>
                 </div>
                 <div className="grid grid-cols-1 gap-2">
                   {[
@@ -519,21 +519,69 @@ export default function BusinessPlan() {
                     </label>
                   ))}
                 </div>
+                <div>
+                  <Label className="text-xs">עלות שיפוץ (אם מתוכנן)</Label>
+                  <Input className="h-10" type="number" min="0" value={renovationCost ?? ''} onChange={(e) => setRenovationCost(numInput(e.target.value))} />
+                </div>
                 <div className="rounded-xl bg-background px-3 py-2 flex items-center justify-between">
-                  <span className="text-sm font-medium">סה״כ עלויות נלוות</span>
-                  <span className="text-lg font-bold tabular-nums">{formatCurrency(sideCosts)}</span>
+                  <span className="text-sm font-medium">סה״כ מס + עלויות נלוות</span>
+                  <span className="text-lg font-bold tabular-nums">{formatCurrency(sideCosts + purchaseTaxAmount)}</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-sm bg-background/80">
+              <CardContent className="p-3 space-y-4">
+                <div className="border-t pt-4 space-y-3">
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">3. מימון</p>
+                    <p className="text-[11px] leading-relaxed text-muted-foreground">כמה מההון שלך נכנס, כמה משכנתא צריך, ומה ההחזר החודשי.</p>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <Field label="הון עצמי" className="sm:col-span-2">
+                      <Input className="h-10 text-base font-semibold" type="number" min="0" value={equityInvested ?? ''} onChange={(e) => setEquityInvested(numInput(e.target.value))} />
+                    </Field>
+                    <Field
+                      label="סכום משכנתא"
+                      hint={!manualMortgageAmount ? 'מחושב כשווי נכס פחות ההון העצמי' : undefined}
+                      action={(
+                        <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-[11px]" onClick={() => setManualMortgageAmount((v) => !v)}>
+                          {manualMortgageAmount ? 'אוטומטי' : 'עריכה ידנית'}
+                        </Button>
+                      )}
+                    >
+                      <Input className="h-10" type="number" min="0" value={manualMortgageAmount ? mortgageAmount : effectiveMortgageAmount} readOnly={!manualMortgageAmount} onChange={(e) => setMortgageAmount(numInput(e.target.value))} />
+                    </Field>
+                    <Field
+                      label="החזר חודשי"
+                      hint={!manualMortgageMonthlyPayment ? 'מחושב לפי הסכום, הריבית והתקופה' : undefined}
+                      action={(
+                        <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-[11px]" onClick={() => setManualMortgageMonthlyPayment((v) => !v)}>
+                          {manualMortgageMonthlyPayment ? 'אוטומטי' : 'עריכה ידנית'}
+                        </Button>
+                      )}
+                    >
+                      <Input className="h-10" type="number" min="0" value={manualMortgageMonthlyPayment ? mortgageMonthlyPayment : effectiveMortgageMonthlyPayment} readOnly={!manualMortgageMonthlyPayment} onChange={(e) => setMortgageMonthlyPayment(numInput(e.target.value))} />
+                    </Field>
+                    <Field label="ריבית (%)">
+                      <Input className="h-10" type="number" min="0" step="0.1" value={mortgageInterestRate} onChange={(e) => setMortgageInterestRate(numInput(e.target.value))} />
+                    </Field>
+                    <Field label="תקופת משכנתא" hint="בשנים">
+                      <Input className="h-10" type="number" min="0" value={mortgageYears ?? ''} onChange={(e) => setMortgageYears(numInput(e.target.value))} />
+                    </Field>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          <InputSection title="3. הכנסות והוצאות" description="שכירות צפויה מול הוצאות תפעול שוטפות.">
+          <InputSection title="4. הכנסה ותפעול" description="כמה שכירות ייכנס בחודש, וכמה עולה להחזיק את הנכס בשנה.">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Field label="שכ״ד חודשי צפוי">
-                <Input className="h-10" type="number" min="0" value={expectedMonthlyRent ?? ''} onChange={(e) => setExpectedMonthlyRent(Number(e.target.value))} />
+                <Input className="h-10" type="number" min="0" value={expectedMonthlyRent ?? ''} onChange={(e) => setExpectedMonthlyRent(numInput(e.target.value))} />
               </Field>
               <Field label="הוצאות תפעול שנתיות">
-                <Input className="h-10" type="number" min="0" value={annualOperatingCosts ?? ''} onChange={(e) => setAnnualOperatingCosts(Number(e.target.value))} />
+                <Input className="h-10" type="number" min="0" value={annualOperatingCosts ?? ''} onChange={(e) => setAnnualOperatingCosts(numInput(e.target.value))} />
               </Field>
             </div>
           </InputSection>
@@ -542,8 +590,8 @@ export default function BusinessPlan() {
             <CardContent className="p-4 space-y-3">
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">השבחה מתחדשות עירונית</p>
-                  <p className="text-[11px] text-muted-foreground">אפשר להזין השבחה בש״ח או באחוזים; היא תיכנס לחישוב התרחישים והיציאה.</p>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">5. תחזית ומכירה</p>
+                  <p className="text-[11px] text-muted-foreground">כמה שנים מחזיקים את הנכס, ואם צפויה השבחה (למשל מהתחדשות עירונית).</p>
                 </div>
                 <Button type="button" variant="outline" size="sm" onClick={() => setUrbanRenewalUpliftMode((m) => m === 'amount' ? 'percent' : 'amount')}>
                   {urbanRenewalUpliftMode === 'amount' ? 'לעבור לאחוזים' : 'לעבור לש״ח'}
@@ -551,8 +599,15 @@ export default function BusinessPlan() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label className="text-xs">השבחה צפויה</Label>
-                <Input className="h-10" type="number" min="0" value={urbanRenewalUpliftValue ?? ''} onChange={(e) => setUrbanRenewalUpliftValue(Number(e.target.value))} />
+                  <Label className="text-xs">תקופת החזקה (שנים)</Label>
+                  <Input className="h-10" type="number" min="0" value={holdingPeriodYears ?? ''} onChange={(e) => setHoldingPeriodYears(numInput(e.target.value))} />
+                </div>
+                <div className="flex items-end text-[11px] text-muted-foreground">
+                  כמה שנים מתכננים להחזיק לפני מכירה
+                </div>
+                <div>
+                  <Label className="text-xs">השבחה צפויה (לא חובה)</Label>
+                <Input className="h-10" type="number" min="0" value={urbanRenewalUpliftValue ?? ''} onChange={(e) => setUrbanRenewalUpliftValue(numInput(e.target.value))} />
                 </div>
                 <div className="flex items-end text-[11px] text-muted-foreground">
                   {urbanRenewalUpliftMode === 'amount' ? 'מוזן כש״ח ומתווסף לשווי הסופי' : 'מוזן כאחוז משווי הרכישה'}
@@ -619,7 +674,7 @@ export default function BusinessPlan() {
                         <Input
                           type="number" step="0.5" className="h-8 text-sm"
                           value={customRates.pessimistic}
-                          onChange={(e) => setCustomRates({ ...customRates, pessimistic: Number(e.target.value) })}
+                          onChange={(e) => setCustomRates({ ...customRates, pessimistic: numInput(e.target.value) })}
                         />
                       </div>
                       <div>
@@ -627,7 +682,7 @@ export default function BusinessPlan() {
                         <Input
                           type="number" step="0.5" className="h-8 text-sm"
                           value={customRates.average}
-                          onChange={(e) => setCustomRates({ ...customRates, average: Number(e.target.value) })}
+                          onChange={(e) => setCustomRates({ ...customRates, average: numInput(e.target.value) })}
                         />
                       </div>
                       <div>
@@ -635,7 +690,7 @@ export default function BusinessPlan() {
                         <Input
                           type="number" step="0.5" className="h-8 text-sm"
                           value={customRates.optimistic}
-                          onChange={(e) => setCustomRates({ ...customRates, optimistic: Number(e.target.value) })}
+                          onChange={(e) => setCustomRates({ ...customRates, optimistic: numInput(e.target.value) })}
                         />
                       </div>
                     </div>

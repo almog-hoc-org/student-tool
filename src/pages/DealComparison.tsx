@@ -1,61 +1,56 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { BarChart3, Edit3, Loader2, RefreshCw, Trash2, TrendingUp } from 'lucide-react';
+import { AlertTriangle, BarChart3, Edit3, Loader2, Plus, RefreshCw, Trash2, TrendingUp } from 'lucide-react';
+import { DealComparisonTable, computeBestByScenario } from '@/components/deals/DealComparisonTable';
+import { DealVerdictPanel } from '@/components/deals/DealVerdictPanel';
+import { DealSideBySide, type SideBySideDeal } from '@/components/deals/DealSideBySide';
+import { DealCharts, type ChartDeal } from '@/components/deals/DealCharts';
+import { QuickAddDealDialog } from '@/components/deals/QuickAddDealDialog';
+import { ExportButton } from '@/components/ExportButton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CHART_SERIES } from '@/lib/chart-colors';
+import { rankDeals, PREFERENCE_LABELS, type RankingPreference } from '@/lib/deal-ranking';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { LoadingState } from '@/components/ui/loading-state';
 import { ErrorState } from '@/components/ui/error-state';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { deleteSnapshot, listSnapshots, type Snapshot } from '@/lib/snapshots';
+import { deleteSnapshot, listSnapshots, updateSnapshot, type Snapshot } from '@/lib/snapshots';
 import {
+  DEFAULT_SCENARIO,
+  dealMetricsFromSnapshot,
   getDealSnapshotData,
   getDealSummary,
+  isDealBroken,
+  isDealStale,
+  recomputeDealSnapshot,
   rowsFromDealSnapshot,
-  type DealRow,
   type DealScenarioFilter,
 } from '@/lib/deals';
 import { formatCurrency } from '@/lib/validation/validators';
 import { cn } from '@/lib/utils';
+import { PropertyAreaNav } from '@/components/PropertyAreaNav';
 import { save } from '@/lib/storage';
 import { toast } from 'sonner';
-
-function formatPercent(value: number | null | undefined): string {
-  if (value === null || value === undefined || Number.isNaN(value)) return '—';
-  return `${(value * 100).toFixed(1)}%`;
-}
-
-function getScenarioTone(label: string) {
-  if (label.includes('מחמיר')) return 'bg-red-50 text-red-700 border-red-200';
-  if (label.includes('טוב') || label.includes('אופטימי')) return 'bg-green-50 text-green-700 border-green-200';
-  return 'bg-blue-50 text-blue-700 border-blue-200';
-}
-
-function bestClass(value: number, best: number, higherIsBetter = true) {
-  if (!Number.isFinite(value) || !Number.isFinite(best)) return '';
-  const isBest = higherIsBetter ? value === best : value === best;
-  return isBest ? 'bg-green-50 text-green-700 font-bold' : '';
-}
-
-function MobileMetric({ label, value, highlight }: { label: string; value: string; highlight?: 'good' | 'bad' | 'best' }) {
-  return (
-    <div className={cn(
-      'rounded-xl border bg-background p-3',
-      highlight === 'best' && 'border-green-200 bg-green-50 text-green-700',
-      highlight === 'good' && 'text-green-600',
-      highlight === 'bad' && 'text-red-600',
-    )}>
-      <p className="text-[11px] text-muted-foreground mb-1">{label}</p>
-      <p className="text-sm font-bold leading-tight">{value}</p>
-    </div>
-  );
-}
 
 export default function DealComparison() {
   const navigate = useNavigate();
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [scenarioFilter, setScenarioFilter] = useState<DealScenarioFilter>('all');
+  const [scenarioFilter, setScenarioFilter] = useState<DealScenarioFilter>('בינוני');
+  const [showAllColumns, setShowAllColumns] = useState(false);
+  const [preference, setPreference] = useState<RankingPreference>('balanced');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -92,12 +87,39 @@ export default function DealComparison() {
       .map(getDealSummary);
   }, [snapshots, selectedIds]);
 
-  const best = useMemo(() => ({
-    monthlyCashflow: Math.max(...rows.map((r) => r.monthlyCashflow), -Infinity),
-    cocYield: Math.max(...rows.map((r) => r.cocYield), -Infinity),
-    irr: Math.max(...rows.map((r) => r.irr ?? -Infinity), -Infinity),
-    totalProfit: Math.max(...rows.map((r) => r.totalProfit), -Infinity),
-  }), [rows]);
+  // המדדים הטובים ביותר מחושבים בתוך כל תרחיש בנפרד — לא בין תרחישים
+  const bestByScenario = useMemo(() => computeBestByScenario(rows), [rows]);
+
+  // דירוג ופסק דין — תמיד על תרחיש קבוע (בינוני או התרחיש המסונן)
+  const ranking = useMemo(() => {
+    const scenario = scenarioFilter === 'all' ? DEFAULT_SCENARIO : scenarioFilter;
+    const metrics = snapshots
+      .filter((snapshot) => selectedIds.has(snapshot.id))
+      .map((snapshot) => dealMetricsFromSnapshot(snapshot, scenario))
+      .filter((m): m is NonNullable<typeof m> => m !== null);
+    return rankDeals(metrics, preference);
+  }, [snapshots, selectedIds, scenarioFilter, preference]);
+
+  // נתונים למול-מול ולגרפים — צבע קבוע לעסקה לפי סדר הבחירה
+  const comparisonDeals = useMemo(() => {
+    const scenario = scenarioFilter === 'all' ? DEFAULT_SCENARIO : scenarioFilter;
+    const assessmentById = new Map(ranking.ranked.map((a) => [a.snapshotId, a]));
+    return snapshots
+      .filter((snapshot) => selectedIds.has(snapshot.id))
+      .map((snapshot, i) => {
+        const metrics = dealMetricsFromSnapshot(snapshot, scenario);
+        if (!metrics) return null;
+        const data = getDealSnapshotData(snapshot);
+        const scenarios = data.results?.scenarios ?? [];
+        return {
+          metrics,
+          assessment: assessmentById.get(snapshot.id),
+          scenario: scenarios.find((sc) => sc.label === metrics.scenarioLabel) ?? scenarios[0],
+          color: CHART_SERIES[i % CHART_SERIES.length],
+        };
+      })
+      .filter((d): d is NonNullable<typeof d> => d !== null);
+  }, [snapshots, selectedIds, scenarioFilter, ranking]);
 
   const snapshotsById = useMemo(() => {
     return new Map(snapshots.map((snapshot) => [snapshot.id, snapshot]));
@@ -123,8 +145,66 @@ export default function DealComparison() {
     navigate('/business-plan');
   };
 
+  const [deleteTarget, setDeleteTarget] = useState<Snapshot | null>(null);
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
+
+  // דוח PDF של ההשוואה — פסק הדין, סקשן לכל עסקה, וצילום הגרפים
+  const exportSections = useMemo(() => {
+    const fmtPct = (v: number | null) => (v === null ? '—' : `${(v * 100).toFixed(1)}%`);
+    return ranking.ranked.map((assessment) => {
+      const deal = comparisonDeals.find((d) => d.metrics.snapshotId === assessment.snapshotId);
+      const m = deal?.metrics;
+      return {
+        title: `${assessment.rank}. ${assessment.name} — ${assessment.score}/100 (${assessment.grade})`,
+        items: m ? [
+          { label: 'מחיר רכישה', value: formatCurrency(m.purchasePrice) },
+          { label: 'הון עצמי', value: formatCurrency(m.equityInvested) },
+          { label: 'תזרים חודשי', value: formatCurrency(m.monthlyCashflow) },
+          { label: 'IRR', value: fmtPct(m.irr) },
+          { label: 'תשואה על ההון (COC)', value: fmtPct(m.cocYield) },
+          { label: 'רווח כולל (בינוני)', value: formatCurrency(m.totalProfit) },
+          ...(assessment.strengths.length ? [{ label: 'חוזקות', value: assessment.strengths.join(' · ') }] : []),
+          ...(assessment.risks.length ? [{ label: 'סיכונים', value: assessment.risks.join(' · ') }] : []),
+        ] : [],
+      };
+    });
+  }, [ranking, comparisonDeals]);
+
+  const handleQuickAdded = (snapshot: Snapshot) => {
+    setSnapshots((current) => [snapshot, ...current]);
+    setSelectedIds((current) => new Set(current).add(snapshot.id));
+  };
+
+  // עסקאות שנשמרו עם מנוע ישן או בלי תרחישים — מוצגות עם אזהרה ופעולת תיקון
+  const staleDeals = useMemo(
+    () => snapshots.filter((s) => !isDealBroken(getDealSnapshotData(s)) && isDealStale(getDealSnapshotData(s))),
+    [snapshots],
+  );
+  const brokenDeals = useMemo(
+    () => snapshots.filter((s) => isDealBroken(getDealSnapshotData(s))),
+    [snapshots],
+  );
+  const [recomputingId, setRecomputingId] = useState<string | null>(null);
+
+  const recomputeDeal = async (snapshot: Snapshot) => {
+    const recomputed = recomputeDealSnapshot(getDealSnapshotData(snapshot));
+    if (!recomputed) {
+      toast.error('אין מספיק נתונים שמורים כדי לחשב מחדש — ערוך את העסקה בתוכנית העסקית');
+      return;
+    }
+    setRecomputingId(snapshot.id);
+    try {
+      const updated = await updateSnapshot({ id: snapshot.id, name: snapshot.name, data: recomputed, notes: snapshot.notes });
+      setSnapshots((current) => current.map((s) => (s.id === snapshot.id ? updated : s)));
+      toast.success(`"${snapshot.name}" חושבה מחדש עם המנוע העדכני`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'שגיאה בחישוב מחדש');
+    } finally {
+      setRecomputingId(null);
+    }
+  };
+
   const removeDeal = async (snapshot: Snapshot) => {
-    if (!window.confirm(`למחוק את העסקה "${snapshot.name}"?`)) return;
     try {
       await deleteSnapshot(snapshot.id);
       setSnapshots((current) => current.filter((s) => s.id !== snapshot.id));
@@ -141,6 +221,7 @@ export default function DealComparison() {
 
   return (
     <div className="space-y-5" dir="rtl">
+      <PropertyAreaNav />
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -151,10 +232,23 @@ export default function DealComparison() {
             השווה בין עסקאות ששמרת בתוכנית העסקית וקבל תמונה מספרית ברורה בסגנון טבלת אקסל.
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={load} disabled={loading} className="gap-1.5">
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-          רענן
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" onClick={() => setQuickAddOpen(true)} className="gap-1.5">
+            <Plus className="w-4 h-4" /> הוסף עסקה
+          </Button>
+          {ranking.winner && (
+            <ExportButton
+              title="השוואת עסקאות — הדרך לדירה"
+              executiveSummary={[ranking.headline, ranking.subline].filter(Boolean)}
+              sections={exportSections}
+              chartElementId="deal-comparison-charts"
+            />
+          )}
+          <Button variant="outline" size="sm" onClick={load} disabled={loading} className="gap-1.5">
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+            רענן
+          </Button>
+        </div>
       </div>
 
       <Card className="border-0 shadow-sm">
@@ -186,7 +280,7 @@ export default function DealComparison() {
                       <button type="button" onClick={() => editDeal(deal.snapshot)} className="rounded-full p-1 hover:bg-background" aria-label="ערוך עסקה">
                         <Edit3 className="w-3.5 h-3.5" />
                       </button>
-                      <button type="button" onClick={() => removeDeal(deal.snapshot)} className="rounded-full p-1 text-destructive hover:bg-background" aria-label="מחק עסקה">
+                      <button type="button" onClick={() => setDeleteTarget(deal.snapshot)} className="rounded-full p-1 text-destructive hover:bg-background" aria-label="מחק עסקה">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
@@ -196,6 +290,22 @@ export default function DealComparison() {
             </div>
 
             <div className="space-y-2 min-w-[220px]">
+              <p className="text-xs font-semibold text-muted-foreground">מה חשוב לך?</p>
+              <div className="grid grid-cols-3 gap-1 rounded-xl bg-muted p-1 text-xs">
+                {(['cashflow', 'balanced', 'longterm'] as const).map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setPreference(value)}
+                    className={cn(
+                      'rounded-lg px-2 py-1.5 transition',
+                      preference === value ? 'bg-background shadow-sm font-semibold' : 'text-muted-foreground',
+                    )}
+                  >
+                    {PREFERENCE_LABELS[value]}
+                  </button>
+                ))}
+              </div>
               <p className="text-xs font-semibold text-muted-foreground">תרחיש</p>
               <div className="grid grid-cols-4 gap-1 rounded-xl bg-muted p-1 text-xs">
                 {(['all', 'מחמיר', 'בינוני', 'טוב'] as const).map((value) => (
@@ -216,6 +326,32 @@ export default function DealComparison() {
           </div>
         </CardContent>
       </Card>
+
+      {!loading && !error && (staleDeals.length > 0 || brokenDeals.length > 0) && (
+        <div className="space-y-2">
+          {brokenDeals.map((snapshot) => (
+            <div key={snapshot.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/40 px-4 py-3 text-sm text-red-800 dark:text-red-300">
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              <span className="flex-1 min-w-[200px]">לא ניתן להציג את "{snapshot.name}" — חסרים נתוני תרחישים.</span>
+              <Button size="sm" variant="outline" className="h-7" disabled={recomputingId === snapshot.id} onClick={() => recomputeDeal(snapshot)}>
+                {recomputingId === snapshot.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'חשב מחדש'}
+              </Button>
+              <Button size="sm" variant="ghost" className="h-7 text-destructive" onClick={() => setDeleteTarget(snapshot)}>מחק</Button>
+            </div>
+          ))}
+          {staleDeals.map((snapshot) => (
+            <div key={snapshot.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/40 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              <span className="flex-1 min-w-[200px]">"{snapshot.name}" חושבה עם גרסה ישנה של המנוע (לפני תיקון מס הרכישה) — המספרים עלולים להטעות בהשוואה.</span>
+              <Button size="sm" variant="outline" className="h-7" disabled={recomputingId === snapshot.id} onClick={() => recomputeDeal(snapshot)}>
+                {recomputingId === snapshot.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'חשב מחדש'}
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!loading && !error && <DealVerdictPanel ranking={ranking} />}
 
       {!loading && !error && selectedSummaries.length > 0 && (
         <div className="grid gap-3 md:grid-cols-3">
@@ -272,10 +408,13 @@ export default function DealComparison() {
           <CardContent className="p-8 text-center space-y-3">
             <TrendingUp className="w-10 h-10 text-muted-foreground mx-auto" />
             <h3 className="font-semibold">אין עדיין עסקאות להשוואה</h3>
-            <p className="text-sm text-muted-foreground">שמור עסקה מתוך התוכנית העסקית והיא תופיע כאן.</p>
-            <Button asChild>
-              <Link to="/business-plan">עבור לתוכנית עסקית</Link>
-            </Button>
+            <p className="text-sm text-muted-foreground">הוסף עסקה מהירה כאן, או שמור עסקה מתוך התוכנית העסקית.</p>
+            <div className="flex justify-center gap-2">
+              <Button onClick={() => setQuickAddOpen(true)} className="gap-1.5"><Plus className="w-4 h-4" /> הוסף עסקה מהירה</Button>
+              <Button asChild variant="outline">
+                <Link to="/business-plan">עבור לתוכנית עסקית</Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
       ) : rows.length === 0 ? (
@@ -295,103 +434,61 @@ export default function DealComparison() {
         </Card>
       ) : (
         <>
-        <div className="md:hidden space-y-3">
-          {rows.map((row) => (
-            <Card key={row.id} className="border-0 shadow-sm overflow-hidden">
-              <CardContent className="p-4 space-y-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <h3 className="font-bold truncate">{row.name}</h3>
-                    <p className="text-[11px] text-muted-foreground">
-                      {row.propertyArea || 'ללא אזור'} · נשמר ב-{new Date(row.createdAt).toLocaleDateString('he-IL')} · {row.holdingPeriodYears} שנים
-                    </p>
-                  </div>
-                  <Badge variant="outline" className={cn('shrink-0', getScenarioTone(row.scenarioLabel))}>
-                    {row.scenarioLabel} · {row.annualAppreciation}%
-                  </Badge>
-                </div>
-
-                {snapshotsById.get(row.snapshotId) && (
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="h-8 flex-1 gap-1" onClick={() => editDeal(snapshotsById.get(row.snapshotId)!)}>
-                      <Edit3 className="w-3.5 h-3.5" /> ערוך
-                    </Button>
-                    <Button variant="outline" size="sm" className="h-8 flex-1 gap-1 text-destructive" onClick={() => removeDeal(snapshotsById.get(row.snapshotId)!)}>
-                      <Trash2 className="w-3.5 h-3.5" /> מחק
-                    </Button>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-2 gap-2">
-                  <MobileMetric label="תזרים חודשי" value={formatCurrency(row.monthlyCashflow)} highlight={row.monthlyCashflow >= 0 ? 'good' : 'bad'} />
-                  <MobileMetric label="רווח כולל" value={formatCurrency(row.totalProfit)} highlight={row.totalProfit === best.totalProfit ? 'best' : row.totalProfit >= 0 ? 'good' : 'bad'} />
-                  <MobileMetric label="COC" value={formatPercent(row.cocYield)} highlight={row.cocYield === best.cocYield ? 'best' : undefined} />
-                  <MobileMetric label="IRR" value={formatPercent(row.irr)} highlight={(row.irr ?? -Infinity) === best.irr ? 'best' : undefined} />
-                </div>
-
-                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs text-muted-foreground border-t pt-3">
-                  <div>מחיר רכישה: <span className="font-semibold text-foreground">{formatCurrency(row.purchasePrice)}</span></div>
-                  <div>שטח: <span className="font-semibold text-foreground">{row.propertySqm ? `${row.propertySqm} מ״ר` : '—'}</span></div>
-                  <div>מחיר למ״ר: <span className="font-semibold text-foreground">{row.pricePerSqm ? formatCurrency(row.pricePerSqm) : '—'}</span></div>
-                  <div>הון עצמי: <span className="font-semibold text-foreground">{formatCurrency(row.equityInvested)}</span></div>
-                  <div>משכנתא: <span className="font-semibold text-foreground">{formatCurrency(row.mortgageAmount)}</span></div>
-                  <div>שכ״ד: <span className="font-semibold text-foreground">{formatCurrency(row.expectedMonthlyRent)}</span></div>
-                  <div className="col-span-2">שווי בסוף תקופה: <span className="font-semibold text-foreground">{formatCurrency(row.propertyValueAtEnd)}</span></div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        <Card className="hidden md:block border-0 shadow-sm overflow-hidden">
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[1320px] border-collapse text-xs">
-                <thead className="bg-muted/80 sticky top-0 z-10">
-                  <tr className="text-right">
-                    {['עסקה', 'אזור', 'שטח', 'מחיר למ״ר', 'תרחיש', 'עלייה שנתית', 'מחיר רכישה', 'הון עצמי', 'משכנתא', 'החזר חודשי', 'שכ״ד', 'תזרים חודשי', 'COC', 'IRR', 'רווח כולל', 'שווי בסוף', 'תקופה', 'נשמר', 'פעולות'].map((head) => (
-                      <th key={head} className="border-b border-l px-3 py-2 font-semibold whitespace-nowrap">{head}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((row) => (
-                    <tr key={row.id} className="hover:bg-muted/40">
-                      <td className="border-b border-l px-3 py-2 font-semibold max-w-[180px] truncate" title={row.notes ?? row.name}>{row.name}</td>
-                      <td className="border-b border-l px-3 py-2 max-w-[140px] truncate">{row.propertyArea || '—'}</td>
-                      <td className="border-b border-l px-3 py-2 whitespace-nowrap">{row.propertySqm ? `${row.propertySqm} מ״ר` : '—'}</td>
-                      <td className="border-b border-l px-3 py-2 whitespace-nowrap">{row.pricePerSqm ? formatCurrency(row.pricePerSqm) : '—'}</td>
-                      <td className="border-b border-l px-3 py-2"><Badge variant="outline" className={getScenarioTone(row.scenarioLabel)}>{row.scenarioLabel}</Badge></td>
-                      <td className="border-b border-l px-3 py-2 text-center">{row.annualAppreciation}%</td>
-                      <td className="border-b border-l px-3 py-2">{formatCurrency(row.purchasePrice)}</td>
-                      <td className="border-b border-l px-3 py-2">{formatCurrency(row.equityInvested)}</td>
-                      <td className="border-b border-l px-3 py-2">{formatCurrency(row.mortgageAmount)}</td>
-                      <td className="border-b border-l px-3 py-2">{formatCurrency(row.mortgageMonthlyPayment)}</td>
-                      <td className="border-b border-l px-3 py-2">{formatCurrency(row.expectedMonthlyRent)}</td>
-                      <td className={cn('border-b border-l px-3 py-2', row.monthlyCashflow >= 0 ? 'text-green-600' : 'text-red-600', bestClass(row.monthlyCashflow, best.monthlyCashflow))}>{formatCurrency(row.monthlyCashflow)}</td>
-                      <td className={cn('border-b border-l px-3 py-2', bestClass(row.cocYield, best.cocYield))}>{formatPercent(row.cocYield)}</td>
-                      <td className={cn('border-b border-l px-3 py-2', bestClass(row.irr ?? -Infinity, best.irr))}>{formatPercent(row.irr)}</td>
-                      <td className={cn('border-b border-l px-3 py-2', row.totalProfit >= 0 ? 'text-green-600' : 'text-red-600', bestClass(row.totalProfit, best.totalProfit))}>{formatCurrency(row.totalProfit)}</td>
-                      <td className="border-b border-l px-3 py-2">{formatCurrency(row.propertyValueAtEnd)}</td>
-                      <td className="border-b border-l px-3 py-2 text-center">{row.holdingPeriodYears} שנים</td>
-                      <td className="border-b border-l px-3 py-2 whitespace-nowrap">{new Date(row.createdAt).toLocaleDateString('he-IL')}</td>
-                      <td className="border-b px-3 py-2 whitespace-nowrap">
-                        {snapshotsById.get(row.snapshotId) && (
-                          <div className="flex gap-1">
-                            <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => editDeal(snapshotsById.get(row.snapshotId)!)}>ערוך</Button>
-                            <Button variant="ghost" size="sm" className="h-7 px-2 text-destructive" onClick={() => removeDeal(snapshotsById.get(row.snapshotId)!)}>מחק</Button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+        <Tabs defaultValue="overview" dir="rtl">
+          <TabsList className="mb-3">
+            <TabsTrigger value="overview">סקירה</TabsTrigger>
+            <TabsTrigger value="side-by-side">מול-מול</TabsTrigger>
+            <TabsTrigger value="charts">גרפים</TabsTrigger>
+          </TabsList>
+          <TabsContent value="overview">
+            <DealComparisonTable
+              rows={rows}
+              bestByScenario={bestByScenario}
+              grouped={scenarioFilter === 'all'}
+              showAllColumns={showAllColumns}
+              onToggleColumns={() => setShowAllColumns((v) => !v)}
+              snapshotsById={snapshotsById}
+              onEdit={editDeal}
+              onDelete={setDeleteTarget}
+            />
+          </TabsContent>
+          <TabsContent value="side-by-side">
+            <DealSideBySide deals={comparisonDeals as SideBySideDeal[]} />
+          </TabsContent>
+          {/* forceMount: הגרפים חיים תמיד כדי שייצוא ה-PDF יוכל לצלם אותם
+              מכל טאב; כשהטאב לא פעיל הם מוזזים מחוץ למסך (לא display:none) */}
+          <TabsContent
+            value="charts"
+            forceMount
+            className="data-[state=inactive]:fixed data-[state=inactive]:top-0 data-[state=inactive]:-start-[10000px] data-[state=inactive]:w-[900px] data-[state=inactive]:pointer-events-none"
+            aria-hidden={undefined}
+          >
+            <DealCharts deals={comparisonDeals as ChartDeal[]} />
+          </TabsContent>
+        </Tabs>
         </>
       )}
+      <QuickAddDealDialog open={quickAddOpen} onOpenChange={setQuickAddOpen} onSaved={handleQuickAdded} />
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>למחוק את העסקה?</AlertDialogTitle>
+            <AlertDialogDescription>
+              "{deleteTarget?.name}" תימחק לצמיתות מההשוואה. אי אפשר לבטל את הפעולה.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ביטול</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => { if (deleteTarget) removeDeal(deleteTarget); setDeleteTarget(null); }}
+            >
+              מחק
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

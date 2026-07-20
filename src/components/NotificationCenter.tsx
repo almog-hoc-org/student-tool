@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useNotifications } from '@/hooks/useNotifications';
 import { cn } from '@/lib/utils';
 
@@ -26,34 +27,27 @@ export function NotificationCenter() {
   const { items, unreadCount, markRead, markAllRead, remove } = useNotifications();
 
   return (
-    <div className="relative">
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => setOpen((v) => !v)}
-        className="relative"
-        aria-label="התראות"
-      >
-        <Bell className="h-5 w-5" />
-        {unreadCount > 0 && (
-          <Badge
-            variant="destructive"
-            className="absolute -top-1 -right-1 h-5 min-w-5 px-1 flex items-center justify-center text-xs"
-          >
-            {unreadCount}
-          </Badge>
-        )}
-      </Button>
-
-      {open && (
-        <>
-          {/* click-outside catcher */}
-          <div
-            className="fixed inset-0 z-40"
-            onClick={() => setOpen(false)}
-            aria-hidden
-          />
-          <div className="absolute left-0 mt-2 w-[22rem] max-w-[calc(100vw-2rem)] z-50" dir="rtl">
+    // Radix Popover — מקבל בחינם מקלדת, Escape, מלכודת פוקוס וסגירה בלחיצה בחוץ
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="relative"
+          aria-label="התראות"
+        >
+          <Bell className="h-5 w-5" />
+          {unreadCount > 0 && (
+            <Badge
+              variant="destructive"
+              className="absolute -top-1 -end-1 h-5 min-w-5 px-1 flex items-center justify-center text-xs"
+            >
+              {unreadCount}
+            </Badge>
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="end" sideOffset={8} dir="rtl" className="w-[22rem] max-w-[calc(100vw-2rem)] p-0 border-0 shadow-none bg-transparent">
             <Card className="border-2 shadow-xl">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
@@ -158,9 +152,7 @@ export function NotificationCenter() {
                 </ScrollArea>
               </CardContent>
             </Card>
-          </div>
-        </>
-      )}
-    </div>
+      </PopoverContent>
+    </Popover>
   );
 }

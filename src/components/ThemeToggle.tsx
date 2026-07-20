@@ -45,7 +45,10 @@ async function loadStoredTheme(userId?: string): Promise<Theme> {
 
 export function ThemeToggle() {
   const { user } = useAuth();
-  const [theme, setTheme] = useState<Theme>('light');
+  // הסקריפט ב-index.html כבר החיל את המצב על ה-DOM לפני הציור הראשון
+  const [theme, setTheme] = useState<Theme>(() =>
+    document.documentElement.classList.contains('dark') ? 'dark' : 'light',
+  );
 
   useEffect(() => {
     let cancelled = false;

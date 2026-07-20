@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Wallet, TrendingUp, Home, MessageCircle, Settings, LogOut, UserCircle, User, BarChart3, Search, HelpCircle } from 'lucide-react';
+import { Wallet, TrendingUp, Home, MessageCircle, Settings, LogOut, UserCircle, User, Search, HelpCircle } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { NotificationCenter } from './NotificationCenter';
 import { Logo } from './Logo';
@@ -15,26 +15,21 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-// Desktop top nav shows everything; the mobile bottom bar keeps the 5 core
-// stops (the rest are reachable from the journey stepper and page links).
-const desktopTabs = [
-  { name: 'תקציב', href: '/', icon: Wallet },
-  { name: 'תוכנית עסקית', href: '/business-plan', icon: TrendingUp },
-  { name: 'משכנתא', href: '/mortgage', icon: Home },
-  { name: 'בדיקת נכס', href: '/property-check', icon: Search },
-  { name: 'השוואת עסקאות', href: '/deal-comparison', icon: BarChart3 },
-  { name: 'יועץ חכם', href: '/chat', icon: MessageCircle },
-  { name: 'מדריך', href: '/guide', icon: HelpCircle },
-  { name: 'אזור אישי', href: '/account', icon: User },
+// ניווט אחד ויחיד — 5 יעדים זהים בדסקטופ ובמובייל.
+// מדריך/אזור אישי/ניהול יושבים בתפריט האווטאר; השוואת עסקאות
+// נגישה כטאב משני בתוך "נכסים" (property-check + deal-comparison).
+const navTabs = [
+  { name: 'תקציב', href: '/', icon: Wallet, activePrefixes: [] as string[] },
+  { name: 'תוכנית עסקית', href: '/business-plan', icon: TrendingUp, activePrefixes: ['/business-plan'] },
+  { name: 'משכנתא', href: '/mortgage', icon: Home, activePrefixes: ['/mortgage'] },
+  { name: 'נכסים', href: '/property-check', icon: Search, activePrefixes: ['/property-check', '/deal-comparison'] },
+  { name: 'יועץ', href: '/chat', icon: MessageCircle, activePrefixes: ['/chat'] },
 ];
 
-const mobileTabs = [
-  { name: 'תקציב', href: '/', icon: Wallet },
-  { name: 'תוכנית עסקית', href: '/business-plan', icon: TrendingUp },
-  { name: 'משכנתא', href: '/mortgage', icon: Home },
-  { name: 'יועץ חכם', href: '/chat', icon: MessageCircle },
-  { name: 'אזור אישי', href: '/account', icon: User },
-];
+function isTabActive(tab: (typeof navTabs)[number], currentPath: string): boolean {
+  if (tab.href === '/') return currentPath === '/';
+  return tab.activePrefixes.some((p) => currentPath.startsWith(p));
+}
 
 export function Layout({ children }: { children: ReactNode }) {
   const location = useLocation();
@@ -53,11 +48,6 @@ export function Layout({ children }: { children: ReactNode }) {
             <span className="font-bold text-base font-display">הדרך לדירה</span>
           </Link>
           <div className="flex items-center gap-2">
-            <Button asChild variant="ghost" size="icon" className="rounded-full" title="מדריך שימוש">
-              <Link to="/guide" aria-label="מדריך שימוש">
-                <HelpCircle className="w-5 h-5" />
-              </Link>
-            </Button>
             <NotificationCenter />
             <ThemeToggle />
             <DropdownMenu>
@@ -112,8 +102,8 @@ export function Layout({ children }: { children: ReactNode }) {
       {/* Desktop top tabs */}
       <div className="hidden md:block border-b border-border bg-background">
         <div className="max-w-5xl mx-auto flex overflow-x-auto no-scrollbar">
-          {desktopTabs.map((tab) => {
-            const isActive = currentPath === tab.href;
+          {navTabs.map((tab) => {
+            const isActive = isTabActive(tab, currentPath);
             return (
               <Link
                 key={tab.href}
@@ -143,8 +133,8 @@ export function Layout({ children }: { children: ReactNode }) {
       {/* Mobile Bottom Tab Bar - exactly 5 tabs, fills the viewport width */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-t border-border pb-[env(safe-area-inset-bottom)]">
         <div className="flex h-16 px-1">
-          {mobileTabs.map((tab) => {
-            const isActive = currentPath === tab.href;
+          {navTabs.map((tab) => {
+            const isActive = isTabActive(tab, currentPath);
             return (
               <Link
                 key={tab.href}

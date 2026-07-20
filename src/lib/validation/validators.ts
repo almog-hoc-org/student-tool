@@ -66,6 +66,15 @@ export const getValidationMessage = (
   return he.validation[type];
 };
 
+/**
+ * המרה בטוחה של קלט שדה מספרי: NaN או ערך שלילי הופכים ל-0,
+ * כך שערך זבל שהודבק לשדה לא מגיע למנועי החישוב.
+ */
+export const numInput = (raw: string): number => {
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+};
+
 export const formatCurrency = (value: number): string => {
   return `₪${value.toLocaleString('he-IL', {
     minimumFractionDigits: 0,

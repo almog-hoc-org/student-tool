@@ -69,30 +69,3 @@ export function calculateRentalIRR(params: {
   return calculateIRR(cashFlows);
 }
 
-/**
- * Build cash flows for a flip deal and calculate IRR
- */
-export function calculateFlipIRR(params: {
-  totalInvestment: number;
-  holdingMonths: number; // חודשי החזקה
-  monthlyCosts: number; // עלויות חודשיות (משכנתא, ביטוח וכו')
-  saleProceeds: number; // תמורת מכירה נטו
-}): number | null {
-  const { totalInvestment, holdingMonths, monthlyCosts, saleProceeds } = params;
-
-  const cashFlows: number[] = [-totalInvestment];
-
-  for (let month = 1; month <= holdingMonths; month++) {
-    if (month === holdingMonths) {
-      cashFlows.push(-monthlyCosts + saleProceeds);
-    } else {
-      cashFlows.push(-monthlyCosts);
-    }
-  }
-
-  // For monthly cash flows, IRR gives monthly rate; annualize it
-  const monthlyIRR = calculateIRR(cashFlows, 0.01);
-  if (monthlyIRR === null) return null;
-
-  return Math.pow(1 + monthlyIRR, 12) - 1;
-}

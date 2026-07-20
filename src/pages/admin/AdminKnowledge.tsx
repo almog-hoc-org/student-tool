@@ -16,6 +16,8 @@ interface SourceRow {
   source_file: string;
   chunk_count: number;
   updated_at: string;
+  /** מקור ישן שהוזן לפני שהיה source_id — נמחק לפי שם קובץ */
+  legacy?: boolean;
 }
 
 export default function AdminKnowledge() {
@@ -47,6 +49,7 @@ export default function AdminKnowledge() {
             source_file: r.source_file,
             chunk_count: 1,
             updated_at: r.updated_at,
+            legacy: !r.source_id,
           });
         }
       }
@@ -84,13 +87,15 @@ export default function AdminKnowledge() {
     }
   }
 
-  async function deleteSource(sourceId: string, sourceName: string) {
-    if (!window.confirm(`למחוק את "${sourceName}" מהמוח של הצ׳אט?`)) return;
+  async function deleteSource(source: SourceRow) {
+    if (!window.confirm(`למחוק את "${source.source_file}" מהמוח של הצ׳אט?`)) return;
     try {
-      const { error } = await supabase
-        .from('knowledge_chunks')
-        .delete()
-        .eq('source_id', sourceId);
+      // מקורות ישנים נשמרו בלי source_id — מחיקה לפי source_id שם
+      // הייתה no-op שקט עם הודעת הצלחה
+      const query = supabase.from('knowledge_chunks').delete();
+      const { error } = source.legacy
+        ? await query.is('source_id', null).eq('source_file', source.source_file)
+        : await query.eq('source_id', source.source_id);
       if (error) throw error;
       toast.success('נמחק');
       reload();
@@ -231,7 +236,7 @@ export default function AdminKnowledge() {
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => deleteSource(s.source_id, s.source_file)}
+                  onClick={() => deleteSource(s)}
                   className="text-destructive hover:text-destructive shrink-0"
                   title="מחק"
                 >

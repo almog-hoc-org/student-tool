@@ -4,7 +4,7 @@
 import { calculatePurchaseTax, BuyerType } from './purchase-tax';
 import { calculateSideCosts, getDefaultSideCostsInput } from './side-costs';
 import { calculateMortgageTrack } from './mortgage-calculator';
-import { MARKET_CONSTANTS } from './mortgage-calculator';
+import { FINANCE } from '@/lib/constants/financial';
 
 export interface QuickCheckInput {
   purchasePrice: number;
@@ -24,7 +24,7 @@ export interface QuickCheckOutput {
   totalAcquisitionCost: number; // price + tax + side costs
 }
 
-const DEFAULT_MORTGAGE_RATE = 4.5; // ריבית ממוצעת משוקללת סבירה
+const DEFAULT_MORTGAGE_RATE = FINANCE.DEFAULT_MORTGAGE_RATE;
 const DEFAULT_MORTGAGE_YEARS = 25;
 
 export function calculateQuickCheck(input: QuickCheckInput): QuickCheckOutput {

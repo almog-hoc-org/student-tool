@@ -19,15 +19,16 @@ import {
   QuickCheckOutput,
 } from '@/lib/calculations/quick-property-check';
 import { BuyerType } from '@/lib/calculations/purchase-tax';
-import { formatCurrency } from '@/lib/validation/validators';
+import { FINANCE, getMinEquityShare } from '@/lib/constants/financial';
+import { formatCurrency, numInput } from '@/lib/validation/validators';
 import { useAuth } from '@/contexts/AuthContext';
 import { save, load } from '@/lib/storage';
 import { useJourney } from '@/hooks/useJourney';
 import { LABELS } from '@/lib/content/labels';
 import { GlossaryLink } from '@/components/GlossaryLink';
 import { EmptyState } from '@/components/ui/empty-state';
-import { JourneyStepper } from '@/components/journey/JourneyStepper';
 import NextStepCard from '@/components/NextStepCard';
+import { PropertyAreaNav } from '@/components/PropertyAreaNav';
 import { cn } from '@/lib/utils';
 
 const DEFAULTS = {
@@ -47,6 +48,11 @@ export default function PropertyCheck() {
   const [purchasePrice, setPurchasePrice] = useState(saved?.purchasePrice ?? DEFAULTS.purchasePrice);
   const [buyerType, setBuyerType] = useState<BuyerType>(saved?.buyerType ?? DEFAULTS.buyerType);
   const [equityPercent, setEquityPercent] = useState(saved?.equityPercent ?? DEFAULTS.equityPercent);
+  // רצפת הון עצמי לפי תקרת המימון החוקית של סוג הרוכש
+  const minEquityPercent = Math.round(getMinEquityShare(buyerType) * 100);
+  useEffect(() => {
+    if (equityPercent < minEquityPercent) setEquityPercent(minEquityPercent);
+  }, [minEquityPercent, equityPercent]);
   const [area, setArea] = useState(saved?.area ?? DEFAULTS.area);
   const [sqm, setSqm] = useState(saved?.sqm ?? DEFAULTS.sqm);
   // True only after real user input — prefilled defaults must not complete milestones.
@@ -94,7 +100,9 @@ export default function PropertyCheck() {
       purchasePrice,
       propertyArea: area,
       propertySqm: sqm,
-      sideCosts: result.purchaseTax + result.sideCosts,
+      // מס רכישה מחושב בתוכנית העסקית לפי סוג הרוכש — מעבירים אותו בנפרד
+      buyerType,
+      sideCosts: result.sideCosts,
       equityInvested: result.equityAmount,
       mortgageAmount: result.mortgageAmount,
       mortgageMonthlyPayment: result.estimatedMonthlyPayment,
@@ -108,7 +116,7 @@ export default function PropertyCheck() {
 
   return (
     <div className="space-y-6">
-      <JourneyStepper />
+      <PropertyAreaNav />
 
       <div className="md:grid md:grid-cols-5 md:gap-8">
         <div className="md:col-span-2 space-y-4 md:sticky md:top-28 md:self-start">
@@ -126,7 +134,7 @@ export default function PropertyCheck() {
               type="number"
               min={0}
               value={purchasePrice ?? ''}
-              onChange={(e) => { touch(); setPurchasePrice(Number(e.target.value)); }}
+              onChange={(e) => { touch(); setPurchasePrice(numInput(e.target.value)); }}
               placeholder="1,800,000"
               className="text-lg font-semibold h-12"
             />
@@ -147,7 +155,7 @@ export default function PropertyCheck() {
                 type="number"
                 min={0}
                 value={sqm ?? ''}
-                onChange={(e) => { touch(); setSqm(Number(e.target.value)); }}
+                onChange={(e) => { touch(); setSqm(numInput(e.target.value)); }}
                 placeholder="60"
               />
             </div>
@@ -178,15 +186,17 @@ export default function PropertyCheck() {
               <Slider
                 value={[equityPercent]}
                 onValueChange={([v]) => { touch(); setEquityPercent(v); }}
-                min={20}
+                min={minEquityPercent}
                 max={100}
                 step={1}
               />
               <div dir="ltr" className="flex justify-between text-[10px] text-muted-foreground">
-                <span>20%</span>
-                <span>50%</span>
+                <span>{minEquityPercent}%</span>
                 <span>100%</span>
               </div>
+              <p className="text-[11px] text-muted-foreground">
+                המינימום החוקי לסוג רוכש זה: {minEquityPercent}% הון עצמי (מימון עד {100 - minEquityPercent}%).
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -221,7 +231,7 @@ export default function PropertyCheck() {
                   icon={ScanLine}
                   title="עלויות נלוות"
                   value={formatCurrency(result.sideCosts)}
-                  sub="שמאי, עו״ד, רישום, ביטוח"
+                  sub="תיווך, עו״ד, שמאי, בדק בית, ביטוח, רישום"
                 />
                 <Kpi
                   icon={Calculator}
@@ -233,7 +243,7 @@ export default function PropertyCheck() {
                   icon={Calculator}
                   title="החזר חודשי משוער"
                   value={formatCurrency(result.estimatedMonthlyPayment)}
-                  sub="4.5% · 25 שנה"
+                  sub={`${FINANCE.DEFAULT_MORTGAGE_RATE}% · 25 שנה`}
                 />
               </div>
 

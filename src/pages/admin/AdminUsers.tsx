@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { Database } from '@/integrations/supabase/types';
 import { UserDrawer } from '@/components/UserDrawer';
+import { useAuth } from '@/contexts/AuthContext';
 
 type UserStatus = Database['public']['Enums']['user_status'];
 type AppRole = Database['public']['Enums']['app_role'];
@@ -37,6 +38,7 @@ const statusColors: Record<UserStatus, string> = {
 };
 
 export default function AdminUsers() {
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<UserRow[]>([]);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -88,6 +90,20 @@ export default function AdminUsers() {
   }
 
   async function toggleAdmin(userId: string) {
+    const target = users.find((u) => u.user_id === userId);
+    const removingAdmin = target?.roles.includes('admin');
+    if (removingAdmin) {
+      const adminCount = users.filter((u) => u.roles.includes('admin')).length;
+      // בלי הגנות אלה אפשר לנעול את כל המערכת בלי אף מנהל
+      if (adminCount <= 1) {
+        toast.error('אי אפשר להסיר את המנהל האחרון במערכת');
+        return;
+      }
+      if (userId === currentUser?.id) {
+        toast.error('אי אפשר להסיר הרשאות מנהל מעצמך');
+        return;
+      }
+    }
     const { error } = await supabase.rpc('admin_toggle_role', {
       _user_id: userId,
       _role: 'admin' as AppRole,
