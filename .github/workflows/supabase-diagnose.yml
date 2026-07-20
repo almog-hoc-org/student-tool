@@ -47,3 +47,10 @@ jobs:
       - name: Functions list (CLI)
         run: |
           npx --yes supabase@latest functions list --project-ref "$PROJECT_REF" || true
+
+      - name: Secrets list (שמות בלבד — הערכים לא נחשפים)
+        run: |
+          echo "=== project secrets ==="
+          curl -sS -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            "https://api.supabase.com/v1/projects/$PROJECT_REF/secrets" \
+            | python3 -c "import json,sys; [print('-', s['name']) for s in json.load(sys.stdin)]" || true
