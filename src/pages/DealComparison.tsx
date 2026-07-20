@@ -28,6 +28,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { deleteSnapshot, listSnapshots, updateSnapshot, type Snapshot } from '@/lib/snapshots';
 import {
+  DEAL_LIMIT,
   DEFAULT_SCENARIO,
   dealMetricsFromSnapshot,
   getDealSnapshotData,
@@ -233,8 +234,15 @@ export default function DealComparison() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button size="sm" onClick={() => setQuickAddOpen(true)} className="gap-1.5">
+          <Button
+            size="sm"
+            onClick={() => setQuickAddOpen(true)}
+            disabled={snapshots.length >= DEAL_LIMIT}
+            className="gap-1.5"
+            title={snapshots.length >= DEAL_LIMIT ? 'הגעת למגבלת העסקאות — מחק עסקה ישנה כדי להוסיף חדשה' : undefined}
+          >
             <Plus className="w-4 h-4" /> הוסף עסקה
+            <span className="text-xs opacity-80 tabular-nums">({snapshots.length}/{DEAL_LIMIT})</span>
           </Button>
           {ranking.winner && (
             <ExportButton
@@ -326,6 +334,12 @@ export default function DealComparison() {
           </div>
         </CardContent>
       </Card>
+
+      {!loading && !error && snapshots.length >= DEAL_LIMIT && (
+        <p className="text-xs text-muted-foreground">
+          הגעת למגבלת {DEAL_LIMIT} עסקאות שמורות — כדי להוסיף חדשה, מחק אחת ישנה (כפתור המחיקה על העסקה).
+        </p>
+      )}
 
       {!loading && !error && (staleDeals.length > 0 || brokenDeals.length > 0) && (
         <div className="space-y-2">
@@ -468,7 +482,7 @@ export default function DealComparison() {
         </Tabs>
         </>
       )}
-      <QuickAddDealDialog open={quickAddOpen} onOpenChange={setQuickAddOpen} onSaved={handleQuickAdded} />
+      <QuickAddDealDialog open={quickAddOpen} onOpenChange={setQuickAddOpen} onSaved={handleQuickAdded} dealCount={snapshots.length} />
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
         <AlertDialogContent dir="rtl">

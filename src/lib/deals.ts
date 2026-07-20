@@ -8,6 +8,9 @@ export type DealScenarioFilter = 'all' | 'מחמיר' | 'בינוני' | 'טוב
 /** תרחיש ברירת המחדל להשוואה ולדירוג */
 export const DEFAULT_SCENARIO = 'בינוני';
 
+/** תקרת השמורות פר-משתמש לכל כלי — נאכפת גם בטריגר ב-DB */
+export const DEAL_LIMIT = 10;
+
 export type DealInputs = Record<string, unknown> & {
   purchasePrice?: number;
   equityInvested?: number;
