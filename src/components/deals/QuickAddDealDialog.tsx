@@ -10,7 +10,7 @@ import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { buildQuickDealSnapshot, suggestedEquity, type QuickDealInput } from '@/lib/quick-deal';
 import { assessDeal } from '@/lib/deal-ranking';
-import { dealMetricsFromSnapshot } from '@/lib/deals';
+import { DEAL_LIMIT, dealMetricsFromSnapshot } from '@/lib/deals';
 import { saveSnapshot, type Snapshot } from '@/lib/snapshots';
 import { formatCurrency, numInput } from '@/lib/validation/validators';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,9 +21,11 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSaved: (snapshot: Snapshot) => void;
+  /** מספר העסקאות השמורות — לחסימת שמירה בתקרה */
+  dealCount: number;
 }
 
-export function QuickAddDealDialog({ open, onOpenChange, onSaved }: Props) {
+export function QuickAddDealDialog({ open, onOpenChange, onSaved, dealCount }: Props) {
   const { user } = useAuth();
   const [name, setName] = useState('');
   const [purchasePrice, setPurchasePrice] = useState(0);
@@ -71,6 +73,10 @@ export function QuickAddDealDialog({ open, onOpenChange, onSaved }: Props) {
   };
 
   const handleSave = async () => {
+    if (dealCount >= DEAL_LIMIT) {
+      toast.error(`הגעת למגבלת ${DEAL_LIMIT} עסקאות שמורות — מחק עסקה ישנה כדי להוסיף חדשה`);
+      return;
+    }
     if (!built || !name.trim()) {
       toast.error('מלא שם, מחיר, שכ״ד והון עצמי');
       return;

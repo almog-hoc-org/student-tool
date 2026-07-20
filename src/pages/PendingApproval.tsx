@@ -34,21 +34,20 @@ export default function PendingApproval() {
           <div className="mx-auto w-14 h-14 bg-amber-500/10 rounded-2xl flex items-center justify-center">
             <Clock className="w-7 h-7 text-amber-500" />
           </div>
-          <CardTitle>{isRejected ? 'הגישה נדחתה' : 'ממתין לאישור'}</CardTitle>
+          <CardTitle>{isRejected ? 'הגישה נחסמה' : 'עוד רגע…'}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {isRejected ? (
             <p className="text-muted-foreground">
-              הבקשה שלך לגישה למערכת נדחתה. אם אתה חושב שמדובר בטעות, פנה למנהל.
+              הגישה שלך למערכת נחסמה. אם אתה חושב שמדובר בטעות, פנה למנהל הקורס.
             </p>
           ) : (
             <>
               <p className="text-muted-foreground">
-                האימייל אומת והרשמתך התקבלה — היא ממתינה כעת לאישור מנהל הקורס.
+                החשבון שלך בהכנה — זה לוקח כמה שניות. העמוד ייפתח אוטומטית.
               </p>
               <p className="text-sm text-muted-foreground">
-                ברגע שהמנהל יאשר, יישלח אליך אימייל עם קישור כניסה והעמוד הזה
-                ייפתח אוטומטית. אפשר להשאיר את החלון פתוח.
+                אם העמוד לא נפתח תוך דקה, נסה להתנתק ולהיכנס שוב.
               </p>
             </>
           )}

@@ -60,6 +60,11 @@ export async function saveSnapshot(input: {
   notes?: string;
 }): Promise<Snapshot> {
   if (E2E) {
+    // אותה תקרה כמו הטריגר ב-DB — כדי שמצב התקרה ייראה גם בצילומי המסך
+    const existing = e2eRead().filter((s) => s.tool_key === input.toolKey);
+    if (existing.length >= 10) {
+      throw new Error('הגעת למגבלת 10 שמורות — מחק שמורה ישנה כדי לשמור חדשה');
+    }
     const snapshot: Snapshot = {
       id: crypto.randomUUID(),
       tool_key: input.toolKey,

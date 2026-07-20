@@ -28,7 +28,7 @@ interface AuthState {
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<{ error: string | null }>;
-  signUp: (email: string, password: string, displayName: string, inviteCode?: string) => Promise<{ error: string | null }>;
+  signUp: (email: string, password: string, displayName: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -175,7 +175,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error?.message ?? null };
   };
 
-  const signUp = async (email: string, password: string, displayName: string, inviteCode?: string) => {
+  const signUp = async (email: string, password: string, displayName: string) => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -186,7 +186,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         emailRedirectTo: `${window.location.origin}/`,
         data: {
           full_name: displayName,
-          invite_code: inviteCode || undefined,
         },
       },
     });
