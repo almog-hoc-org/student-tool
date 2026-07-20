@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { BarChart3, Edit3, Loader2, RefreshCw, Trash2, TrendingUp } from 'lucide-react';
 import { DealComparisonTable, computeBestByScenario } from '@/components/deals/DealComparisonTable';
+import { DealVerdictPanel } from '@/components/deals/DealVerdictPanel';
+import { rankDeals, PREFERENCE_LABELS, type RankingPreference } from '@/lib/deal-ranking';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,10 +22,11 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { deleteSnapshot, listSnapshots, type Snapshot } from '@/lib/snapshots';
 import {
+  DEFAULT_SCENARIO,
+  dealMetricsFromSnapshot,
   getDealSnapshotData,
   getDealSummary,
   rowsFromDealSnapshot,
-  type DealRow,
   type DealScenarioFilter,
 } from '@/lib/deals';
 import { formatCurrency } from '@/lib/validation/validators';
@@ -38,6 +41,7 @@ export default function DealComparison() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [scenarioFilter, setScenarioFilter] = useState<DealScenarioFilter>('בינוני');
   const [showAllColumns, setShowAllColumns] = useState(false);
+  const [preference, setPreference] = useState<RankingPreference>('balanced');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -76,6 +80,16 @@ export default function DealComparison() {
 
   // המדדים הטובים ביותר מחושבים בתוך כל תרחיש בנפרד — לא בין תרחישים
   const bestByScenario = useMemo(() => computeBestByScenario(rows), [rows]);
+
+  // דירוג ופסק דין — תמיד על תרחיש קבוע (בינוני או התרחיש המסונן)
+  const ranking = useMemo(() => {
+    const scenario = scenarioFilter === 'all' ? DEFAULT_SCENARIO : scenarioFilter;
+    const metrics = snapshots
+      .filter((snapshot) => selectedIds.has(snapshot.id))
+      .map((snapshot) => dealMetricsFromSnapshot(snapshot, scenario))
+      .filter((m): m is NonNullable<typeof m> => m !== null);
+    return rankDeals(metrics, preference);
+  }, [snapshots, selectedIds, scenarioFilter, preference]);
 
   const snapshotsById = useMemo(() => {
     return new Map(snapshots.map((snapshot) => [snapshot.id, snapshot]));
@@ -176,6 +190,22 @@ export default function DealComparison() {
             </div>
 
             <div className="space-y-2 min-w-[220px]">
+              <p className="text-xs font-semibold text-muted-foreground">מה חשוב לך?</p>
+              <div className="grid grid-cols-3 gap-1 rounded-xl bg-muted p-1 text-xs">
+                {(['cashflow', 'balanced', 'longterm'] as const).map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setPreference(value)}
+                    className={cn(
+                      'rounded-lg px-2 py-1.5 transition',
+                      preference === value ? 'bg-background shadow-sm font-semibold' : 'text-muted-foreground',
+                    )}
+                  >
+                    {PREFERENCE_LABELS[value]}
+                  </button>
+                ))}
+              </div>
               <p className="text-xs font-semibold text-muted-foreground">תרחיש</p>
               <div className="grid grid-cols-4 gap-1 rounded-xl bg-muted p-1 text-xs">
                 {(['all', 'מחמיר', 'בינוני', 'טוב'] as const).map((value) => (
@@ -196,6 +226,8 @@ export default function DealComparison() {
           </div>
         </CardContent>
       </Card>
+
+      {!loading && !error && <DealVerdictPanel ranking={ranking} />}
 
       {!loading && !error && selectedSummaries.length > 0 && (
         <div className="grid gap-3 md:grid-cols-3">
