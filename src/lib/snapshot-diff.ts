@@ -84,6 +84,7 @@ const FIELD_META: Record<string, FieldMeta> = {
   // Business Plan
   purchasePrice: { label: 'מחיר רכישה', format: currency },
   purchaseTax: { label: 'מס רכישה', format: currency },
+  listingUrl: { label: 'קישור למודעה', format: text },
   sideCosts: { label: 'עלויות נלוות', format: currency },
   renovationCost: { label: 'עלות שיפוץ', format: currency },
   equityInvested: { label: 'הון מושקע', format: currency },

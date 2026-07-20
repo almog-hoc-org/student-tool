@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AlertTriangle, BarChart3, Edit3, Loader2, RefreshCw, Trash2, TrendingUp } from 'lucide-react';
+import { AlertTriangle, BarChart3, Edit3, Loader2, Plus, RefreshCw, Trash2, TrendingUp } from 'lucide-react';
 import { DealComparisonTable, computeBestByScenario } from '@/components/deals/DealComparisonTable';
 import { DealVerdictPanel } from '@/components/deals/DealVerdictPanel';
 import { DealSideBySide, type SideBySideDeal } from '@/components/deals/DealSideBySide';
 import { DealCharts, type ChartDeal } from '@/components/deals/DealCharts';
+import { QuickAddDealDialog } from '@/components/deals/QuickAddDealDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CHART_SERIES } from '@/lib/chart-colors';
 import { rankDeals, PREFERENCE_LABELS, type RankingPreference } from '@/lib/deal-ranking';
@@ -144,6 +145,12 @@ export default function DealComparison() {
   };
 
   const [deleteTarget, setDeleteTarget] = useState<Snapshot | null>(null);
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
+
+  const handleQuickAdded = (snapshot: Snapshot) => {
+    setSnapshots((current) => [snapshot, ...current]);
+    setSelectedIds((current) => new Set(current).add(snapshot.id));
+  };
 
   // עסקאות שנשמרו עם מנוע ישן או בלי תרחישים — מוצגות עם אזהרה ופעולת תיקון
   const staleDeals = useMemo(
@@ -202,10 +209,15 @@ export default function DealComparison() {
             השווה בין עסקאות ששמרת בתוכנית העסקית וקבל תמונה מספרית ברורה בסגנון טבלת אקסל.
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={load} disabled={loading} className="gap-1.5">
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-          רענן
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" onClick={() => setQuickAddOpen(true)} className="gap-1.5">
+            <Plus className="w-4 h-4" /> הוסף עסקה
+          </Button>
+          <Button variant="outline" size="sm" onClick={load} disabled={loading} className="gap-1.5">
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+            רענן
+          </Button>
+        </div>
       </div>
 
       <Card className="border-0 shadow-sm">
@@ -365,10 +377,13 @@ export default function DealComparison() {
           <CardContent className="p-8 text-center space-y-3">
             <TrendingUp className="w-10 h-10 text-muted-foreground mx-auto" />
             <h3 className="font-semibold">אין עדיין עסקאות להשוואה</h3>
-            <p className="text-sm text-muted-foreground">שמור עסקה מתוך התוכנית העסקית והיא תופיע כאן.</p>
-            <Button asChild>
-              <Link to="/business-plan">עבור לתוכנית עסקית</Link>
-            </Button>
+            <p className="text-sm text-muted-foreground">הוסף עסקה מהירה כאן, או שמור עסקה מתוך התוכנית העסקית.</p>
+            <div className="flex justify-center gap-2">
+              <Button onClick={() => setQuickAddOpen(true)} className="gap-1.5"><Plus className="w-4 h-4" /> הוסף עסקה מהירה</Button>
+              <Button asChild variant="outline">
+                <Link to="/business-plan">עבור לתוכנית עסקית</Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
       ) : rows.length === 0 ? (
@@ -415,6 +430,8 @@ export default function DealComparison() {
         </Tabs>
         </>
       )}
+      <QuickAddDealDialog open={quickAddOpen} onOpenChange={setQuickAddOpen} onSaved={handleQuickAdded} />
+
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
         <AlertDialogContent dir="rtl">
           <AlertDialogHeader>

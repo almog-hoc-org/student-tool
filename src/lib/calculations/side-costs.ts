@@ -113,6 +113,29 @@ export function calculateSideCosts(input: SideCostsInput): SideCostsOutput {
   return { items, totalSideCosts };
 }
 
+/** פריטי הפריסט של התוכנית העסקית — מקור אחד גם לטופס וגם להוספה המהירה */
+export interface BpPresetSelection {
+  broker: boolean;
+  mortgageAdvice: boolean;
+  lawyer: boolean;
+  appraiser: boolean;
+  extras: boolean;
+}
+
+/**
+ * פריסט העלויות של התוכנית העסקית (מתווך 2%, ייעוץ ₪7K, עו"ד 1%,
+ * שמאי ₪2K, נוספים ₪5K). חייב להישאר זהה לחישוב שבטופס — ההוספה
+ * המהירה משתמשת בו כדי שעריכה מאוחרת לא תשנה מספרים.
+ */
+export function businessPlanSideCostsPreset(purchasePrice: number, selected: BpPresetSelection): number {
+  const broker = selected.broker ? purchasePrice * 0.02 : 0;
+  const mortgageAdvice = selected.mortgageAdvice ? 7000 : 0;
+  const lawyer = selected.lawyer ? purchasePrice * 0.01 : 0;
+  const appraiser = selected.appraiser ? 2000 : 0;
+  const extras = selected.extras ? 5000 : 0;
+  return broker + mortgageAdvice + lawyer + appraiser + extras;
+}
+
 /**
  * אומדן מהיר של עלויות נלוות לפי ברירות המחדל — משמש את כל המחשבונים
  * (תקציב, תוכנית עסקית, בדיקת נכס) כדי שאותו נכס יקבל אותו מספר בכל כלי.

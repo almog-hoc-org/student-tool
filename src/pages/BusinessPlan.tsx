@@ -9,6 +9,7 @@ import { SaveSnapshotButton } from '@/components/SaveSnapshotButton';
 import { calculateBusinessPlan, BUSINESS_PLAN_ENGINE_VERSION, BusinessPlanOutput, ScenarioResult } from '@/lib/calculations/business-plan';
 import { calculateMortgageMonthlyPayment } from '@/lib/calculations/mortgage-calculator';
 import { calculatePurchaseTax, type BuyerType } from '@/lib/calculations/purchase-tax';
+import { businessPlanSideCostsPreset } from '@/lib/calculations/side-costs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatCurrency, numInput } from '@/lib/validation/validators';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -154,6 +155,7 @@ const BP_DEFAULTS = {
   customRates: { pessimistic: 0, average: 1, optimistic: 2 },
   urbanRenewalUpliftMode: 'amount' as const,
   urbanRenewalUpliftValue: 0,
+  listingUrl: '',
   manualMortgageAmount: false,
   manualMortgageMonthlyPayment: false,
 };
@@ -177,6 +179,7 @@ export default function BusinessPlan() {
   const [propertyRooms, setPropertyRooms] = useState(saved?.propertyRooms ?? BP_DEFAULTS.propertyRooms);
   const [propertyNotes, setPropertyNotes] = useState(saved?.propertyNotes ?? BP_DEFAULTS.propertyNotes);
   const [buyerType, setBuyerType] = useState<BuyerType>(saved?.buyerType ?? BP_DEFAULTS.buyerType);
+  const [listingUrl, setListingUrl] = useState(saved?.listingUrl ?? BP_DEFAULTS.listingUrl);
   const [sideCosts, setSideCosts] = useState(saved?.sideCosts ?? BP_DEFAULTS.sideCosts);
   const [renovationCost, setRenovationCost] = useState(saved?.renovationCost ?? BP_DEFAULTS.renovationCost);
   const [equityInvested, setEquityInvested] = useState(saved?.equityInvested ?? BP_DEFAULTS.equityInvested);
@@ -209,26 +212,22 @@ export default function BusinessPlan() {
       propertyNotes, buyerType, sideCosts, renovationCost, equityInvested, mortgageAmount,
       mortgageMonthlyPayment, mortgageInterestRate, mortgageYears, expectedMonthlyRent,
       annualOperatingCosts, holdingPeriodYears, baseAppreciation, customRates,
-      urbanRenewalUpliftMode, urbanRenewalUpliftValue, manualMortgageAmount,
+      urbanRenewalUpliftMode, urbanRenewalUpliftValue, listingUrl, manualMortgageAmount,
       manualMortgageMonthlyPayment, useSideCostPreset, selectedSideCosts, touched,
     }, uid);
   }, [purchasePrice, propertyArea, propertySqm, propertyFloor, propertyRooms,
     propertyNotes, buyerType, sideCosts, renovationCost, equityInvested, mortgageAmount,
     mortgageMonthlyPayment, mortgageInterestRate, mortgageYears, expectedMonthlyRent,
     annualOperatingCosts, holdingPeriodYears, baseAppreciation, customRates,
-    urbanRenewalUpliftMode, urbanRenewalUpliftValue, manualMortgageAmount,
+    urbanRenewalUpliftMode, urbanRenewalUpliftValue, listingUrl, manualMortgageAmount,
     manualMortgageMonthlyPayment, useSideCostPreset, selectedSideCosts, touched, uid]);
 
   const budgetData = getBudgetResults();
 
-  const sideCostPresetTotal = useMemo(() => {
-    const broker = selectedSideCosts.broker ? purchasePrice * 0.02 : 0;
-    const mortgageAdvice = selectedSideCosts.mortgageAdvice ? 7000 : 0;
-    const lawyer = selectedSideCosts.lawyer ? purchasePrice * 0.01 : 0;
-    const appraiser = selectedSideCosts.appraiser ? 2000 : 0;
-    const extras = selectedSideCosts.extras ? 5000 : 0;
-    return broker + mortgageAdvice + lawyer + appraiser + extras;
-  }, [purchasePrice, selectedSideCosts]);
+  const sideCostPresetTotal = useMemo(
+    () => businessPlanSideCostsPreset(purchasePrice, selectedSideCosts),
+    [purchasePrice, selectedSideCosts],
+  );
 
   useEffect(() => {
     if (useSideCostPreset) {
@@ -298,6 +297,7 @@ export default function BusinessPlan() {
     setCustomRates(BP_DEFAULTS.customRates);
     setUrbanRenewalUpliftMode(BP_DEFAULTS.urbanRenewalUpliftMode);
     setUrbanRenewalUpliftValue(BP_DEFAULTS.urbanRenewalUpliftValue);
+    setListingUrl(BP_DEFAULTS.listingUrl);
     setManualMortgageAmount(BP_DEFAULTS.manualMortgageAmount);
     setManualMortgageMonthlyPayment(BP_DEFAULTS.manualMortgageMonthlyPayment);
     setUseSideCostPreset(true);
@@ -389,7 +389,7 @@ export default function BusinessPlan() {
                     mortgageAmount: effectiveMortgageAmount, mortgageMonthlyPayment: effectiveMortgageMonthlyPayment, mortgageInterestRate,
                     mortgageYears, expectedMonthlyRent, annualOperatingCosts,
                     holdingPeriodYears, baseAppreciation, customRates,
-                    urbanRenewalUpliftMode, urbanRenewalUpliftValue, manualMortgageAmount,
+                    urbanRenewalUpliftMode, urbanRenewalUpliftValue, listingUrl, manualMortgageAmount,
                     manualMortgageMonthlyPayment, useSideCostPreset, selectedSideCosts,
                   },
                   results: result,
@@ -460,6 +460,9 @@ export default function BusinessPlan() {
                         </Field>
                         <Field label="הערות נכס" className="sm:col-span-2">
                           <Input className="h-10" value={propertyNotes} onChange={(e) => setPropertyNotes(e.target.value)} placeholder="מעלית, מרפסת, חניה, מצב הנכס או כל פרט חשוב" />
+                        </Field>
+                        <Field label="קישור למודעה" className="sm:col-span-2">
+                          <Input className="h-10" dir="ltr" value={listingUrl} onChange={(e) => setListingUrl(e.target.value)} placeholder="https://…" />
                         </Field>
                       </div>
                     </CollapsibleContent>
