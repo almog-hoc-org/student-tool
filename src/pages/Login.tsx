@@ -18,7 +18,6 @@ export default function Login() {
   const [regName, setRegName] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
-  const [inviteCode, setInviteCode] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   if (loading) {
@@ -47,12 +46,12 @@ export default function Login() {
       return;
     }
     setSubmitting(true);
-    const { error } = await signUp(regEmail, regPassword, regName, inviteCode || undefined);
+    const { error } = await signUp(regEmail, regPassword, regName);
     setSubmitting(false);
     if (error) {
       toast.error(error);
     } else {
-      toast.success('נרשמת בהצלחה! בדוק את המייל לאימות.');
+      toast.success('נרשמת בהצלחה! אשר את המייל שנשלח אליך — ומיד אחרי זה אפשר להיכנס.');
       // Notify admins of the pending signup (best-effort; verified server-side).
       supabase.functions
         .invoke('notify-email', {
@@ -141,16 +140,6 @@ export default function Login() {
                     onChange={e => setRegPassword(e.target.value)}
                     required
                     minLength={6}
-                    dir="ltr"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="invite-code">קוד הזמנה (אופציונלי)</Label>
-                  <Input
-                    id="invite-code"
-                    value={inviteCode}
-                    onChange={e => setInviteCode(e.target.value)}
-                    placeholder="הכנס קוד אם קיבלת"
                     dir="ltr"
                   />
                 </div>
