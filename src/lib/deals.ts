@@ -1,6 +1,11 @@
 import type { Snapshot } from './snapshots';
+import type { BuyerType } from './calculations/purchase-tax';
+import type { DealMetricsInput } from './deal-ranking';
 
 export type DealScenarioFilter = 'all' | 'מחמיר' | 'בינוני' | 'טוב';
+
+/** תרחיש ברירת המחדל להשוואה ולדירוג */
+export const DEFAULT_SCENARIO = 'בינוני';
 
 export type DealInputs = Record<string, unknown> & {
   purchasePrice?: number;
@@ -9,26 +14,38 @@ export type DealInputs = Record<string, unknown> & {
   mortgageMonthlyPayment?: number;
   expectedMonthlyRent?: number;
   holdingPeriodYears?: number;
+  buyerType?: BuyerType;
+  purchaseTax?: number;
   propertyArea?: string;
   propertySqm?: number;
   propertyFloor?: string;
   propertyRooms?: string;
   propertyNotes?: string;
+  listingUrl?: string;
+};
+
+export type DealScenario = {
+  label?: string;
+  annualAppreciation?: number;
+  propertyValueAtEnd?: number;
+  totalProfit?: number;
+  cocYield?: number;
+  irr?: number | null;
+  totalEquityReturn?: number;
+  yearlyProjection?: Array<{ year: number; value: number; equity: number }>;
 };
 
 export type DealSnapshotData = {
   inputs?: DealInputs;
   results?: {
     monthlyCashflow?: number;
-    scenarios?: Array<{
-      label?: string;
-      annualAppreciation?: number;
-      propertyValueAtEnd?: number;
-      totalProfit?: number;
-      cocYield?: number;
-      irr?: number | null;
-    }>;
+    initialInvestment?: number;
+    totalDealCost?: number;
+    annualNetCashflow?: number;
+    scenarios?: DealScenario[];
   };
+  /** גרסת מנוע החישוב שיצרה את התוצאות; חסר = 1 (לפני מס רכישה בתוכנית) */
+  engineVersion?: number;
 };
 
 export interface DealRow {
@@ -121,6 +138,54 @@ export function rowsFromDealSnapshot(snapshot: Snapshot): DealRow[] {
     propertyRooms: asText(inputs.propertyRooms),
     pricePerSqm: purchasePrice > 0 && propertySqm > 0 ? Math.round(purchasePrice / propertySqm) : 0,
   }));
+}
+
+/**
+ * מדדי עסקה לתרחיש קבוע — הקלט של מנוע הדירוג.
+ * מחזיר null כשאין תרחישים (עסקה פגומה) — כדי שהיא תוצג כאזהרה, לא תיעלם.
+ */
+export function dealMetricsFromSnapshot(
+  snapshot: Snapshot,
+  scenarioLabel: string = DEFAULT_SCENARIO,
+): DealMetricsInput | null {
+  const data = getDealSnapshotData(snapshot);
+  const inputs = data.inputs ?? {};
+  const scenarios = Array.isArray(data.results?.scenarios) ? data.results.scenarios : [];
+  if (scenarios.length === 0) return null;
+
+  // התרחיש המבוקש; אם לא נמצא — האמצעי (בינוני בסדר השמור), ואם אין — הראשון
+  const scenario =
+    scenarios.find((s) => s.label === scenarioLabel)
+    ?? scenarios[Math.min(1, scenarios.length - 1)];
+  const pessimistic = scenarios.find((s) => s.label === 'מחמיר') ?? scenarios[0];
+
+  const initialInvestment = asNumber(data.results?.initialInvestment);
+  const totalProfit = asNumber(scenario.totalProfit);
+  const storedEquityReturn = scenario.totalEquityReturn;
+
+  return {
+    snapshotId: snapshot.id,
+    name: snapshot.name,
+    scenarioLabel: scenario.label ?? scenarioLabel,
+    monthlyCashflow: asNumber(data.results?.monthlyCashflow),
+    cocYield: asNumber(scenario.cocYield),
+    irr: typeof scenario.irr === 'number' ? scenario.irr : null,
+    totalProfit,
+    totalEquityReturn:
+      typeof storedEquityReturn === 'number' && Number.isFinite(storedEquityReturn)
+        ? storedEquityReturn
+        : initialInvestment > 0 ? totalProfit / initialInvestment : 0,
+    initialInvestment,
+    purchasePrice: asNumber(inputs.purchasePrice),
+    equityInvested: asNumber(inputs.equityInvested),
+    mortgageAmount: asNumber(inputs.mortgageAmount),
+    mortgageMonthlyPayment: asNumber(inputs.mortgageMonthlyPayment),
+    expectedMonthlyRent: asNumber(inputs.expectedMonthlyRent),
+    holdingPeriodYears: asNumber(inputs.holdingPeriodYears),
+    buyerType: inputs.buyerType,
+    pessimisticTotalProfit:
+      typeof pessimistic?.totalProfit === 'number' ? pessimistic.totalProfit : undefined,
+  };
 }
 
 export function getDealSummary(snapshot: Snapshot): DealSummary {
