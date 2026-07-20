@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { BarChart3, ChevronDown, Import, RotateCcw, TrendingUp } from 'lucide-react';
 import { SaveSnapshotButton } from '@/components/SaveSnapshotButton';
-import { calculateBusinessPlan, BusinessPlanOutput, ScenarioResult } from '@/lib/calculations/business-plan';
+import { calculateBusinessPlan, BUSINESS_PLAN_ENGINE_VERSION, BusinessPlanOutput, ScenarioResult } from '@/lib/calculations/business-plan';
 import { calculateMortgageMonthlyPayment } from '@/lib/calculations/mortgage-calculator';
 import { calculatePurchaseTax, type BuyerType } from '@/lib/calculations/purchase-tax';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -393,6 +393,7 @@ export default function BusinessPlan() {
                     manualMortgageMonthlyPayment, useSideCostPreset, selectedSideCosts,
                   },
                   results: result,
+                  engineVersion: BUSINESS_PLAN_ENGINE_VERSION,
                 })}
               />
               <Link to="/deal-comparison">

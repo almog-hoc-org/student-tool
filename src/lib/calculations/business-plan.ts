@@ -1,6 +1,13 @@
 import { calculateRentalIRR } from './irr';
 import { remainingBalance } from './annuity';
 
+/**
+ * גרסת מנוע החישוב — נחתמת בכל snapshot שנשמר.
+ * v1: לפני איחוד המנועים (בלי מס רכישה בהזנה ישירה, טאבו 0.5%)
+ * v2: מנוע מאוחד — מס רכישה תמיד, עלויות מתוקנות, clamp יתרה
+ */
+export const BUSINESS_PLAN_ENGINE_VERSION = 2;
+
 export interface BusinessPlanInput {
   purchasePrice: number;
   sideCosts: number;

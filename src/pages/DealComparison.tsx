@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { BarChart3, Edit3, Loader2, RefreshCw, Trash2, TrendingUp } from 'lucide-react';
+import { AlertTriangle, BarChart3, Edit3, Loader2, RefreshCw, Trash2, TrendingUp } from 'lucide-react';
 import { DealComparisonTable, computeBestByScenario } from '@/components/deals/DealComparisonTable';
 import { DealVerdictPanel } from '@/components/deals/DealVerdictPanel';
 import { rankDeals, PREFERENCE_LABELS, type RankingPreference } from '@/lib/deal-ranking';
@@ -20,12 +20,15 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { deleteSnapshot, listSnapshots, type Snapshot } from '@/lib/snapshots';
+import { deleteSnapshot, listSnapshots, updateSnapshot, type Snapshot } from '@/lib/snapshots';
 import {
   DEFAULT_SCENARIO,
   dealMetricsFromSnapshot,
   getDealSnapshotData,
   getDealSummary,
+  isDealBroken,
+  isDealStale,
+  recomputeDealSnapshot,
   rowsFromDealSnapshot,
   type DealScenarioFilter,
 } from '@/lib/deals';
@@ -116,6 +119,35 @@ export default function DealComparison() {
   };
 
   const [deleteTarget, setDeleteTarget] = useState<Snapshot | null>(null);
+
+  // עסקאות שנשמרו עם מנוע ישן או בלי תרחישים — מוצגות עם אזהרה ופעולת תיקון
+  const staleDeals = useMemo(
+    () => snapshots.filter((s) => !isDealBroken(getDealSnapshotData(s)) && isDealStale(getDealSnapshotData(s))),
+    [snapshots],
+  );
+  const brokenDeals = useMemo(
+    () => snapshots.filter((s) => isDealBroken(getDealSnapshotData(s))),
+    [snapshots],
+  );
+  const [recomputingId, setRecomputingId] = useState<string | null>(null);
+
+  const recomputeDeal = async (snapshot: Snapshot) => {
+    const recomputed = recomputeDealSnapshot(getDealSnapshotData(snapshot));
+    if (!recomputed) {
+      toast.error('אין מספיק נתונים שמורים כדי לחשב מחדש — ערוך את העסקה בתוכנית העסקית');
+      return;
+    }
+    setRecomputingId(snapshot.id);
+    try {
+      const updated = await updateSnapshot({ id: snapshot.id, name: snapshot.name, data: recomputed, notes: snapshot.notes });
+      setSnapshots((current) => current.map((s) => (s.id === snapshot.id ? updated : s)));
+      toast.success(`"${snapshot.name}" חושבה מחדש עם המנוע העדכני`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'שגיאה בחישוב מחדש');
+    } finally {
+      setRecomputingId(null);
+    }
+  };
 
   const removeDeal = async (snapshot: Snapshot) => {
     try {
@@ -226,6 +258,30 @@ export default function DealComparison() {
           </div>
         </CardContent>
       </Card>
+
+      {!loading && !error && (staleDeals.length > 0 || brokenDeals.length > 0) && (
+        <div className="space-y-2">
+          {brokenDeals.map((snapshot) => (
+            <div key={snapshot.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/40 px-4 py-3 text-sm text-red-800 dark:text-red-300">
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              <span className="flex-1 min-w-[200px]">לא ניתן להציג את "{snapshot.name}" — חסרים נתוני תרחישים.</span>
+              <Button size="sm" variant="outline" className="h-7" disabled={recomputingId === snapshot.id} onClick={() => recomputeDeal(snapshot)}>
+                {recomputingId === snapshot.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'חשב מחדש'}
+              </Button>
+              <Button size="sm" variant="ghost" className="h-7 text-destructive" onClick={() => setDeleteTarget(snapshot)}>מחק</Button>
+            </div>
+          ))}
+          {staleDeals.map((snapshot) => (
+            <div key={snapshot.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/40 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              <span className="flex-1 min-w-[200px]">"{snapshot.name}" חושבה עם גרסה ישנה של המנוע (לפני תיקון מס הרכישה) — המספרים עלולים להטעות בהשוואה.</span>
+              <Button size="sm" variant="outline" className="h-7" disabled={recomputingId === snapshot.id} onClick={() => recomputeDeal(snapshot)}>
+                {recomputingId === snapshot.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'חשב מחדש'}
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {!loading && !error && <DealVerdictPanel ranking={ranking} />}
 
