@@ -1,6 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { BarChart3, Edit3, Loader2, RefreshCw, Trash2, TrendingUp } from 'lucide-react';
+import { DealComparisonTable, computeBestByScenario } from '@/components/deals/DealComparisonTable';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { LoadingState } from '@/components/ui/loading-state';
 import { ErrorState } from '@/components/ui/error-state';
 import { Card, CardContent } from '@/components/ui/card';
@@ -21,42 +32,11 @@ import { PropertyAreaNav } from '@/components/PropertyAreaNav';
 import { save } from '@/lib/storage';
 import { toast } from 'sonner';
 
-function formatPercent(value: number | null | undefined): string {
-  if (value === null || value === undefined || Number.isNaN(value)) return '—';
-  return `${(value * 100).toFixed(1)}%`;
-}
-
-function getScenarioTone(label: string) {
-  if (label.includes('מחמיר')) return 'bg-red-50 text-red-700 border-red-200';
-  if (label.includes('טוב') || label.includes('אופטימי')) return 'bg-green-50 text-green-700 border-green-200';
-  return 'bg-blue-50 text-blue-700 border-blue-200';
-}
-
-function bestClass(value: number, best: number, higherIsBetter = true) {
-  if (!Number.isFinite(value) || !Number.isFinite(best)) return '';
-  const isBest = higherIsBetter ? value === best : value === best;
-  return isBest ? 'bg-green-50 text-green-700 font-bold' : '';
-}
-
-function MobileMetric({ label, value, highlight }: { label: string; value: string; highlight?: 'good' | 'bad' | 'best' }) {
-  return (
-    <div className={cn(
-      'rounded-xl border bg-background p-3',
-      highlight === 'best' && 'border-green-200 bg-green-50 text-green-700',
-      highlight === 'good' && 'text-green-600',
-      highlight === 'bad' && 'text-red-600',
-    )}>
-      <p className="text-[11px] text-muted-foreground mb-1">{label}</p>
-      <p className="text-sm font-bold leading-tight">{value}</p>
-    </div>
-  );
-}
-
 export default function DealComparison() {
   const navigate = useNavigate();
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [scenarioFilter, setScenarioFilter] = useState<DealScenarioFilter>('all');
+  const [scenarioFilter, setScenarioFilter] = useState<DealScenarioFilter>('בינוני');
   const [showAllColumns, setShowAllColumns] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -94,12 +74,8 @@ export default function DealComparison() {
       .map(getDealSummary);
   }, [snapshots, selectedIds]);
 
-  const best = useMemo(() => ({
-    monthlyCashflow: Math.max(...rows.map((r) => r.monthlyCashflow), -Infinity),
-    cocYield: Math.max(...rows.map((r) => r.cocYield), -Infinity),
-    irr: Math.max(...rows.map((r) => r.irr ?? -Infinity), -Infinity),
-    totalProfit: Math.max(...rows.map((r) => r.totalProfit), -Infinity),
-  }), [rows]);
+  // המדדים הטובים ביותר מחושבים בתוך כל תרחיש בנפרד — לא בין תרחישים
+  const bestByScenario = useMemo(() => computeBestByScenario(rows), [rows]);
 
   const snapshotsById = useMemo(() => {
     return new Map(snapshots.map((snapshot) => [snapshot.id, snapshot]));
@@ -125,8 +101,9 @@ export default function DealComparison() {
     navigate('/business-plan');
   };
 
+  const [deleteTarget, setDeleteTarget] = useState<Snapshot | null>(null);
+
   const removeDeal = async (snapshot: Snapshot) => {
-    if (!window.confirm(`למחוק את העסקה "${snapshot.name}"?`)) return;
     try {
       await deleteSnapshot(snapshot.id);
       setSnapshots((current) => current.filter((s) => s.id !== snapshot.id));
@@ -189,7 +166,7 @@ export default function DealComparison() {
                       <button type="button" onClick={() => editDeal(deal.snapshot)} className="rounded-full p-1 hover:bg-background" aria-label="ערוך עסקה">
                         <Edit3 className="w-3.5 h-3.5" />
                       </button>
-                      <button type="button" onClick={() => removeDeal(deal.snapshot)} className="rounded-full p-1 text-destructive hover:bg-background" aria-label="מחק עסקה">
+                      <button type="button" onClick={() => setDeleteTarget(deal.snapshot)} className="rounded-full p-1 text-destructive hover:bg-background" aria-label="מחק עסקה">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
@@ -298,117 +275,37 @@ export default function DealComparison() {
         </Card>
       ) : (
         <>
-        <div className="md:hidden space-y-3">
-          {rows.map((row) => (
-            <Card key={row.id} className="border-0 shadow-sm overflow-hidden">
-              <CardContent className="p-4 space-y-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <h3 className="font-bold truncate">{row.name}</h3>
-                    <p className="text-[11px] text-muted-foreground">
-                      {row.propertyArea || 'ללא אזור'} · נשמר ב-{new Date(row.createdAt).toLocaleDateString('he-IL')} · {row.holdingPeriodYears} שנים
-                    </p>
-                  </div>
-                  <Badge variant="outline" className={cn('shrink-0', getScenarioTone(row.scenarioLabel))}>
-                    {row.scenarioLabel} · {row.annualAppreciation}%
-                  </Badge>
-                </div>
-
-                {snapshotsById.get(row.snapshotId) && (
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="h-8 flex-1 gap-1" onClick={() => editDeal(snapshotsById.get(row.snapshotId)!)}>
-                      <Edit3 className="w-3.5 h-3.5" /> ערוך
-                    </Button>
-                    <Button variant="outline" size="sm" className="h-8 flex-1 gap-1 text-destructive" onClick={() => removeDeal(snapshotsById.get(row.snapshotId)!)}>
-                      <Trash2 className="w-3.5 h-3.5" /> מחק
-                    </Button>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-2 gap-2">
-                  <MobileMetric label="תזרים חודשי" value={formatCurrency(row.monthlyCashflow)} highlight={row.monthlyCashflow >= 0 ? 'good' : 'bad'} />
-                  <MobileMetric label="רווח כולל" value={formatCurrency(row.totalProfit)} highlight={row.totalProfit === best.totalProfit ? 'best' : row.totalProfit >= 0 ? 'good' : 'bad'} />
-                  <MobileMetric label="COC" value={formatPercent(row.cocYield)} highlight={row.cocYield === best.cocYield ? 'best' : undefined} />
-                  <MobileMetric label="IRR" value={formatPercent(row.irr)} highlight={(row.irr ?? -Infinity) === best.irr ? 'best' : undefined} />
-                </div>
-
-                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs text-muted-foreground border-t pt-3">
-                  <div>מחיר רכישה: <span className="font-semibold text-foreground">{formatCurrency(row.purchasePrice)}</span></div>
-                  <div>שטח: <span className="font-semibold text-foreground">{row.propertySqm ? `${row.propertySqm} מ״ר` : '—'}</span></div>
-                  <div>מחיר למ״ר: <span className="font-semibold text-foreground">{row.pricePerSqm ? formatCurrency(row.pricePerSqm) : '—'}</span></div>
-                  <div>הון עצמי: <span className="font-semibold text-foreground">{formatCurrency(row.equityInvested)}</span></div>
-                  <div>משכנתא: <span className="font-semibold text-foreground">{formatCurrency(row.mortgageAmount)}</span></div>
-                  <div>שכ״ד: <span className="font-semibold text-foreground">{formatCurrency(row.expectedMonthlyRent)}</span></div>
-                  <div className="col-span-2">שווי בסוף תקופה: <span className="font-semibold text-foreground">{formatCurrency(row.propertyValueAtEnd)}</span></div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        <Card className="hidden md:block border-0 shadow-sm overflow-hidden">
-          <CardContent className="p-0">
-            <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/40">
-              <p className="text-xs text-muted-foreground">
-                {showAllColumns ? 'כל העמודות מוצגות' : 'מוצגות העמודות העיקריות בלבד'}
-              </p>
-              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setShowAllColumns((v) => !v)}>
-                {showAllColumns ? 'פחות עמודות' : 'עוד עמודות'}
-              </Button>
-            </div>
-            <div className="overflow-x-auto">
-              <table className={cn('w-full border-collapse text-xs', showAllColumns && 'min-w-[1320px]')}>
-                <thead className="bg-muted/80 sticky top-0 z-10">
-                  <tr className="text-right">
-                    {['עסקה', 'תרחיש', 'מחיר רכישה', 'הון עצמי', 'תזרים חודשי',
-                      ...(showAllColumns ? ['אזור', 'שטח', 'מחיר למ״ר', 'עלייה שנתית', 'משכנתא', 'החזר חודשי', 'שכ״ד', 'COC', 'שווי בסוף', 'תקופה', 'נשמר'] : []),
-                      'IRR', 'רווח כולל', 'פעולות'].map((head) => (
-                      <th key={head} className="border-b border-l px-3 py-2 font-semibold whitespace-nowrap">{head}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((row) => (
-                    <tr key={row.id} className="hover:bg-muted/40">
-                      <td className="border-b border-l px-3 py-2 font-semibold max-w-[180px] truncate" title={row.notes ?? row.name}>{row.name}</td>
-                      <td className="border-b border-l px-3 py-2"><Badge variant="outline" className={getScenarioTone(row.scenarioLabel)}>{row.scenarioLabel}</Badge></td>
-                      <td className="border-b border-l px-3 py-2">{formatCurrency(row.purchasePrice)}</td>
-                      <td className="border-b border-l px-3 py-2">{formatCurrency(row.equityInvested)}</td>
-                      <td className={cn('border-b border-l px-3 py-2', row.monthlyCashflow >= 0 ? 'text-green-600' : 'text-red-600', bestClass(row.monthlyCashflow, best.monthlyCashflow))}>{formatCurrency(row.monthlyCashflow)}</td>
-                      {showAllColumns && (
-                        <>
-                          <td className="border-b border-l px-3 py-2 max-w-[140px] truncate">{row.propertyArea || '—'}</td>
-                          <td className="border-b border-l px-3 py-2 whitespace-nowrap">{row.propertySqm ? `${row.propertySqm} מ״ר` : '—'}</td>
-                          <td className="border-b border-l px-3 py-2 whitespace-nowrap">{row.pricePerSqm ? formatCurrency(row.pricePerSqm) : '—'}</td>
-                          <td className="border-b border-l px-3 py-2 text-center">{row.annualAppreciation}%</td>
-                          <td className="border-b border-l px-3 py-2">{formatCurrency(row.mortgageAmount)}</td>
-                          <td className="border-b border-l px-3 py-2">{formatCurrency(row.mortgageMonthlyPayment)}</td>
-                          <td className="border-b border-l px-3 py-2">{formatCurrency(row.expectedMonthlyRent)}</td>
-                          <td className={cn('border-b border-l px-3 py-2', bestClass(row.cocYield, best.cocYield))}>{formatPercent(row.cocYield)}</td>
-                          <td className="border-b border-l px-3 py-2">{formatCurrency(row.propertyValueAtEnd)}</td>
-                          <td className="border-b border-l px-3 py-2 text-center">{row.holdingPeriodYears} שנים</td>
-                          <td className="border-b border-l px-3 py-2 whitespace-nowrap">{new Date(row.createdAt).toLocaleDateString('he-IL')}</td>
-                        </>
-                      )}
-                      <td className={cn('border-b border-l px-3 py-2', bestClass(row.irr ?? -Infinity, best.irr))}>{formatPercent(row.irr)}</td>
-                      <td className={cn('border-b border-l px-3 py-2', row.totalProfit >= 0 ? 'text-green-600' : 'text-red-600', bestClass(row.totalProfit, best.totalProfit))}>{formatCurrency(row.totalProfit)}</td>
-                      <td className="border-b px-3 py-2 whitespace-nowrap">
-                        {snapshotsById.get(row.snapshotId) && (
-                          <div className="flex gap-1">
-                            <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => editDeal(snapshotsById.get(row.snapshotId)!)}>ערוך</Button>
-                            <Button variant="ghost" size="sm" className="h-7 px-2 text-destructive" onClick={() => removeDeal(snapshotsById.get(row.snapshotId)!)}>מחק</Button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+        <DealComparisonTable
+          rows={rows}
+          bestByScenario={bestByScenario}
+          grouped={scenarioFilter === 'all'}
+          showAllColumns={showAllColumns}
+          onToggleColumns={() => setShowAllColumns((v) => !v)}
+          snapshotsById={snapshotsById}
+          onEdit={editDeal}
+          onDelete={setDeleteTarget}
+        />
         </>
       )}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>למחוק את העסקה?</AlertDialogTitle>
+            <AlertDialogDescription>
+              "{deleteTarget?.name}" תימחק לצמיתות מההשוואה. אי אפשר לבטל את הפעולה.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ביטול</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => { if (deleteTarget) removeDeal(deleteTarget); setDeleteTarget(null); }}
+            >
+              מחק
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
