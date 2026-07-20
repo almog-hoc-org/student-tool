@@ -6,6 +6,7 @@ import { DealVerdictPanel } from '@/components/deals/DealVerdictPanel';
 import { DealSideBySide, type SideBySideDeal } from '@/components/deals/DealSideBySide';
 import { DealCharts, type ChartDeal } from '@/components/deals/DealCharts';
 import { QuickAddDealDialog } from '@/components/deals/QuickAddDealDialog';
+import { ExportButton } from '@/components/ExportButton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CHART_SERIES } from '@/lib/chart-colors';
 import { rankDeals, PREFERENCE_LABELS, type RankingPreference } from '@/lib/deal-ranking';
@@ -147,6 +148,28 @@ export default function DealComparison() {
   const [deleteTarget, setDeleteTarget] = useState<Snapshot | null>(null);
   const [quickAddOpen, setQuickAddOpen] = useState(false);
 
+  // דוח PDF של ההשוואה — פסק הדין, סקשן לכל עסקה, וצילום הגרפים
+  const exportSections = useMemo(() => {
+    const fmtPct = (v: number | null) => (v === null ? '—' : `${(v * 100).toFixed(1)}%`);
+    return ranking.ranked.map((assessment) => {
+      const deal = comparisonDeals.find((d) => d.metrics.snapshotId === assessment.snapshotId);
+      const m = deal?.metrics;
+      return {
+        title: `${assessment.rank}. ${assessment.name} — ${assessment.score}/100 (${assessment.grade})`,
+        items: m ? [
+          { label: 'מחיר רכישה', value: formatCurrency(m.purchasePrice) },
+          { label: 'הון עצמי', value: formatCurrency(m.equityInvested) },
+          { label: 'תזרים חודשי', value: formatCurrency(m.monthlyCashflow) },
+          { label: 'IRR', value: fmtPct(m.irr) },
+          { label: 'תשואה על ההון (COC)', value: fmtPct(m.cocYield) },
+          { label: 'רווח כולל (בינוני)', value: formatCurrency(m.totalProfit) },
+          ...(assessment.strengths.length ? [{ label: 'חוזקות', value: assessment.strengths.join(' · ') }] : []),
+          ...(assessment.risks.length ? [{ label: 'סיכונים', value: assessment.risks.join(' · ') }] : []),
+        ] : [],
+      };
+    });
+  }, [ranking, comparisonDeals]);
+
   const handleQuickAdded = (snapshot: Snapshot) => {
     setSnapshots((current) => [snapshot, ...current]);
     setSelectedIds((current) => new Set(current).add(snapshot.id));
@@ -213,6 +236,14 @@ export default function DealComparison() {
           <Button size="sm" onClick={() => setQuickAddOpen(true)} className="gap-1.5">
             <Plus className="w-4 h-4" /> הוסף עסקה
           </Button>
+          {ranking.winner && (
+            <ExportButton
+              title="השוואת עסקאות — הדרך לדירה"
+              executiveSummary={[ranking.headline, ranking.subline].filter(Boolean)}
+              sections={exportSections}
+              chartElementId="deal-comparison-charts"
+            />
+          )}
           <Button variant="outline" size="sm" onClick={load} disabled={loading} className="gap-1.5">
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
             רענן
@@ -424,7 +455,14 @@ export default function DealComparison() {
           <TabsContent value="side-by-side">
             <DealSideBySide deals={comparisonDeals as SideBySideDeal[]} />
           </TabsContent>
-          <TabsContent value="charts">
+          {/* forceMount: הגרפים חיים תמיד כדי שייצוא ה-PDF יוכל לצלם אותם
+              מכל טאב; כשהטאב לא פעיל הם מוזזים מחוץ למסך (לא display:none) */}
+          <TabsContent
+            value="charts"
+            forceMount
+            className="data-[state=inactive]:fixed data-[state=inactive]:top-0 data-[state=inactive]:-start-[10000px] data-[state=inactive]:w-[900px] data-[state=inactive]:pointer-events-none"
+            aria-hidden={undefined}
+          >
             <DealCharts deals={comparisonDeals as ChartDeal[]} />
           </TabsContent>
         </Tabs>
