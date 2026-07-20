@@ -9,9 +9,11 @@
  */
 import { chromium } from 'playwright';
 import { mkdirSync } from 'fs';
+import { buildSeedSnapshots } from './e2e-seed-deals';
 
 const BASE = process.env.E2E_BASE_URL ?? 'http://localhost:8080';
 const OUT = process.argv[2] ?? 'screenshots';
+const SEED_JSON = JSON.stringify(buildSeedSnapshots());
 
 const ROUTES = [
   { path: '/login', name: 'login' },
@@ -44,6 +46,10 @@ async function main() {
       viewport: { width: vp.width, height: vp.height },
       serviceWorkers: 'block',
     });
+    // עסקאות דמו למצב E2E — snapshots.ts קורא אותן מ-localStorage
+    await context.addInitScript((seed: string) => {
+      window.localStorage.setItem('e2e_snapshots', seed);
+    }, SEED_JSON);
     const page = await context.newPage();
     page.on('console', (msg) => {
       if (msg.type() === 'error') {
@@ -61,6 +67,22 @@ async function main() {
       await page.waitForTimeout(900); // אנימציות כניסה
       await page.screenshot({ path: `${OUT}/${route.name}-${vp.name}.png`, fullPage: true });
       console.log(`✓ ${route.name} (${vp.name})`);
+
+      // בעמוד ההשוואה — צילום גם של טאבי מול-מול וגרפים
+      if (route.path === '/deal-comparison') {
+        for (const tab of [
+          { label: 'מול-מול', name: 'deal-side-by-side' },
+          { label: 'גרפים', name: 'deal-charts' },
+        ]) {
+          const trigger = page.getByRole('tab', { name: tab.label });
+          if (await trigger.count()) {
+            await trigger.first().click();
+            await page.waitForTimeout(700);
+            await page.screenshot({ path: `${OUT}/${tab.name}-${vp.name}.png`, fullPage: true });
+            console.log(`✓ ${tab.name} (${vp.name})`);
+          }
+        }
+      }
     }
     await context.close();
   }
