@@ -21,3 +21,8 @@ otp_expiry = 3600
 [auth.email.template.confirmation]
 subject = "אישור הרשמה — הדרך לדירה"
 content_path = "./supabase/templates/confirmation.html"
+
+# הפונקציה מאמתת JWT בעצמה בקוד (getUser); אימות השער חוסם טוקנים
+# אסימטריים של משתמשים (הפרויקט עובד עם JWKS) — חייב להישאר false.
+[functions.chat-ai]
+verify_jwt = false
