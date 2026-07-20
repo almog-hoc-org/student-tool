@@ -3,6 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AlertTriangle, BarChart3, Edit3, Loader2, RefreshCw, Trash2, TrendingUp } from 'lucide-react';
 import { DealComparisonTable, computeBestByScenario } from '@/components/deals/DealComparisonTable';
 import { DealVerdictPanel } from '@/components/deals/DealVerdictPanel';
+import { DealSideBySide, type SideBySideDeal } from '@/components/deals/DealSideBySide';
+import { DealCharts, type ChartDeal } from '@/components/deals/DealCharts';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CHART_SERIES } from '@/lib/chart-colors';
 import { rankDeals, PREFERENCE_LABELS, type RankingPreference } from '@/lib/deal-ranking';
 import {
   AlertDialog,
@@ -93,6 +97,27 @@ export default function DealComparison() {
       .filter((m): m is NonNullable<typeof m> => m !== null);
     return rankDeals(metrics, preference);
   }, [snapshots, selectedIds, scenarioFilter, preference]);
+
+  // נתונים למול-מול ולגרפים — צבע קבוע לעסקה לפי סדר הבחירה
+  const comparisonDeals = useMemo(() => {
+    const scenario = scenarioFilter === 'all' ? DEFAULT_SCENARIO : scenarioFilter;
+    const assessmentById = new Map(ranking.ranked.map((a) => [a.snapshotId, a]));
+    return snapshots
+      .filter((snapshot) => selectedIds.has(snapshot.id))
+      .map((snapshot, i) => {
+        const metrics = dealMetricsFromSnapshot(snapshot, scenario);
+        if (!metrics) return null;
+        const data = getDealSnapshotData(snapshot);
+        const scenarios = data.results?.scenarios ?? [];
+        return {
+          metrics,
+          assessment: assessmentById.get(snapshot.id),
+          scenario: scenarios.find((sc) => sc.label === metrics.scenarioLabel) ?? scenarios[0],
+          color: CHART_SERIES[i % CHART_SERIES.length],
+        };
+      })
+      .filter((d): d is NonNullable<typeof d> => d !== null);
+  }, [snapshots, selectedIds, scenarioFilter, ranking]);
 
   const snapshotsById = useMemo(() => {
     return new Map(snapshots.map((snapshot) => [snapshot.id, snapshot]));
@@ -363,16 +388,31 @@ export default function DealComparison() {
         </Card>
       ) : (
         <>
-        <DealComparisonTable
-          rows={rows}
-          bestByScenario={bestByScenario}
-          grouped={scenarioFilter === 'all'}
-          showAllColumns={showAllColumns}
-          onToggleColumns={() => setShowAllColumns((v) => !v)}
-          snapshotsById={snapshotsById}
-          onEdit={editDeal}
-          onDelete={setDeleteTarget}
-        />
+        <Tabs defaultValue="overview" dir="rtl">
+          <TabsList className="mb-3">
+            <TabsTrigger value="overview">סקירה</TabsTrigger>
+            <TabsTrigger value="side-by-side">מול-מול</TabsTrigger>
+            <TabsTrigger value="charts">גרפים</TabsTrigger>
+          </TabsList>
+          <TabsContent value="overview">
+            <DealComparisonTable
+              rows={rows}
+              bestByScenario={bestByScenario}
+              grouped={scenarioFilter === 'all'}
+              showAllColumns={showAllColumns}
+              onToggleColumns={() => setShowAllColumns((v) => !v)}
+              snapshotsById={snapshotsById}
+              onEdit={editDeal}
+              onDelete={setDeleteTarget}
+            />
+          </TabsContent>
+          <TabsContent value="side-by-side">
+            <DealSideBySide deals={comparisonDeals as SideBySideDeal[]} />
+          </TabsContent>
+          <TabsContent value="charts">
+            <DealCharts deals={comparisonDeals as ChartDeal[]} />
+          </TabsContent>
+        </Tabs>
         </>
       )}
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>

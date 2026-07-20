@@ -242,6 +242,9 @@ export function dealMetricsFromSnapshot(
     buyerType: inputs.buyerType,
     pessimisticTotalProfit:
       typeof pessimistic?.totalProfit === 'number' ? pessimistic.totalProfit : undefined,
+    propertyArea: asText(inputs.propertyArea) || undefined,
+    propertySqm: asNumber(inputs.propertySqm) || undefined,
+    listingUrl: asText(inputs.listingUrl) || undefined,
   };
 }
 

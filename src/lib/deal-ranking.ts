@@ -33,6 +33,10 @@ export interface DealMetricsInput {
   buyerType?: BuyerType;
   /** רווח בתרחיש המחמיר — לחוק "שולי ביטחון" */
   pessimisticTotalProfit?: number;
+  // מטא-דאטה להצגה (לא משפיע על הציון)
+  propertyArea?: string;
+  propertySqm?: number;
+  listingUrl?: string;
 }
 
 export interface ComponentScores {
