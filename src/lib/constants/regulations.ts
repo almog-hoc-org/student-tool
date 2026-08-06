@@ -14,4 +14,5 @@ export function indexLawNote(): string {
 }
 
 export const PURCHASE_TAX_FREEZE_RANGE = '2025–2027';
-export const FIRST_HOME_EXEMPTION_CEILING = 1_978_745;
+// מקור האמת לתקרה הוא מדרגות המס עצמן — כאן רק re-export לנוחות
+export { FIRST_HOME_TAX_FREE_CEILING as FIRST_HOME_EXEMPTION_CEILING } from '@/lib/calculations/purchase-tax';

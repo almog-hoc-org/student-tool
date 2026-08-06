@@ -2,7 +2,10 @@
 // מעודכן: מדרגות מוקפאות מ-16.1.2025 עד 15.1.2028 (הוראת שעה, חוק ההתייעלות)
 // מע"מ: 18% מ-1.1.2025
 
-export type BuyerType = 'singleApartment' | 'additionalApartment' | 'foreignResident';
+export type BuyerType = 'singleApartment' | 'upgrade' | 'additionalApartment' | 'foreignResident';
+
+// תקרת המדרגה הפטורה לדירה יחידה — מיוצאת כדי שיהיה מקור אמת אחד
+export const FIRST_HOME_TAX_FREE_CEILING = 1_978_745;
 
 interface TaxBracket {
   upTo: number; // עד סכום (אינסוף = Infinity)
@@ -11,7 +14,7 @@ interface TaxBracket {
 
 // דירה יחידה - מדרגות מוקפאות 2025-2027
 const SINGLE_APARTMENT_BRACKETS: TaxBracket[] = [
-  { upTo: 1978745, rate: 0 },
+  { upTo: FIRST_HOME_TAX_FREE_CEILING, rate: 0 },
   { upTo: 2347040, rate: 0.035 },
   { upTo: 6055070, rate: 0.05 },
   { upTo: 20183565, rate: 0.08 },
@@ -85,6 +88,10 @@ export function calculatePurchaseTax(input: PurchaseTaxInput): PurchaseTaxOutput
 
   switch (buyerType) {
     case 'singleApartment':
+      return calculateWithBrackets(purchasePrice, SINGLE_APARTMENT_BRACKETS);
+    // משפר דיור שמתחייב למכור את דירתו הקיימת בתוך התקופה הקבועה בחוק
+    // (18 חודשים) זכאי למדרגות דירה יחידה
+    case 'upgrade':
       return calculateWithBrackets(purchasePrice, SINGLE_APARTMENT_BRACKETS);
     case 'additionalApartment':
       return calculateWithBrackets(purchasePrice, ADDITIONAL_APARTMENT_BRACKETS);
