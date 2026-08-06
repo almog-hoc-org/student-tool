@@ -4,9 +4,16 @@ import { cn } from "@/lib/utils";
 
 const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
   ({ className, type, ...props }, ref) => {
+    // שדות מספריים מקבלים מקלדת ספרות במובייל ומאבדים את חיצי הספינר
+    // ואת שינוי-הערך-בגלילה של type=number (שניהם גרמו לשינויים בטעות)
+    const numericProps: Partial<React.ComponentProps<'input'>> =
+      type === 'number' && !props.inputMode
+        ? { inputMode: 'decimal', onWheel: (e) => (e.target as HTMLElement).blur() }
+        : {};
     return (
       <input
         type={type}
+        {...numericProps}
         className={cn(
           "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground/60 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:border-primary/50 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
           className,

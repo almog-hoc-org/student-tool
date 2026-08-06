@@ -1,12 +1,14 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Search, BarChart3 } from 'lucide-react';
+import { Search, BarChart3, CalendarClock, Receipt } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-// טאבים משניים של אזור "נכסים" — מקשרים בין בדיקת נכס להשוואת עסקאות,
-// כך ששני הכלים נגישים גם במובייל דרך פריט הניווט האחד.
+// טאבים משניים של אזור "נכסים" — כל כלי הנכסים נגישים גם במובייל
+// דרך פריט הניווט האחד.
 const tabs = [
   { name: 'בדיקת נכס', href: '/property-check', icon: Search },
   { name: 'השוואת עסקאות', href: '/deal-comparison', icon: BarChart3 },
+  { name: 'ציר הזמן', href: '/timeline', icon: CalendarClock },
+  { name: 'מס שבח', href: '/capital-gains', icon: Receipt },
 ];
 
 export function PropertyAreaNav() {
