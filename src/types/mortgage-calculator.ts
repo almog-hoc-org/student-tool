@@ -19,8 +19,12 @@ export type MortgageCalculatorInput = {
 
 export type MortgageTrackResult = {
   trackId: string;
+  /** ההחזר החודשי הראשון (במסלול צמוד — ההחזר גדל עם המדד) */
   monthlyPayment: number;
+  /** סך ריבית + הצמדה לאורך חיי המסלול */
   totalInterestPaid: number;
+  /** עלות ההצמדה למדד בלבד (0 במסלולים לא צמודים) */
+  linkageCost?: number;
 };
 
 export type MortgageCalculatorOutput = {
@@ -28,6 +32,8 @@ export type MortgageCalculatorOutput = {
   totalMonthlyPayment: number;
   totalInterestPaid: number;
   weightedAverageInterest: number;
+  /** סך עלות ההצמדה למדד בכל המסלולים הצמודים */
+  totalLinkageCost?: number;
 };
 
 export type AmortizationRow = {

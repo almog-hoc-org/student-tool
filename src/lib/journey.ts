@@ -64,8 +64,9 @@ export function isMilestoneDone(
   return !!rows.find((r) => r.milestone_key === milestone)?.completed_at;
 }
 
+/** השלב שאחרי הנוכחי (null כשהנוכחי הוא האחרון) */
 export function nextMilestone(rows: JourneyRow[]): MilestoneKey | null {
   const idx = MILESTONES.indexOf(currentMilestone(rows));
   if (idx < 0) return MILESTONES[0];
-  return MILESTONES[idx] ?? null;
+  return MILESTONES[idx + 1] ?? null;
 }

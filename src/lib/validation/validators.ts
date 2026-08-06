@@ -75,6 +75,16 @@ export const numInput = (raw: string): number => {
   return Number.isFinite(n) && n > 0 ? n : 0;
 };
 
+/**
+ * גרסה שמאפשרת ערכים שליליים — לשדות שבהם מינוס הוא קלט לגיטימי,
+ * כמו שיעור עליית ערך בתרחיש מחמיר (שוק יורד: ‑3%).
+ */
+export const numInputSigned = (raw: string): number => {
+  if (raw.trim() === '' || raw.trim() === '-') return 0;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : 0;
+};
+
 export const formatCurrency = (value: number): string => {
   return `₪${value.toLocaleString('he-IL', {
     minimumFractionDigits: 0,

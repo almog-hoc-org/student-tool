@@ -63,6 +63,10 @@ export interface SendMessageResult {
   conversation_id: string;
   reply: string;
   sources?: { source_file: string; similarity: number }[];
+  /** קישורי מקורות רשת (Google Search grounding) */
+  web_sources?: string[];
+  /** 'empty' = לא נמצא תוכן קורס — התשובה מידע כללי */
+  rag_status?: 'ok' | 'empty';
   tokens_used?: number | null;
 }
 

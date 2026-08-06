@@ -12,6 +12,8 @@ export interface BudgetResults {
   currentRent: number;
   livingExpenses: number;
   freeCashFlow: number;
+  /** תזרים פנוי אחרי הרכישה — המגבלה האמיתית להחזר המשכנתא */
+  freeCashFlowAfterPurchase: number;
   maxAffordableMortgagePayment: number;
   maxPropertyByEquity: number;
   recommendedPropertyValue: number;
@@ -41,6 +43,8 @@ export function getBudgetResults(): BudgetResults | null {
     currentRent: inputs.currentRent ?? 0,
     livingExpenses: inputs.livingExpenses ?? 0,
     freeCashFlow: results.freeCashFlow,
+    // נתונים ישנים (לפני v3) לא כוללים את השדה — נופלים לתזרים הרגיל
+    freeCashFlowAfterPurchase: results.freeCashFlowAfterPurchase ?? results.freeCashFlow,
     maxAffordableMortgagePayment: results.maxAffordableMortgagePayment,
     maxPropertyByEquity: results.maxPropertyByEquity,
     recommendedPropertyValue: results.recommendedPropertyValue,
