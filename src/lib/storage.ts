@@ -21,6 +21,14 @@ function writeMeta(meta: MetaMap): void {
   } catch { /* quota exceeded */ }
 }
 
+/** חותמת העדכון האחרונה של כלי (או null אם מעולם לא נשמר) */
+export function getToolUpdatedAt(key: string): Date | null {
+  const raw = readMeta()[key];
+  if (!raw) return null;
+  const d = new Date(raw);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
 /** כל מפתחות הכלים השמורים מקומית (בלי מפת המטא). */
 function localToolKeys(): string[] {
   const keys: string[] = [];
@@ -166,7 +174,7 @@ export async function syncOnLogin(userId: string): Promise<void> {
   const cloud = await loadAllFromCloudWithMeta(userId);
   const meta = readMeta();
 
-  // משיכה: ענן → מקומי כשהענן חדש יותר (או שאין מקומי)
+  // משיכה: ענן ← מקומי כשהענן חדש יותר (או שאין מקומי)
   for (const [key, row] of Object.entries(cloud)) {
     const localRaw = localStorage.getItem(PREFIX + key);
     const localTime = meta[key];
@@ -180,7 +188,7 @@ export async function syncOnLogin(userId: string): Promise<void> {
   }
   writeMeta(meta);
 
-  // דחיפה: מקומי → ענן כשהמקומי חדש יותר (או שאין בענן)
+  // דחיפה: מקומי ← ענן כשהמקומי חדש יותר (או שאין בענן)
   for (const key of localToolKeys()) {
     const cloudRow = cloud[key];
     const localTime = meta[key];

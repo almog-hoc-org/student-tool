@@ -110,7 +110,9 @@ export function assessDeal(deal: DealMetricsInput, preference: RankingPreference
   const irrUnavailable = deal.irr === null;
   const effectiveIrr = deal.irr ?? deal.cocYield;
   const ltv = deal.purchasePrice > 0 ? deal.mortgageAmount / deal.purchasePrice : 0;
-  const maxLtv = getMaxLtv(deal.buyerType ?? 'additionalApartment');
+  // עסקה ישנה בלי סוג רוכש — ברירת מחדל מקילה (דירה יחידה), כדי לא
+  // להצמיד אזהרת "חריגה מתקרת מימון" מזויפת ולהוריד 30 נקודות על לא כלום
+  const maxLtv = getMaxLtv(deal.buyerType ?? 'singleApartment');
 
   // --- רכיבי הציון ---
   const cashflowScore = clamp01to100(50 + (deal.monthlyCashflow / SCORE_ANCHORS.CASHFLOW_FULL) * 50);

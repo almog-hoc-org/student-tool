@@ -2,14 +2,23 @@ import { load } from './storage';
 import { BudgetOutput } from './calculations/budget-calculator';
 import { BusinessPlanOutput } from './calculations/business-plan';
 import { BuyerType } from './calculations/purchase-tax';
+import { FINANCE } from './constants/financial';
 
 export interface Insight {
   type: 'warning' | 'recommendation' | 'insight' | 'next_step';
   title: string;
   description: string;
   tool?: string;
+  /** קישור פעולה — לאן ללכת כדי לטפל בתובנה */
+  href?: string;
   priority: number; // 1=high, 3=low
 }
+
+const TOOL_ROUTES: Record<string, string> = {
+  'תקציב': '/',
+  'תוכנית עסקית': '/business-plan',
+  'משכנתא': '/mortgage',
+};
 
 interface BudgetData {
   equity: number;
@@ -17,6 +26,7 @@ interface BudgetData {
   monthlyObligations: number;
   buyerType: BuyerType;
   mortgageYears: number;
+  touched?: boolean;
 }
 
 interface BusinessPlanData {
@@ -24,18 +34,21 @@ interface BusinessPlanData {
   mortgageMonthlyPayment?: number;
   holdingPeriodYears?: number;
   purchasePrice?: number;
+  touched?: boolean;
 }
 
 interface MortgageData {
   tracks: { type: string; principal: number; annualInterestRate: number; years: number }[];
   monthlyIncome: number;
+  freeCashFlow?: number;
   propertyPrice: number;
+  touched?: boolean;
 }
 
+// חייב לשקף את MortgageCalculatorOutput שנשמר בפועל ב-mortgage_results
 interface MortgageResults {
   totalMonthlyPayment: number;
   totalInterestPaid: number;
-  totalPaid: number;
   weightedAverageInterest: number;
 }
 
@@ -48,10 +61,11 @@ export function generateInsights(): Insight[] {
   const mortgage = load<MortgageData>('mortgage');
   const mortgageResults = load<MortgageResults>('mortgage_results');
 
+  // תובנות רק על נתונים שהתלמיד באמת הזין — לא על ברירות מחדל שטרם נגעו בהן
   const hasTools = {
-    budget: !!budget && !!budgetResults,
-    businessPlan: !!businessPlan,
-    mortgage: !!mortgage && !!mortgageResults,
+    budget: !!budget?.touched && !!budgetResults,
+    businessPlan: !!businessPlan?.touched,
+    mortgage: !!mortgage?.touched && !!mortgageResults,
   };
 
   // --- Next Steps ---
@@ -97,7 +111,7 @@ export function generateInsights(): Insight[] {
       });
     }
 
-    if (freeCashFlow > 0 && dti > 40) {
+    if (freeCashFlow > 0 && dti > FINANCE.MAX_DTI * 100) {
       insights.push({
         type: 'warning',
         title: 'יחס החזר/הכנסה חורג מ-40%',
@@ -123,8 +137,8 @@ export function generateInsights(): Insight[] {
       });
     }
 
-    const equityRatio = budget!.equity / budgetResults.maxPropertyValue;
-    if (equityRatio < 0.3) {
+    const equityRatio = budgetResults.maxPropertyValue > 0 ? budget!.equity / budgetResults.maxPropertyValue : 0;
+    if (equityRatio > 0 && equityRatio < 0.3) {
       insights.push({
         type: 'warning',
         title: 'הון עצמי נמוך ביחס לנכס',
@@ -134,7 +148,7 @@ export function generateInsights(): Insight[] {
       });
     }
 
-    const taxPercent = budgetResults.purchaseTax / budget!.equity * 100;
+    const taxPercent = budget!.equity > 0 ? (budgetResults.purchaseTax / budget!.equity) * 100 : 0;
     if (taxPercent > 15) {
       insights.push({
         type: 'insight',
@@ -194,9 +208,10 @@ export function generateInsights(): Insight[] {
   // --- Mortgage Insights ---
   if (hasTools.mortgage && mortgageResults && mortgage) {
     const totalInterest = mortgageResults.totalInterestPaid;
-    const totalPrincipal = mortgageResults.totalPaid - totalInterest;
+    // סך הקרן — מסכום המסלולים שנשמרו (mortgage_results לא מכיל totalPaid)
+    const totalPrincipal = (mortgage.tracks ?? []).reduce((sum, t) => sum + (t.principal || 0), 0);
 
-    if (totalInterest > totalPrincipal * 0.6) {
+    if (totalPrincipal > 0 && totalInterest > totalPrincipal * 0.6) {
       insights.push({
         type: 'warning',
         title: 'ריבית כוללת גבוהה',
@@ -222,7 +237,7 @@ export function generateInsights(): Insight[] {
     }
 
     const avgInterest = mortgageResults.weightedAverageInterest;
-    if (avgInterest > 6) {
+    if (avgInterest > FINANCE.DEFAULT_MORTGAGE_RATE + 1) {
       insights.push({
         type: 'recommendation',
         title: 'ריבית משוקללת גבוהה',
@@ -272,8 +287,20 @@ export function generateInsights(): Insight[] {
     }
   }
 
-  // Sort by priority
-  return insights.sort((a, b) => a.priority - b.priority);
+  // כל תובנה מקבלת קישור פעולה לפי הכלי שלה — תובנה בלי דרך לפעול היא מבוי סתום
+  return insights
+    .map((i) => ({ ...i, href: i.href ?? (i.tool ? TOOL_ROUTES[i.tool] : undefined) }))
+    .sort((a, b) => a.priority - b.priority);
+}
+
+/**
+ * התובנות הדחופות בלבד (אזהרות והמלצות) עבור כלי מסוים — מוצגות בעמוד
+ * הכלי עצמו, לא רק בפאנל המכווץ בצ'אט.
+ */
+export function insightsForTool(toolLabel: string, max: number = 3): Insight[] {
+  return generateInsights()
+    .filter((i) => (i.type === 'warning' || i.type === 'recommendation') && (i.tool === toolLabel || !i.tool))
+    .slice(0, max);
 }
 
 export function hasAnyData(): boolean {

@@ -25,11 +25,18 @@ export interface DiffRow {
   kind: 'added' | 'removed' | 'changed';
   /** Sentiment direction for numeric increase (helpful for color cues) */
   trend?: 'up' | 'down' | 'neutral';
+  /**
+   * האם עלייה בערך היא חיובית עבור התלמיד? (שכירות ↑ = טוב, מחיר ↑ = רע)
+   * משמש לצבעי המגמה — לפני זה עליית מחיר נצבעה ירוק.
+   */
+  upIsGood?: boolean | null;
 }
 
 interface FieldMeta {
   label: string;
   format?: (v: Value) => string;
+  /** true = עלייה טובה; false = עלייה רעה; undefined = ניטרלי */
+  upIsGood?: boolean;
 }
 
 const currency = (v: Value): string => {
@@ -53,14 +60,15 @@ const text = (v: Value): string => (v == null || v === '' ? '—' : String(v));
 
 const FIELD_META: Record<string, FieldMeta> = {
   // Budget
-  equity: { label: 'הון עצמי', format: currency },
-  monthlyIncome: { label: 'הכנסה חודשית', format: currency },
-  monthlyObligations: { label: 'התחייבויות חודשיות', format: currency },
+  equity: { label: 'הון עצמי', format: currency, upIsGood: true },
+  monthlyIncome: { label: 'הכנסה חודשית', format: currency, upIsGood: true },
+  monthlyObligations: { label: 'התחייבויות חודשיות', format: currency, upIsGood: false },
   buyerType: {
     label: 'סוג רוכש',
     format: (v) => {
       const m: Record<string, string> = {
         singleApartment: 'דירה יחידה',
+        upgrade: 'משפר דיור',
         additionalApartment: 'דירה נוספת / משקיע',
         foreignResident: 'תושב חוץ',
       };
@@ -70,29 +78,29 @@ const FIELD_META: Record<string, FieldMeta> = {
   mortgageYears: { label: 'תקופת משכנתא', format: years },
 
   // Mortgage
-  propertyPrice: { label: 'מחיר נכס', format: currency },
+  propertyPrice: { label: 'מחיר נכס', format: currency, upIsGood: false },
   isOffPlan: { label: 'דירה מקבלן', format: bool },
   madadRate: { label: 'אחוז מדד', format: percent },
   madadYears: { label: 'שנות מדד', format: years },
   'tracks.length': { label: 'מספר מסלולים', format: text },
   'track.principal': { label: 'קרן', format: currency },
-  'track.annualInterestRate': { label: 'ריבית שנתית', format: percent },
+  'track.annualInterestRate': { label: 'ריבית שנתית', format: percent, upIsGood: false },
   'track.years': { label: 'שנים', format: years },
   'track.type': { label: 'סוג מסלול', format: text },
   'track.name': { label: 'שם מסלול', format: text },
 
   // Business Plan
-  purchasePrice: { label: 'מחיר רכישה', format: currency },
-  purchaseTax: { label: 'מס רכישה', format: currency },
+  purchasePrice: { label: 'מחיר רכישה', format: currency, upIsGood: false },
+  purchaseTax: { label: 'מס רכישה', format: currency, upIsGood: false },
   listingUrl: { label: 'קישור למודעה', format: text },
-  sideCosts: { label: 'עלויות נלוות', format: currency },
-  renovationCost: { label: 'עלות שיפוץ', format: currency },
+  sideCosts: { label: 'עלויות נלוות', format: currency, upIsGood: false },
+  renovationCost: { label: 'עלות שיפוץ', format: currency, upIsGood: false },
   equityInvested: { label: 'הון מושקע', format: currency },
-  mortgageAmount: { label: 'סכום משכנתא', format: currency },
-  mortgageMonthlyPayment: { label: 'החזר חודשי', format: currency },
-  mortgageInterestRate: { label: 'ריבית משכנתא', format: percent },
-  expectedMonthlyRent: { label: 'שכירות צפויה', format: currency },
-  annualOperatingCosts: { label: 'עלויות תפעול שנתיות', format: currency },
+  mortgageAmount: { label: 'סכום משכנתא', format: currency, upIsGood: false },
+  mortgageMonthlyPayment: { label: 'החזר חודשי', format: currency, upIsGood: false },
+  mortgageInterestRate: { label: 'ריבית משכנתא', format: percent, upIsGood: false },
+  expectedMonthlyRent: { label: 'שכירות צפויה', format: currency, upIsGood: true },
+  annualOperatingCosts: { label: 'עלויות תפעול שנתיות', format: currency, upIsGood: false },
   holdingPeriodYears: { label: 'תקופת החזקה', format: years },
   baseAppreciation: { label: 'עליית ערך בסיסית', format: percent },
   manualMode: { label: 'מצב ידני', format: bool },
@@ -108,14 +116,20 @@ function flatten(o: unknown, prefix = ''): Record<string, Value> {
     return out;
   }
   if (Array.isArray(o)) {
-    // Treat arrays specially — surface length + element 0 fields, ignore deeper
+    // כל איברי המערך, לא רק הראשון — שינוי ריבית במסלול השני הופיע בעבר
+    // כ"אין שינוי". מפתח לפי אינדקס כדי שסידור מחדש לא ייצור שינויי רפאים בשמות.
     out[`${prefix}.length`] = o.length;
-    if (o.length > 0 && typeof o[0] === 'object' && o[0] !== null) {
-      Object.assign(out, flatten(o[0], prefix.replace(/s$/, '')));
-    }
+    o.forEach((item, idx) => {
+      if (item != null && typeof item === 'object') {
+        const itemPrefix = o.length === 1 ? prefix.replace(/s$/, '') : `${prefix.replace(/s$/, '')} ${idx + 1}`;
+        Object.assign(out, flatten(item, itemPrefix));
+      }
+    });
     return out;
   }
   for (const [k, v] of Object.entries(o)) {
+    // סדרות תחזית ארוכות מייצרות רעש בלי ערך בהשוואה — מדלגים
+    if (k === 'yearlyProjection') continue;
     const key = prefix ? `${prefix}.${k}` : k;
     if (v != null && typeof v === 'object' && !Array.isArray(v)) {
       Object.assign(out, flatten(v, key));
@@ -137,6 +151,12 @@ function eq(a: Value, b: Value): boolean {
 
 function metaFor(key: string): FieldMeta {
   if (FIELD_META[key]) return FIELD_META[key];
+  // "track 2.principal" → מטא של 'track.principal' עם מספר המסלול בתווית
+  const indexed = key.match(/^(\w+) (\d+)\.(.+)$/);
+  if (indexed) {
+    const base = FIELD_META[`${indexed[1]}.${indexed[3]}`];
+    if (base) return { ...base, label: `${base.label} (מסלול ${indexed[2]})` };
+  }
   return { label: key, format: text };
 }
 
@@ -168,6 +188,7 @@ export function diffSnapshots(before: unknown, after: unknown): DiffRow[] {
       after: fmt(b),
       kind,
       trend,
+      upIsGood: meta.upIsGood ?? null,
     });
   }
 

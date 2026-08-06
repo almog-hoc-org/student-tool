@@ -102,6 +102,7 @@ export function buildQuickDealSnapshot(input: QuickDealInput): {
       expectedMonthlyRent,
       annualOperatingCosts: DEFAULTS.annualOperatingCosts,
       holdingPeriodYears: DEFAULTS.holdingPeriodYears,
+      buyerType,
     },
     DEFAULTS.baseAppreciation,
     DEFAULTS.customRates,

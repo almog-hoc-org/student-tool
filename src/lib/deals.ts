@@ -1,7 +1,7 @@
 import type { Snapshot } from './snapshots';
 import type { BuyerType } from './calculations/purchase-tax';
 import type { DealMetricsInput } from './deal-ranking';
-import { BUSINESS_PLAN_ENGINE_VERSION, calculateBusinessPlan } from './calculations/business-plan';
+import { BUSINESS_PLAN_ENGINE_VERSION, calculateBusinessPlan, type BusinessPlanInput } from './calculations/business-plan';
 
 export type DealScenarioFilter = 'all' | 'מחמיר' | 'בינוני' | 'טוב';
 
@@ -156,6 +156,7 @@ export function recomputeDealSnapshot(data: DealSnapshotData): DealSnapshotData 
       holdingPeriodYears: asNumber(inputs.holdingPeriodYears),
       urbanRenewalUpliftAmount: effectiveUplift,
       urbanRenewalUpliftPercent: upliftMode === 'percent' ? upliftValue : undefined,
+      buyerType: (inputs.buyerType as BusinessPlanInput['buyerType']) ?? undefined,
     },
     asNumber(inputs.baseAppreciation),
     customRates,
