@@ -63,3 +63,14 @@ describe("מס רכישה — תושב חוץ", () => {
     }
   });
 });
+
+describe("מס רכישה — משפר דיור", () => {
+  it("משפר דיור מקבל מדרגות דירה יחידה — לא 8% מהשקל הראשון", () => {
+    const upgrade = calculatePurchaseTax({ purchasePrice: 2_000_000, buyerType: "upgrade" });
+    const single = calculatePurchaseTax({ purchasePrice: 2_000_000, buyerType: "singleApartment" });
+    const investor = calculatePurchaseTax({ purchasePrice: 2_000_000, buyerType: "additionalApartment" });
+    expect(upgrade.totalTax).toBeCloseTo(single.totalTax, 2);
+    // הבאג שתוקן: משפר דיור נאלץ להיות "משקיע" ושילם ₪160,000 מיותרים
+    expect(investor.totalTax - upgrade.totalTax).toBeGreaterThan(150_000);
+  });
+});

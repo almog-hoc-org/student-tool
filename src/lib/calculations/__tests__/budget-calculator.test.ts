@@ -64,8 +64,43 @@ describe("תקרת החזר — 40% מההכנסה (DTI)", () => {
     expect(withDebt.maxAffordableMortgagePayment).toBeLessThan(clean.maxAffordableMortgagePayment);
   });
 
-  it("תזרים פנוי נמוך מ-40% מההכנסה — התזרים הוא החסם", () => {
-    const out = calculateBudget({ ...base, livingExpenses: 15_000 }); // תזרים פנוי ₪5K < ₪8K
-    expect(out.maxAffordableMortgagePayment).toBe(5_000);
+  it("תזרים פנוי נמוך מ-40% מההכנסה — התזרים אחרי רכישה הוא החסם", () => {
+    // תזרים אחרי רכישה: 20,000 − 15,000 מחיה − עלויות אחזקה = פחות מתקרת ה-40% (₪8K)
+    const out = calculateBudget({ ...base, livingExpenses: 15_000 });
+    expect(out.maxAffordableMortgagePayment).toBe(5_000 - FINANCE.MONTHLY_CARRYING_COSTS);
+  });
+
+  it("שכר דירה נוכחי לא מקטין את יכולת ההחזר — הוא נפסק אחרי הקנייה", () => {
+    // באג שתוקן: שכר הדירה נוכה מהתזרים לנצח והקטין את היכולת בחינם
+    const noRent = calculateBudget({ ...base, livingExpenses: 8_000 });
+    const withRent = calculateBudget({ ...base, livingExpenses: 8_000, currentRent: 5_000 });
+    expect(withRent.maxAffordableMortgagePayment).toBe(noRent.maxAffordableMortgagePayment);
+    // אבל התזרים "היום" כן מציג את השכירות
+    expect(withRent.freeCashFlow).toBe(noRent.freeCashFlow - 5_000);
+  });
+
+  it("dtiPercent כולל התחייבויות קיימות — כמו שהבנק מודד", () => {
+    const out = calculateBudget({ ...base, monthlyObligations: 3_000 });
+    const expected = ((out.monthlyPayment + 3_000) / base.monthlyIncome) * 100;
+    // monthlyPayment שבפלט מעוגל — סטייה של אלפיות אחוז מותרת
+    expect(out.dtiPercent).toBeCloseTo(expected, 2);
+  });
+
+  it("העיגול תמיד כלפי מטה — אף פעם לא מציג מחיר מעבר ליכולת", () => {
+    const out = calculateBudget(base);
+    // ההון נטו + המשכנתא חייבים לכסות את המחיר במלואו (בלי טולרנס 0.99)
+    expect(out.netEquityForProperty + out.maxMortgage).toBeGreaterThanOrEqual(out.maxPropertyValue - 1);
+  });
+});
+
+describe("משפר דיור", () => {
+  it("משפר דיור: מימון עד 70% ומדרגות מס של דירה יחידה", () => {
+    const out = calculateBudget({ ...base, buyerType: "upgrade", monthlyIncome: 60_000 });
+    expect(out.maxMortgage).toBeLessThanOrEqual(out.maxPropertyValue * 0.70 + 1);
+    // מס רכישה של דירה יחידה (0% עד התקרה) — לא 8% מהשקל הראשון
+    const single = calculateBudget({ ...base, monthlyIncome: 60_000 });
+    if (out.maxPropertyValue === single.maxPropertyValue) {
+      expect(out.purchaseTax).toBe(single.purchaseTax);
+    }
   });
 });
