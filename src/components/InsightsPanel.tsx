@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -56,6 +57,11 @@ function InsightCard({ insight }: { insight: Insight }) {
           </div>
           <p className="text-sm font-medium">{insight.title}</p>
           <p className="text-sm text-muted-foreground">{insight.description}</p>
+          {insight.href && (
+            <Link to={insight.href} className="text-xs text-primary inline-flex items-center gap-1 underline-offset-4 hover:underline">
+              עבור לכלי <ArrowLeft className="w-3 h-3" />
+            </Link>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -69,16 +75,14 @@ function InsightCard({ insight }: { insight: Insight }) {
 export function InsightsPanel() {
   const { insights, loading, analyze, hasData } = useInsights();
   const [open, setOpen] = useState(false);
-  const [analyzed, setAnalyzed] = useState(false);
 
   if (!hasData) return null;
 
+  // ניתוח מחדש בכל פתיחה — הנתונים משתנים בין ביקורים, והפאנל הציג
+  // בעבר אזהרות של אתמול כי חושב פעם אחת בלבד
   const handleOpenChange = (next: boolean) => {
     setOpen(next);
-    if (next && !analyzed) {
-      analyze();
-      setAnalyzed(true);
-    }
+    if (next) analyze();
   };
 
   return (

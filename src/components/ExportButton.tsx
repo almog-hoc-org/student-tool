@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 interface PDFSection {
   title: string;
@@ -25,6 +26,8 @@ export function ExportButton({ title, sections, executiveSummary, chartElementId
       await exportToPDF({ title, sections, executiveSummary, chartElementId });
     } catch (e) {
       console.error('PDF export failed:', e);
+      // כישלון שקט השאיר את התלמיד בלי קובץ ובלי הסבר
+      toast.error('ייצוא ה-PDF נכשל — נסה שוב. אם זה חוזר, רענן את העמוד.');
     } finally {
       setLoading(false);
     }

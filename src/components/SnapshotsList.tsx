@@ -31,16 +31,20 @@ export function SnapshotsList() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   // Index snapshots: for each, find the next-older snapshot of the same tool
-  // so we know what to diff against.
+  // AND the same name — "דירה בחיפה" מושווית רק לגרסה קודמת של "דירה בחיפה".
+  // התאמה לפי כלי בלבד הציגה שני נכסים שונים כאילו נכס אחד השתנה.
   const olderByTool = useMemo(() => {
     const map = new Map<string, Snapshot | null>();
     // Snapshots are ordered DESC by created_at, so for each one the next item
-    // with the same tool_key (further down in the array) is the prior version.
+    // with the same tool_key+name (further down in the array) is the prior version.
     for (let i = 0; i < snapshots.length; i++) {
       const s = snapshots[i];
       let older: Snapshot | null = null;
       for (let j = i + 1; j < snapshots.length; j++) {
-        if (snapshots[j].tool_key === s.tool_key) { older = snapshots[j]; break; }
+        if (snapshots[j].tool_key === s.tool_key && snapshots[j].name === s.name) {
+          older = snapshots[j];
+          break;
+        }
       }
       map.set(s.id, older);
     }
@@ -69,7 +73,16 @@ export function SnapshotsList() {
   }, [user?.id]);
 
   const handleLoad = (s: Snapshot) => {
-    save(s.tool_key, s.data as unknown, user?.id);
+    // ה-snapshot נשמר כ-{inputs, results} — המחשבונים קוראים אובייקט קלטים שטוח.
+    // טעינת הבלוב המלא הייתה מאפסת את המחשבון ודורסת עבודה קיימת (באג שתוקן).
+    const blob = s.data as { inputs?: Record<string, unknown> } | null;
+    const inputs = blob?.inputs;
+    if (!inputs || typeof inputs !== 'object') {
+      toast.error('התרחיש שמור בפורמט ישן שלא ניתן לטעון');
+      return;
+    }
+    if (!window.confirm(`לטעון את "${s.name}"? הנתונים הנוכחיים במחשבון יוחלפו.`)) return;
+    save(s.tool_key, { ...inputs, touched: true }, user?.id);
     toast.success(`נטען: "${s.name}"`);
     const route = TOOL_ROUTE[s.tool_key] || '/';
     navigate(route);
@@ -182,10 +195,15 @@ export function SnapshotsList() {
 }
 
 function DiffBlock({ current, older }: { current: Snapshot; older: Snapshot }) {
-  const rows = useMemo(
-    () => diffSnapshots(older.data, current.data),
-    [current, older],
-  );
+  const rows = useMemo(() => {
+    // משווים קלטים בלבד — התוצאות נגזרות מהם, והצגתן יצרה שורות באנגלית
+    // גולמית ("results.scenarios.totalProfit") ורעש של תחזיות שנתיות
+    const pick = (d: unknown) => {
+      const blob = d as { inputs?: unknown } | null;
+      return blob && typeof blob === 'object' && blob.inputs ? blob.inputs : d;
+    };
+    return diffSnapshots(pick(older.data), pick(current.data));
+  }, [current, older]);
 
   return (
     <div className="border-t pt-2 mt-1 space-y-2">
@@ -216,10 +234,15 @@ function DiffBlock({ current, older }: { current: Snapshot; older: Snapshot }) {
 function DiffRowView({ row }: { row: DiffRow }) {
   const TrendIcon =
     row.trend === 'up' ? ArrowUp : row.trend === 'down' ? ArrowDown : null;
+  // צבע לפי משמעות ולא לפי כיוון — עליית מחיר/ריבית נצבעה בעבר ירוק
+  const isGoodChange =
+    row.upIsGood == null || row.trend === 'neutral'
+      ? null
+      : (row.trend === 'up') === row.upIsGood;
   const trendColor =
-    row.trend === 'up'
+    isGoodChange === true
       ? 'text-emerald-600'
-      : row.trend === 'down'
+      : isGoodChange === false
         ? 'text-amber-600'
         : 'text-muted-foreground';
 

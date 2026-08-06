@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Wallet, TrendingUp, Home, MessageCircle, Settings, LogOut, UserCircle, User, Search, HelpCircle } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { NotificationCenter } from './NotificationCenter';
+import { SaveIndicator } from './SaveIndicator';
 import { Logo } from './Logo';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,7 +23,7 @@ const navTabs = [
   { name: 'תקציב', href: '/', icon: Wallet, activePrefixes: [] as string[] },
   { name: 'תוכנית עסקית', href: '/business-plan', icon: TrendingUp, activePrefixes: ['/business-plan'] },
   { name: 'משכנתא', href: '/mortgage', icon: Home, activePrefixes: ['/mortgage'] },
-  { name: 'נכסים', href: '/property-check', icon: Search, activePrefixes: ['/property-check', '/deal-comparison'] },
+  { name: 'נכסים', href: '/property-check', icon: Search, activePrefixes: ['/property-check', '/deal-comparison', '/timeline', '/capital-gains'] },
   { name: 'יועץ', href: '/chat', icon: MessageCircle, activePrefixes: ['/chat'] },
 ];
 
@@ -48,9 +49,10 @@ export function Layout({ children }: { children: ReactNode }) {
             <span className="font-bold text-base font-display">הדרך לדירה</span>
           </Link>
           <div className="flex items-center gap-2">
+            <SaveIndicator />
             <NotificationCenter />
             <ThemeToggle />
-            <DropdownMenu>
+            <DropdownMenu dir="rtl">
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
                   {profile?.avatar_url ? (
@@ -64,7 +66,7 @@ export function Layout({ children }: { children: ReactNode }) {
                   )}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" dir="rtl">
+              <DropdownMenuContent align="end">
                 <div className="px-3 py-2 text-sm">
                   <p className="font-medium">{profile?.display_name || 'משתמש'}</p>
                 </div>
@@ -100,7 +102,7 @@ export function Layout({ children }: { children: ReactNode }) {
       </header>
 
       {/* Desktop top tabs */}
-      <div className="hidden md:block border-b border-border bg-background">
+      <nav aria-label="ניווט ראשי" className="hidden md:block border-b border-border bg-background">
         <div className="max-w-5xl mx-auto flex overflow-x-auto no-scrollbar">
           {navTabs.map((tab) => {
             const isActive = isTabActive(tab, currentPath);
@@ -108,6 +110,7 @@ export function Layout({ children }: { children: ReactNode }) {
               <Link
                 key={tab.href}
                 to={tab.href}
+                aria-current={isActive ? 'page' : undefined}
                 className={cn(
                   'flex shrink-0 items-center gap-2 px-3 py-3 text-sm font-medium border-b-2 transition-colors lg:px-5',
                   isActive
@@ -121,7 +124,7 @@ export function Layout({ children }: { children: ReactNode }) {
             );
           })}
         </div>
-      </div>
+      </nav>
 
       {/* Main Content */}
       <main className="pb-20 md:pb-8 px-4 py-4 sm:px-6">
@@ -131,7 +134,7 @@ export function Layout({ children }: { children: ReactNode }) {
       </main>
 
       {/* Mobile Bottom Tab Bar - exactly 5 tabs, fills the viewport width */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-t border-border pb-[env(safe-area-inset-bottom)]">
+      <nav aria-label="ניווט תחתון" className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-t border-border pb-[env(safe-area-inset-bottom)]">
         <div className="flex h-16 px-1">
           {navTabs.map((tab) => {
             const isActive = isTabActive(tab, currentPath);
@@ -139,6 +142,7 @@ export function Layout({ children }: { children: ReactNode }) {
               <Link
                 key={tab.href}
                 to={tab.href}
+                aria-current={isActive ? 'page' : undefined}
                 className={cn(
                   'flex flex-1 min-w-0 flex-col items-center justify-center gap-1 py-2 rounded-xl transition-colors',
                   isActive
@@ -147,13 +151,13 @@ export function Layout({ children }: { children: ReactNode }) {
                 )}
               >
                 <tab.icon className={cn('w-5 h-5', isActive && 'scale-110')} />
-                <span className="text-[10px] font-semibold leading-tight text-center truncate w-full px-0.5">{tab.name}</span>
+                <span className="text-[11px] font-semibold leading-tight text-center w-full px-0.5">{tab.name}</span>
                 {isActive && <div className="w-1.5 h-1.5 rounded-full bg-primary" />}
               </Link>
             );
           })}
         </div>
-      </div>
+      </nav>
     </div>
   );
 }

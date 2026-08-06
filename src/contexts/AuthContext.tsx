@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { syncOnLogin, syncToCloud, clearAllLocal } from '@/lib/storage';
+import { syncOnLogin, syncToCloud, clearAllLocal, flushPendingSaves } from '@/lib/storage';
 import type { Database } from '@/integrations/supabase/types';
 
 type AppRole = Database['public']['Enums']['app_role'];
@@ -161,6 +161,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  // סגירת טאב/מעבר אפליקציה — ניקוז כתיבות ענן שממתינות בדיבאונס
+  useEffect(() => {
+    if (!user) return;
+    const onPageHide = () => flushPendingSaves(user.id);
+    window.addEventListener('pagehide', onPageHide);
+    return () => window.removeEventListener('pagehide', onPageHide);
+  }, [user]);
+
+  // סנכרון חוזר בחזרה לטאב / חזרת רשת — קודם רק פעם אחת בהתחברות,
+  // ושני מכשירים פתוחים התבדרו לכל אורך הסשן. מוגבל לפעם בדקה.
+  const lastResync = useRef(0);
+  useEffect(() => {
+    if (!user) return;
+    const resync = () => {
+      const now = Date.now();
+      if (now - lastResync.current < 60_000) return;
+      lastResync.current = now;
+      syncOnLogin(user.id).catch(() => {});
+    };
+    window.addEventListener('focus', resync);
+    window.addEventListener('online', resync);
+    return () => {
+      window.removeEventListener('focus', resync);
+      window.removeEventListener('online', resync);
+    };
+  }, [user]);
+
   const signInWithGoogle = async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -196,7 +223,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // דחיפה אחרונה לענן ואז ניקוי מקומי מלא — משתמש אחר באותו דפדפן
     // לא יראה (או ידרוס) את הנתונים הפיננסיים של המשתמש הקודם
     if (user) {
-      try { await syncToCloud(user.id); } catch { /* offline — עדיף לנקות בכל זאת */ }
+      flushPendingSaves(user.id);
+      let synced = false;
+      try { synced = await syncToCloud(user.id); } catch { /* offline */ }
+      if (!synced) {
+        const proceed = window.confirm(
+          'הסנכרון לענן נכשל (אין חיבור?). התנתקות עכשיו תמחק שינויים מקומיים שטרם נשמרו. להתנתק בכל זאת?',
+        );
+        if (!proceed) return;
+      }
     }
     clearAllLocal();
     syncedForUser.current = null;

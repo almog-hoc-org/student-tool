@@ -69,7 +69,7 @@ export function ExpertContactCard({ variant = 'card' }: { variant?: 'card' | 'su
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium leading-tight">
-              לא מצאת תשובה? כתוב למומחה קרנף אנושי
+              לא מצאת תשובה? כתוב למומחה אנושי מצוות הקורס
             </p>
             <p className="text-[11px] text-muted-foreground mt-0.5">
               נחזור אליך בהקדם עם מענה אישי
@@ -88,7 +88,7 @@ export function ExpertContactCard({ variant = 'card' }: { variant?: 'card' | 'su
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-sm">לא מצאת תשובה לשאלה שחיפשת?</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                כתוב למומחה קרנף אנושי ונענה לך בהקדם.
+                כתוב למומחה אנושי מצוות הקורס ונענה לך בהקדם.
               </p>
             </div>
             <Button
@@ -108,7 +108,7 @@ export function ExpertContactCard({ variant = 'card' }: { variant?: 'card' | 'su
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Headphones className="w-5 h-5 text-primary" />
-              פנייה למומחה קרנף
+              פנייה למומחה מצוות הקורס
             </DialogTitle>
             <DialogDescription>
               הפנייה נשלחת לצוות התמיכה. נחזור אליך בתוך 24 שעות ותקבל

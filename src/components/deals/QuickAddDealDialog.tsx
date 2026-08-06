@@ -141,6 +141,7 @@ export function QuickAddDealDialog({ open, onOpenChange, onSaved, dealCount }: P
               <SelectContent>
                 <SelectItem value="additionalApartment">דירה נוספת / משקיע</SelectItem>
                 <SelectItem value="singleApartment">דירה יחידה</SelectItem>
+                <SelectItem value="upgrade">משפר דיור (מוכר את הקיימת)</SelectItem>
                 <SelectItem value="foreignResident">תושב חוץ</SelectItem>
               </SelectContent>
             </Select>

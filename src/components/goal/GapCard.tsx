@@ -13,9 +13,12 @@ import { LoadingState } from '@/components/ui/loading-state';
 import { EmptyState } from '@/components/ui/empty-state';
 import { cn } from '@/lib/utils';
 
+import type { BuyerType } from '@/lib/calculations/purchase-tax';
+
 interface BudgetSaved {
   equity?: number;
   monthlyIncome?: number;
+  buyerType?: BuyerType;
 }
 
 export function GapCard() {
@@ -57,11 +60,13 @@ export function GapCard() {
   }
 
   const budget = load<BudgetSaved>('budget');
+  const buyerType = budget?.buyerType ?? 'singleApartment';
   const result: GapResult = computeGap({
     targetPrice: goal.target_price,
     equity: budget?.equity ?? 0,
     monthlySaving: goal.monthly_saving ?? 0,
     targetDate: goal.target_date,
+    buyerType,
   });
 
   const statusBadge = (() => {
@@ -90,10 +95,16 @@ export function GapCard() {
       <CardContent className="space-y-3 text-sm">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <Metric label="מחיר יעד" value={formatCurrency(goal.target_price ?? 0)} />
-          <Metric label="הון נדרש (25%)" value={formatCurrency(result.requiredDownPayment)} />
+          <Metric
+            label={`הון נדרש (${Math.round(result.downPaymentPct * 100)}% + מס ועלויות)`}
+            value={formatCurrency(result.requiredTotalEquity)}
+          />
           <Metric label="הון נוכחי" value={formatCurrency(result.currentEquity)} />
           <Metric label={LABELS.gap.gapLabel} value={formatCurrency(result.gap)} highlight={result.gap > 0} />
         </div>
+        <p className="text-[11px] text-muted-foreground">
+          מקדמה {formatCurrency(result.requiredDownPayment)} + מס רכישה {formatCurrency(result.purchaseTax)} + עלויות נלוות {formatCurrency(result.sideCosts)}
+        </p>
 
         {result.monthsToTarget !== null && (
           <div className="grid grid-cols-2 gap-3 pt-2 border-t">
