@@ -1,15 +1,27 @@
 import { calculateRentalIRR } from './irr';
 import { remainingBalance } from './annuity';
+import { calculateCapitalGainsTax } from './capital-gains';
+import { calculateRentalTax, RentalTaxTrack } from './rental-tax';
+import { BuyerType } from './purchase-tax';
+import { FINANCE } from '@/lib/constants/financial';
+
+// עלויות מכירה: תיווך 2% + מע"מ, עו"ד מוכר 0.5% + מע"מ ≈ 2.95% מהתמורה
+export const SALE_BROKER_PERCENT = 2;
+export const SALE_LAWYER_PERCENT = 0.5;
+export const EXIT_COSTS_RATE =
+  ((SALE_BROKER_PERCENT + SALE_LAWYER_PERCENT) / 100) * (1 + FINANCE.VAT_RATE);
 
 /**
  * גרסת מנוע החישוב — נחתמת בכל snapshot שנשמר.
  * v1: לפני איחוד המנועים (בלי מס רכישה בהזנה ישירה, טאבו 0.5%)
  * v2: מנוע מאוחד — מס רכישה תמיד, עלויות מתוקנות, clamp יתרה
+ * v3: עלויות נלוות אחודות עם מע"מ (מתווך/עו"ד/שמאי), מס שבח ומס שכירות באקזיט
  */
-export const BUSINESS_PLAN_ENGINE_VERSION = 2;
+export const BUSINESS_PLAN_ENGINE_VERSION = 3;
 
 export interface BusinessPlanInput {
   purchasePrice: number;
+  /** עלויות נלוות כולל מס רכישה (העמוד מוסיף את המס לפני הקריאה) */
   sideCosts: number;
   renovationCost: number;
   equityInvested: number;
@@ -22,6 +34,14 @@ export interface BusinessPlanInput {
   holdingPeriodYears: number;
   urbanRenewalUpliftAmount?: number;
   urbanRenewalUpliftPercent?: number;
+  /**
+   * סוג הרוכש — קובע אם חל פטור דירה יחידה במס שבח באקזיט.
+   * דירה יחידה/משפר דיור: פטור (עד התקרה). משקיע/תושב חוץ: 25% על השבח הריאלי.
+   * ברירת מחדל היסטורית (נתונים שמורים ישנים): ללא מס שבח — כמו v2.
+   */
+  buyerType?: BuyerType;
+  /** מסלול מס על השכירות (ברירת מחדל: אוטומטי — פטור עד התקרה, אחרת 10%) */
+  rentalTaxTrack?: RentalTaxTrack;
 }
 
 export interface ScenarioResult {
@@ -30,6 +50,10 @@ export interface ScenarioResult {
   propertyValueAtEnd: number;
   valueUplift: number;
   initialInvestment: number;
+  /** עלויות מכירה (תיווך + עו"ד + מע"מ) */
+  exitCosts: number;
+  /** מס שבח באקזיט (0 כשחל פטור דירה יחידה) */
+  capitalGainsTax: number;
   netSaleProceeds: number;
   totalProfit: number;
   annualEquityReturn: number;
@@ -44,6 +68,10 @@ export interface BusinessPlanOutput {
   initialInvestment: number;
   annualNetCashflow: number;
   monthlyCashflow: number;
+  /** מס שנתי על השכירות (0 עד תקרת הפטור) */
+  annualRentalTax: number;
+  /** המסלול שנבחר בפועל למס השכירות */
+  rentalTaxTrack: 'exempt' | 'flat10' | 'none';
   scenarios: [ScenarioResult, ScenarioResult, ScenarioResult];
 }
 
@@ -73,8 +101,25 @@ function calculateScenario(
   const baseValueAtEnd = purchasePrice * Math.pow(1 + appreciationRate / 100, holdingPeriodYears);
   const propertyValueAtEnd = baseValueAtEnd + valueUplift;
   const mortgageBalance = calculateMortgageBalance(mortgageAmount, mortgageInterestRate, mortgageYears, holdingPeriodYears);
-  const exitCosts = propertyValueAtEnd * 0.02;
-  const netSaleProceeds = propertyValueAtEnd - exitCosts - mortgageBalance;
+  // עלויות מכירה ריאליות: תיווך + עו"ד מוכר + מע"מ (לא 2% עגול)
+  const exitCosts = propertyValueAtEnd * EXIT_COSTS_RATE;
+
+  // מס שבח — הפער הגדול ביותר שהיה במנוע: משקיע משלם 25% על השבח הריאלי.
+  // בסיס העלות: מחיר + עלויות נלוות (כולל מס רכישה) + שיפוץ — כולם ניכויים מוכרים.
+  const capitalGains = input.buyerType
+    ? calculateCapitalGainsTax({
+        purchasePrice,
+        acquisitionCosts: input.sideCosts,
+        improvementCosts: input.renovationCost,
+        salePrice: propertyValueAtEnd,
+        sellingCosts: exitCosts,
+        holdingYears: holdingPeriodYears,
+        isExemptSingleApartment: input.buyerType === 'singleApartment' || input.buyerType === 'upgrade',
+      })
+    : null;
+  const capitalGainsTax = capitalGains?.tax ?? 0;
+
+  const netSaleProceeds = propertyValueAtEnd - exitCosts - capitalGainsTax - mortgageBalance;
   const totalProfit = netSaleProceeds + (annualNetCashflow * holdingPeriodYears) - initialInvestment;
 
   const annualEquityReturn = initialInvestment > 0 ? annualNetCashflow / initialInvestment : 0;
@@ -85,7 +130,7 @@ function calculateScenario(
     annualNetCashflow,
     holdingYears: holdingPeriodYears,
     exitValue: propertyValueAtEnd,
-    exitCosts: exitCosts + mortgageBalance,
+    exitCosts: exitCosts + capitalGainsTax + mortgageBalance,
   });
 
   const yearlyProjection = [] as { year: number; value: number; equity: number }[];
@@ -105,6 +150,8 @@ function calculateScenario(
     propertyValueAtEnd: Math.round(propertyValueAtEnd),
     valueUplift: Math.round(valueUplift),
     initialInvestment: Math.round(initialInvestment),
+    exitCosts: Math.round(exitCosts),
+    capitalGainsTax: Math.round(capitalGainsTax),
     netSaleProceeds: Math.round(netSaleProceeds),
     totalProfit: Math.round(totalProfit),
     annualEquityReturn,
@@ -125,9 +172,13 @@ export function calculateBusinessPlan(
 
   const grossRentYear = input.expectedMonthlyRent * 12;
   const annualMortgagePayment = input.mortgageMonthlyPayment * 12;
-  const annualNetCashflow = grossRentYear - input.annualOperatingCosts - annualMortgagePayment;
+  // מס על השכירות — פטור עד התקרה, אחרת 10% על המחזור
+  const rentalTax = calculateRentalTax(input.expectedMonthlyRent, input.rentalTaxTrack ?? 'auto');
+  const annualNetCashflow =
+    grossRentYear - rentalTax.annualTax - input.annualOperatingCosts - annualMortgagePayment;
 
-  const pessRate = customRates?.pessimistic ?? Math.max(0, baseAppreciation - 2);
+  // התרחיש המחמיר רשאי להיות שלילי — מבחן לחץ אמיתי חייב לאפשר שוק יורד
+  const pessRate = customRates?.pessimistic ?? (baseAppreciation - 2);
   const avgRate = customRates?.average ?? baseAppreciation;
   const optRate = customRates?.optimistic ?? baseAppreciation + 1;
 
@@ -142,6 +193,8 @@ export function calculateBusinessPlan(
     initialInvestment,
     annualNetCashflow,
     monthlyCashflow: Math.round(annualNetCashflow / 12),
+    annualRentalTax: rentalTax.annualTax,
+    rentalTaxTrack: rentalTax.effectiveTrack,
     scenarios,
   };
 }

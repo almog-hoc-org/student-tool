@@ -8,6 +8,21 @@ const VAT_RATE = FINANCE.VAT_RATE;
 // אגרת רישום בטאבו — סכום קבוע (אגרות בפועל הן מאות שקלים, לא אחוז מהמחיר)
 export const TABU_REGISTRATION_FEE = 800;
 
+// תעריפי ברירת מחדל אחידים — כל המחשבונים חייבים להשתמש באותם ערכים
+export const DEFAULT_BROKER_PERCENT = 2;
+export const DEFAULT_LAWYER_PERCENT = 0.5;
+export const MORTGAGE_ADVISORY_FEE = 7000; // ליווי משכנתא (טווח שוק 2,000–6,000+ ₪, כולל מע"מ)
+
+export function appraiserFee(purchasePrice: number): number {
+  return purchasePrice > 3_000_000 ? 4000 : 2500;
+}
+
+export function inspectionFee(purchasePrice: number): number {
+  return purchasePrice > 3_000_000 ? 3000 : 1800;
+}
+
+const withVat = (amount: number): number => Math.round(amount * (1 + VAT_RATE));
+
 export interface SideCostsInput {
   purchasePrice: number;
   includeBroker: boolean;
@@ -36,50 +51,45 @@ export function calculateSideCosts(input: SideCostsInput): SideCostsOutput {
   const items: SideCostItem[] = [];
 
   // עורך דין
-  const lawyerBase = input.purchasePrice * (input.lawyerPercent / 100);
-  const lawyerWithVat = lawyerBase * (1 + VAT_RATE);
   items.push({
     name: 'עורך דין',
-    amount: Math.round(lawyerWithVat),
+    amount: withVat(input.purchasePrice * (input.lawyerPercent / 100)),
     description: `${input.lawyerPercent}% + מע"מ`,
   });
 
   // תיווך
   if (input.includeBroker) {
-    const brokerBase = input.purchasePrice * (input.brokerPercent / 100);
-    const brokerWithVat = brokerBase * (1 + VAT_RATE);
     items.push({
       name: 'תיווך',
-      amount: Math.round(brokerWithVat),
+      amount: withVat(input.purchasePrice * (input.brokerPercent / 100)),
       description: `${input.brokerPercent}% + מע"מ`,
     });
   }
 
-  // שמאי
+  // שמאי — שירות חייב במע"מ
   if (input.includeAppraisal) {
-    const appraisalCost = input.purchasePrice > 3000000 ? 4000 : 2500;
     items.push({
       name: 'שמאי מקרקעין',
-      amount: appraisalCost,
-      description: 'הערכת שווי הנכס',
+      amount: withVat(appraiserFee(input.purchasePrice)),
+      description: 'הערכת שווי הנכס + מע"מ',
     });
   }
 
-  // בדק בית
+  // בדק בית — שירות חייב במע"מ
   if (input.includeInspection) {
-    const inspectionCost = input.purchasePrice > 3000000 ? 3000 : 1800;
     items.push({
       name: 'בדק בית (מהנדס)',
-      amount: inspectionCost,
-      description: 'בדיקת מצב פיזי הנכס',
+      amount: withVat(inspectionFee(input.purchasePrice)),
+      description: 'בדיקת מצב פיזי הנכס + מע"מ',
     });
   }
 
-  // ביטוח מבנה + חיים (שנה ראשונה) — 0.1% מהנכס או מינימום ₪2,500
+  // ביטוח מבנה + חיים (שנה ראשונה) — 0.1% מהנכס או מינימום ₪2,500.
+  // דמי ביטוח פטורים ממע"מ בישראל — אין תוספת מע"מ.
   items.push({
     name: 'ביטוח מבנה + חיים (שנה ראשונה)',
     amount: Math.max(2500, Math.round(input.purchasePrice * 0.001)),
-    description: 'נדרש לצורך משכנתא',
+    description: 'נדרש לצורך משכנתא (פטור ממע"מ)',
   });
 
   // אגרות רישום טאבו — אגרה קבועה
@@ -123,15 +133,16 @@ export interface BpPresetSelection {
 }
 
 /**
- * פריסט העלויות של התוכנית העסקית (מתווך 2%, ייעוץ ₪7K, עו"ד 1%,
- * שמאי ₪2K, נוספים ₪5K). חייב להישאר זהה לחישוב שבטופס — ההוספה
+ * פריסט העלויות של התוכנית העסקית — אותם תעריפים בדיוק כמו calculateSideCosts
+ * (מתווך 2% + מע"מ, עו"ד 0.5% + מע"מ, שמאי לפי מדרגה + מע"מ), בתוספת
+ * ליווי משכנתא והוצאות נוספות. חייב להישאר זהה לחישוב שבטופס — ההוספה
  * המהירה משתמשת בו כדי שעריכה מאוחרת לא תשנה מספרים.
  */
 export function businessPlanSideCostsPreset(purchasePrice: number, selected: BpPresetSelection): number {
-  const broker = selected.broker ? purchasePrice * 0.02 : 0;
-  const mortgageAdvice = selected.mortgageAdvice ? 7000 : 0;
-  const lawyer = selected.lawyer ? purchasePrice * 0.01 : 0;
-  const appraiser = selected.appraiser ? 2000 : 0;
+  const broker = selected.broker ? withVat(purchasePrice * (DEFAULT_BROKER_PERCENT / 100)) : 0;
+  const mortgageAdvice = selected.mortgageAdvice ? MORTGAGE_ADVISORY_FEE : 0;
+  const lawyer = selected.lawyer ? withVat(purchasePrice * (DEFAULT_LAWYER_PERCENT / 100)) : 0;
+  const appraiser = selected.appraiser ? withVat(appraiserFee(purchasePrice)) : 0;
   const extras = selected.extras ? 5000 : 0;
   return broker + mortgageAdvice + lawyer + appraiser + extras;
 }

@@ -61,24 +61,48 @@ export function calculateMortgageMonthlyPayment(principal: number, annualInteres
   return monthlyPayment(principal, annualInterestRate, years);
 }
 
+/** מסלולים צמודי מדד — הקרן וההחזר גדלים עם המדד לאורך חיי ההלוואה */
+export const LINKED_TRACK_TYPES = new Set<MortgageTrack['type']>(['fixedLinked', 'variableLinked']);
+/** מסלולים שמושפעים משינויי ריבית בשוק (קבועות נעולות חוזית) */
+export const RATE_SENSITIVE_TRACK_TYPES = new Set<MortgageTrack['type']>(['prime', 'variableLinked']);
+
 export function calculateMortgageTrack(
-  track: MortgageTrack
+  track: MortgageTrack,
+  annualCpiRate: number = FINANCE.DEFAULT_CPI_RATE,
 ): MortgageTrackResult {
   const payment = monthlyPayment(track.principal, track.annualInterestRate, track.years);
-  const totalPaid = payment * track.years * 12;
+  const n = track.years * 12;
+  const unlinkedTotalPaid = payment * n;
+
+  // מסלול צמוד: ההחזר החודשי מוצמד למדד, כך שהתשלום בחודש t הוא
+  // payment × (1+cpi_m)^t. סך התשלומים = payment × Σ(1+cpi_m)^t.
+  // "הריבית" המדווחת כוללת את עלות ההצמדה — זה מה שהתלמיד באמת ישלם.
+  let totalPaid = unlinkedTotalPaid;
+  let linkageCost = 0;
+  if (LINKED_TRACK_TYPES.has(track.type) && annualCpiRate > 0 && n > 0 && payment > 0) {
+    const cpiM = Math.pow(1 + annualCpiRate / 100, 1 / 12) - 1;
+    // סכום סדרה הנדסית: Σ_{t=0}^{n-1} (1+g)^t = ((1+g)^n − 1) / g
+    const factor = (Math.pow(1 + cpiM, n) - 1) / cpiM;
+    totalPaid = payment * factor;
+    linkageCost = totalPaid - unlinkedTotalPaid;
+  }
+
   const totalInterestPaid = payment > 0 ? totalPaid - track.principal : 0;
 
   return {
     trackId: track.id,
     monthlyPayment: payment,
     totalInterestPaid,
+    linkageCost: Math.round(linkageCost),
   };
 }
 
 export function calculateMortgage(
-  input: MortgageCalculatorInput
+  input: MortgageCalculatorInput,
+  options?: { annualCpiRate?: number },
 ): MortgageCalculatorOutput {
-  const results: MortgageTrackResult[] = input.tracks.map(calculateMortgageTrack);
+  const cpi = options?.annualCpiRate ?? FINANCE.DEFAULT_CPI_RATE;
+  const results: MortgageTrackResult[] = input.tracks.map((t) => calculateMortgageTrack(t, cpi));
 
   const totalMonthlyPayment = results.reduce(
     (sum, t) => sum + t.monthlyPayment,
@@ -100,11 +124,14 @@ export function calculateMortgage(
     );
   }
 
+  const totalLinkageCost = results.reduce((sum, t) => sum + (t.linkageCost ?? 0), 0);
+
   return {
     tracks: results,
     totalMonthlyPayment,
     totalInterestPaid,
     weightedAverageInterest,
+    totalLinkageCost,
   };
 }
 
@@ -112,12 +139,15 @@ export function calculateMortgage(
  * Generate amortization schedule for all tracks combined
  */
 export function generateAmortizationSchedule(
-  tracks: MortgageTrack[]
+  tracks: MortgageTrack[],
+  annualCpiRate: number = FINANCE.DEFAULT_CPI_RATE,
 ): AmortizationRow[] {
   if (tracks.length === 0) return [];
   const maxMonths = Math.max(...tracks.map(t => t.years * 12));
   if (maxMonths <= 0) return [];
   const rows: AmortizationRow[] = [];
+
+  const cpiM = annualCpiRate > 0 ? Math.pow(1 + annualCpiRate / 100, 1 / 12) - 1 : 0;
 
   // Initialize balances
   const balances = tracks.map(t => t.principal);
@@ -125,6 +155,17 @@ export function generateAmortizationSchedule(
   // Accumulators for yearly sums (reset every 12 months)
   let yearlyPrincipalSum = 0;
   let yearlyInterestSum = 0;
+
+  const pushRow = (month: number, totalRemainingBalance: number) => {
+    rows.push({
+      year: Math.ceil(month / 12),
+      principalPayment: Math.round(yearlyPrincipalSum),
+      interestPayment: Math.round(yearlyInterestSum),
+      remainingBalance: Math.round(totalRemainingBalance),
+    });
+    yearlyPrincipalSum = 0;
+    yearlyInterestSum = 0;
+  };
 
   for (let month = 1; month <= maxMonths; month++) {
     let totalRemainingBalance = 0;
@@ -136,6 +177,12 @@ export function generateAmortizationSchedule(
         return; // track finished — balance is 0
       }
 
+      const linked = LINKED_TRACK_TYPES.has(track.type);
+      // מסלול צמוד: היתרה נצמדת למדד לפני חישוב התשלום החודשי
+      if (linked && cpiM > 0) {
+        balances[i] *= 1 + cpiM;
+      }
+
       const r = track.annualInterestRate / 100 / 12;
       let mp: number;
       if (r === 0) {
@@ -143,27 +190,25 @@ export function generateAmortizationSchedule(
       } else {
         mp = (track.principal * r) / (1 - Math.pow(1 + r, -n));
       }
+      // במסלול צמוד גם ההחזר עצמו מוצמד — אחרת היתרה לא נסגרת בסוף התקופה
+      if (linked && cpiM > 0) {
+        mp *= Math.pow(1 + cpiM, month);
+      }
 
       const interestPayment = balances[i] * r;
       const principalPayment = mp - interestPayment;
       balances[i] = Math.max(0, balances[i] - principalPayment);
 
       yearlyPrincipalSum += principalPayment;
+      // עלות ההצמדה מדווחת יחד עם הריבית — זו העלות האמיתית לתלמיד
       yearlyInterestSum += interestPayment;
       totalRemainingBalance += balances[i];
     });
 
-    // Only add yearly rows to keep it manageable
-    if (month % 12 === 0) {
-      rows.push({
-        year: month / 12,
-        principalPayment: Math.round(yearlyPrincipalSum),
-        interestPayment: Math.round(yearlyInterestSum),
-        remainingBalance: Math.round(totalRemainingBalance),
-      });
-      // Reset accumulators for next year
-      yearlyPrincipalSum = 0;
-      yearlyInterestSum = 0;
+    // Yearly rows, plus a final partial row when the term isn't a whole
+    // number of years (a 12.5-year mix used to silently drop 6 months).
+    if (month % 12 === 0 || month === maxMonths) {
+      pushRow(month, totalRemainingBalance);
     }
   }
 
@@ -171,7 +216,10 @@ export function generateAmortizationSchedule(
 }
 
 /**
- * Sensitivity analysis - what happens if interest changes
+ * ניתוח רגישות לשינוי ריבית בשוק.
+ * רק מסלולים תלויי-שוק (פריים, משתנה צמודה) זזים — ריבית קבועה נעולה
+ * חוזית ואינה מושפעת מהחלטות בנק ישראל. הצגת "+2% על הכל" הפחידה
+ * תלמידים מתרחיש שלא יכול לקרות.
  */
 export function sensitivityAnalysis(
   tracks: MortgageTrack[],
@@ -180,7 +228,9 @@ export function sensitivityAnalysis(
   return deltas.map(delta => {
     const adjustedTracks = tracks.map(t => ({
       ...t,
-      annualInterestRate: Math.max(0, t.annualInterestRate + delta),
+      annualInterestRate: RATE_SENSITIVE_TRACK_TYPES.has(t.type)
+        ? Math.max(0, t.annualInterestRate + delta)
+        : t.annualInterestRate,
     }));
     const result = calculateMortgage({ tracks: adjustedTracks });
     return {

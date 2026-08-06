@@ -11,6 +11,8 @@ export interface BudgetInput {
   monthlyObligations: number;
   buyerType: BuyerType;
   mortgageYears: number;
+  /** ריבית שנתית להערכה — ברירת מחדל: הריבית האחידה של המערכת */
+  annualInterestRate?: number;
 }
 
 export interface BudgetOutput {
@@ -21,10 +23,19 @@ export interface BudgetOutput {
   purchaseTax: number;
   sideCosts: number;
   netEquityForProperty: number;
+  /** תזרים פנוי היום (לפני רכישה): הכנסה − שכירות − מחיה − התחייבויות */
   freeCashFlow: number;
+  /**
+   * תזרים פנוי אחרי הרכישה: שכר הדירה נפסק, אבל נכנסות עלויות אחזקה
+   * (ארנונה, ועד, ביטוח). זה התזרים שממנו משלמים את המשכנתא בפועל.
+   */
+  freeCashFlowAfterPurchase: number;
+  /** עלויות האחזקה החודשיות שהונחו במודל */
+  monthlyCarryingCosts: number;
   maxAffordableMortgagePayment: number;
   maxPropertyByEquity: number;
   recommendedPropertyValue: number;
+  /** יחס החזר מההכנסה כמו שהבנק מודד: (החזר + התחייבויות קיימות) / הכנסה נטו */
   dtiPercent: number;
   equityBreakdown: {
     netEquity: number;
@@ -41,13 +52,20 @@ const calculateMonthlyPayment = monthlyPayment;
 
 export function calculateBudget(input: BudgetInput): BudgetOutput {
   const { equity, monthlyIncome, currentRent = 0, livingExpenses = 0, monthlyObligations, buyerType, mortgageYears } = input;
+  const interestRate = input.annualInterestRate ?? DEFAULT_INTEREST_RATE;
 
+  // תזרים היום — לפני רכישה (שכר דירה עדיין משולם)
   const freeCashFlow = monthlyIncome - currentRent - livingExpenses - monthlyObligations;
+  // תזרים אחרי רכישה — שכר הדירה נפסק, נכנסות עלויות אחזקת דירה בבעלות.
+  // המודל הקודם ניכה את שכר הדירה לנצח והקטין את היכולת במאות אלפי שקלים.
+  const monthlyCarryingCosts = FINANCE.MONTHLY_CARRYING_COSTS;
+  const freeCashFlowAfterPurchase =
+    monthlyIncome - livingExpenses - monthlyObligations - monthlyCarryingCosts;
   // תקרת החזר: כלל הבנקים (40% מההכנסה נטו, בניכוי התחייבויות קיימות),
-  // ולא יותר מהתזרים הפנוי בפועל.
+  // ולא יותר מהתזרים הפנוי אחרי הרכישה.
   const maxPaymentByDti = FINANCE.MAX_DTI * monthlyIncome - monthlyObligations;
-  const maxAffordableMortgagePayment = Math.max(0, Math.min(maxPaymentByDti, freeCashFlow));
-  const maxMortgageByCashflow = maxMortgageFromPayment(maxAffordableMortgagePayment, DEFAULT_INTEREST_RATE, mortgageYears);
+  const maxAffordableMortgagePayment = Math.max(0, Math.min(maxPaymentByDti, freeCashFlowAfterPurchase));
+  const maxMortgageByCashflow = maxMortgageFromPayment(maxAffordableMortgagePayment, interestRate, mortgageYears);
   // תקרת מימון (LTV) לפי סוג הרוכש: דירה יחידה 75%, דירה נוספת/תושב חוץ 50%
   const maxLtv = getMaxLtv(buyerType);
   const requiredEquityShare = getMinEquityShare(buyerType);
@@ -85,15 +103,17 @@ export function calculateBudget(input: BudgetInput): BudgetOutput {
     if (hi - lo < 500) break;
   }
 
-  const maxPropertyValue = Math.max(0, Math.round(bestProperty / 1000) * 1000);
+  // עיגול כלפי מטה — עיגול למעלה יכול להציג מחיר שמעבר ליכולת בפועל
+  const maxPropertyValue = Math.max(0, Math.floor(bestProperty / 1000) * 1000);
   const purchaseTax = calculatePurchaseTax({ purchasePrice: maxPropertyValue, buyerType }).totalTax;
   const sideCosts = quickSideCostsEstimate(maxPropertyValue).totalSideCosts;
   const netEquity = Math.max(0, equity - purchaseTax - sideCosts);
   const mortgageNeeded = Math.max(0, maxPropertyValue - netEquity);
   const maxMortgage = Math.min(mortgageNeeded, maxMortgageByCashflow, maxPropertyValue * maxLtv);
-  const payment = calculateMonthlyPayment(maxMortgage, DEFAULT_INTEREST_RATE, mortgageYears);
-  // יחס החזר מההכנסה (DTI) — כמו שהבנק מודד: החזר חודשי חלקי הכנסה נטו
-  const dtiPercent = monthlyIncome > 0 ? (payment / monthlyIncome) * 100 : 0;
+  const payment = calculateMonthlyPayment(maxMortgage, interestRate, mortgageYears);
+  // יחס החזר מההכנסה (DTI) — כמו שהבנק מודד: ההחזר החדש + ההתחייבויות
+  // הקיימות, חלקי ההכנסה נטו. הצגת ההחזר לבד הסתירה את התמונה מהתלמיד.
+  const dtiPercent = monthlyIncome > 0 ? ((payment + monthlyObligations) / monthlyIncome) * 100 : 0;
   const recommendedPropertyValue = Math.max(0, Math.round(maxPropertyValue * 0.9 / 1000) * 1000);
 
   return {
@@ -105,6 +125,8 @@ export function calculateBudget(input: BudgetInput): BudgetOutput {
     sideCosts,
     netEquityForProperty: Math.max(0, Math.round(netEquity)),
     freeCashFlow: Math.round(freeCashFlow),
+    freeCashFlowAfterPurchase: Math.round(freeCashFlowAfterPurchase),
+    monthlyCarryingCosts,
     maxAffordableMortgagePayment: Math.round(maxAffordableMortgagePayment),
     maxPropertyByEquity: Math.round(equity / requiredEquityShare),
     recommendedPropertyValue,
