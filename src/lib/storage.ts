@@ -31,6 +31,51 @@ function localToolKeys(): string[] {
   return keys;
 }
 
+// דיבאונס לכתיבות ענן — כתיבה מקומית נשארת מיידית, אבל upsert לענן יוצא
+// רק אחרי שהמשתמש הפסיק להקליד. בלי זה כל הקשה יצרה upsert + שורת אנליטיקה,
+// והכתיבות יכלו לנחות בענן שלא לפי הסדר.
+const CLOUD_DEBOUNCE_MS = 800;
+// אירוע שימוש אחד לכל כלי בחלון זמן — כדי שמדדי האדמין ימדדו שימוש, לא הקשות
+const USAGE_LOG_INTERVAL_MS = 5 * 60 * 1000;
+
+const pendingCloud = new Map<string, ReturnType<typeof setTimeout>>();
+const lastUsageLog = new Map<string, number>();
+
+export type SaveStatus = 'saving' | 'saved' | 'error';
+
+/** חיווי מצב שמירה לענן — SaveIndicator מאזין לאירוע הזה */
+function emitSaveStatus(status: SaveStatus): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent('tool-save-status', { detail: { status, at: Date.now() } }));
+}
+
+function flushCloudSave(userId: string, key: string): void {
+  const raw = localStorage.getItem(PREFIX + key);
+  if (!raw) return;
+  let data: unknown;
+  try {
+    data = JSON.parse(raw);
+  } catch {
+    return;
+  }
+  emitSaveStatus('saving');
+  saveToCloud(userId, key, data)
+    .then(() => emitSaveStatus('saved'))
+    .catch((e) => {
+      console.warn('cloud save failed', key, e);
+      emitSaveStatus('error');
+    });
+}
+
+/** ניקוז כל הכתיבות הממתינות מיד — נקרא לפני התנתקות/סגירת עמוד */
+export function flushPendingSaves(userId: string): void {
+  for (const [key, timer] of pendingCloud) {
+    clearTimeout(timer);
+    flushCloudSave(userId, key);
+  }
+  pendingCloud.clear();
+}
+
 export function save<T>(key: string, data: T, userId?: string): void {
   try {
     localStorage.setItem(PREFIX + key, JSON.stringify(data));
@@ -40,8 +85,20 @@ export function save<T>(key: string, data: T, userId?: string): void {
   } catch { /* quota exceeded */ }
 
   if (userId) {
-    saveToCloud(userId, key, data).catch(() => {});
-    logUsageEvent(userId, key, 'save').catch(() => {});
+    const existing = pendingCloud.get(key);
+    if (existing) clearTimeout(existing);
+    pendingCloud.set(
+      key,
+      setTimeout(() => {
+        pendingCloud.delete(key);
+        flushCloudSave(userId, key);
+        const last = lastUsageLog.get(key) ?? 0;
+        if (Date.now() - last > USAGE_LOG_INTERVAL_MS) {
+          lastUsageLog.set(key, Date.now());
+          logUsageEvent(userId, key, 'save').catch(() => {});
+        }
+      }, CLOUD_DEBOUNCE_MS),
+    );
   }
 }
 
@@ -77,16 +134,24 @@ export function clearAllLocal(): void {
   localStorage.removeItem(META_KEY);
 }
 
-/** העלאת כל הנתונים המקומיים לענן (למשל לפני התנתקות). */
-export async function syncToCloud(userId: string): Promise<void> {
+/**
+ * העלאת כל הנתונים המקומיים לענן (למשל לפני התנתקות).
+ * מחזירה false אם לפחות כתיבה אחת נכשלה — כדי שההתנתקות תוכל
+ * להזהיר לפני מחיקת נתונים מקומיים שלא סונכרנו.
+ */
+export async function syncToCloud(userId: string): Promise<boolean> {
+  let allOk = true;
   for (const key of localToolKeys()) {
     const raw = localStorage.getItem(PREFIX + key);
     if (raw) {
       try {
         await saveToCloud(userId, key, JSON.parse(raw));
-      } catch { /* offline — הנתונים המקומיים נשארים */ }
+      } catch {
+        allOk = false; /* offline — הנתונים המקומיים נשארים */
+      }
     }
   }
+  return allOk;
 }
 
 /**
