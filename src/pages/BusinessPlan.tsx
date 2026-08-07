@@ -1,24 +1,31 @@
-import { useState, useMemo, useEffect, useRef, type ReactNode } from 'react';
+import { useState, useMemo, useEffect, useRef, useId, isValidElement, cloneElement, type ReactNode, type ReactElement } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { BarChart3, ChevronDown, Import, RotateCcw, TrendingUp } from 'lucide-react';
+import { BarChart3, ChevronDown, Import, TrendingUp } from 'lucide-react';
+import { ResetConfirmButton } from '@/components/ResetConfirmButton';
+import { ExampleDataBadge } from '@/components/ExampleDataBadge';
+import { PageInsights } from '@/components/PageInsights';
+import { StaleDataNotice } from '@/components/StaleDataNotice';
 import { SaveSnapshotButton } from '@/components/SaveSnapshotButton';
 import { calculateBusinessPlan, BUSINESS_PLAN_ENGINE_VERSION, BusinessPlanOutput, ScenarioResult } from '@/lib/calculations/business-plan';
 import { calculateMortgageMonthlyPayment } from '@/lib/calculations/mortgage-calculator';
 import { calculatePurchaseTax, type BuyerType } from '@/lib/calculations/purchase-tax';
-import { businessPlanSideCostsPreset } from '@/lib/calculations/side-costs';
+import { businessPlanSideCostsPreset, appraiserFee, MORTGAGE_ADVISORY_FEE } from '@/lib/calculations/side-costs';
+import { FINANCE } from '@/lib/constants/financial';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { formatCurrency, numInput } from '@/lib/validation/validators';
+import { formatCurrency, numInput, numInputSigned } from '@/lib/validation/validators';
+import { RENTAL_TAX_EXEMPTION_CEILING_MONTHLY } from '@/lib/calculations/rental-tax';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { save, load, clear } from '@/lib/storage';
 import { useAuth } from '@/contexts/AuthContext';
-import { getBudgetResults } from '@/lib/flow';
+import { getBudgetResults, getMortgageResults } from '@/lib/flow';
+import { assessDeal, type DealMetricsInput } from '@/lib/deal-ranking';
 import { ExportButton } from '@/components/ExportButton';
 import { InfoTooltip } from '@/components/InfoTooltip';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -27,7 +34,9 @@ import { CHART } from '@/lib/chart-colors';
 import NextStepCard from '@/components/NextStepCard';
 import { useJourney } from '@/hooks/useJourney';
 
-const SCENARIO_COLORS = {
+type ScenarioStyle = { bg: string; border: string; text: string; chart: string };
+
+const SCENARIO_COLORS: Record<'pessimistic' | 'average' | 'optimistic', ScenarioStyle> = {
   pessimistic: { bg: 'bg-red-50 dark:bg-red-950/30', border: 'border-red-200 dark:border-red-800', text: 'text-red-600 dark:text-red-400', chart: CHART.red },
   average: { bg: 'bg-orange-50 dark:bg-orange-950/30', border: 'border-orange-200 dark:border-orange-800', text: 'text-orange-700 dark:text-orange-400', chart: CHART.terracotta },
   optimistic: { bg: 'bg-emerald-50 dark:bg-emerald-950/30', border: 'border-emerald-200 dark:border-emerald-800', text: 'text-emerald-700 dark:text-emerald-400', chart: CHART.emerald },
@@ -39,7 +48,7 @@ const SCENARIO_HELP: Record<string, string> = {
   'טוב': 'בודק את פוטנציאל העסקה אם השוק עולה בקצב מתון.',
 };
 
-function ScenarioCard({ scenario, style, monthlyCashflow }: { scenario: ScenarioResult; style: typeof SCENARIO_COLORS.pessimistic; monthlyCashflow: number }) {
+function ScenarioCard({ scenario, style, monthlyCashflow }: { scenario: ScenarioResult; style: ScenarioStyle; monthlyCashflow: number }) {
   return (
     <Card className={cn('h-full border', style.border, style.bg)}>
       <CardContent className="p-4 h-full flex flex-col gap-3">
@@ -59,6 +68,12 @@ function ScenarioCard({ scenario, style, monthlyCashflow }: { scenario: Scenario
             <p className="text-[11px] text-muted-foreground">רווח כולל</p>
             <p className={cn('text-lg font-bold tabular-nums leading-tight break-words', scenario.totalProfit >= 0 ? 'text-green-600' : 'text-red-600')}>
               {formatCurrency(scenario.totalProfit)}
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              אחרי עלויות מכירה ({formatCurrency(scenario.exitCosts ?? 0)})
+              {(scenario.capitalGainsTax ?? 0) > 0 && (
+                <> ומס שבח ({formatCurrency(scenario.capitalGainsTax)})</>
+              )}
             </p>
           </div>
           <div className="min-w-0">
@@ -121,13 +136,20 @@ function Field({
   children: ReactNode;
   className?: string;
 }) {
+  // חיווט label↔input אוטומטי: כשה-child הוא אלמנט יחיד (Input וכד')
+  // הוא מקבל id וה-Label מקבל htmlFor — קורא מסך מכריז את שם השדה
+  // במקום "edit text, blank"
+  const autoId = useId();
+  const single = isValidElement(children) ? children : null;
+  const childId = single ? ((single.props as { id?: string }).id ?? autoId) : undefined;
+  const wired = single ? cloneElement(single as ReactElement<{ id?: string }>, { id: childId }) : children;
   return (
     <div className={cn('min-w-0 space-y-1.5', className)}>
       <div className="flex min-h-6 items-center justify-between gap-2">
-        <Label className="text-xs font-medium text-foreground/80">{label}</Label>
+        <Label htmlFor={childId} className="text-xs font-medium text-foreground/80">{label}</Label>
         {action}
       </div>
-      {children}
+      {wired}
       {hint && <p className="text-[10px] leading-relaxed text-muted-foreground">{hint}</p>}
     </div>
   );
@@ -167,7 +189,11 @@ type UpliftMode = 'amount' | 'percent';
 export default function BusinessPlan() {
   const { user } = useAuth();
   const uid = user?.id;
-  const saved = load<typeof BP_DEFAULTS & { touched?: boolean }>('business_plan');
+  const saved = load<typeof BP_DEFAULTS & {
+    touched?: boolean;
+    useSideCostPreset?: boolean;
+    selectedSideCosts?: { broker: boolean; mortgageAdvice: boolean; lawyer: boolean; appraiser: boolean; extras: boolean };
+  }>('business_plan');
   const [editingDeal, setEditingDeal] = useState<EditingDeal | null>(() => load<EditingDeal>('business_plan_editing'));
   // True only after real user input — prefilled defaults must not complete milestones.
   const [touched, setTouched] = useState(!!saved?.touched);
@@ -178,7 +204,10 @@ export default function BusinessPlan() {
   const [propertyFloor, setPropertyFloor] = useState(saved?.propertyFloor ?? BP_DEFAULTS.propertyFloor);
   const [propertyRooms, setPropertyRooms] = useState(saved?.propertyRooms ?? BP_DEFAULTS.propertyRooms);
   const [propertyNotes, setPropertyNotes] = useState(saved?.propertyNotes ?? BP_DEFAULTS.propertyNotes);
-  const [buyerType, setBuyerType] = useState<BuyerType>(saved?.buyerType ?? BP_DEFAULTS.buyerType);
+  // סוג הרוכש נורש מהתקציב אם הוגדר שם — הזנה אחת, לא שלוש הזנות סותרות
+  const [buyerType, setBuyerType] = useState<BuyerType>(
+    saved?.buyerType ?? load<{ buyerType?: BuyerType }>('budget_profile')?.buyerType ?? BP_DEFAULTS.buyerType,
+  );
   const [listingUrl, setListingUrl] = useState(saved?.listingUrl ?? BP_DEFAULTS.listingUrl);
   const [sideCosts, setSideCosts] = useState(saved?.sideCosts ?? BP_DEFAULTS.sideCosts);
   const [renovationCost, setRenovationCost] = useState(saved?.renovationCost ?? BP_DEFAULTS.renovationCost);
@@ -205,8 +234,9 @@ export default function BusinessPlan() {
     extras: true,
   });
 
-  // Auto-save
+  // Auto-save — רק אחרי קלט אמיתי (נתוני דוגמה לא נשמרים ולא מתפשטים)
   useEffect(() => {
+    if (!touched) return;
     save('business_plan', {
       purchasePrice, propertyArea, propertySqm, propertyFloor, propertyRooms,
       propertyNotes, buyerType, sideCosts, renovationCost, equityInvested, mortgageAmount,
@@ -274,8 +304,23 @@ export default function BusinessPlan() {
     }
   };
 
+  // ייבוא המשכנתא האמיתית — התמהיל שהתלמיד בנה במחשבון המשכנתא.
+  // בלי זה כל IRR/ציון/השוואה חושבו מאנואיטה נאיבית חד-ריבידית שאינה
+  // העסקה האמיתית של התלמיד.
+  const mortgageResults = getMortgageResults();
+  const handleImportMortgage = () => {
+    if (!mortgageResults) return;
+    touch();
+    if (mortgageResults.totalPrincipal > 0) {
+      setMortgageAmount(Math.round(mortgageResults.totalPrincipal));
+      setManualMortgageAmount(true);
+    }
+    setMortgageMonthlyPayment(Math.round(mortgageResults.totalMonthlyPayment));
+    setManualMortgageMonthlyPayment(true);
+    if (mortgageResults.weightedRate > 0) setMortgageInterestRate(mortgageResults.weightedRate);
+  };
+
   const handleReset = () => {
-    if (!window.confirm('בטוח? כל הנתונים יימחקו')) return;
     setPurchasePrice(BP_DEFAULTS.purchasePrice);
     setPropertyArea(BP_DEFAULTS.propertyArea);
     setPropertySqm(BP_DEFAULTS.propertySqm);
@@ -324,6 +369,7 @@ export default function BusinessPlan() {
         holdingPeriodYears,
         urbanRenewalUpliftAmount: effectiveUpliftValue,
         urbanRenewalUpliftPercent: urbanRenewalUpliftMode === 'percent' ? urbanRenewalUpliftValue : undefined,
+        buyerType,
       },
       baseAppreciation,
       customRates,
@@ -331,7 +377,36 @@ export default function BusinessPlan() {
   }, [purchasePrice, sideCosts, renovationCost, equityInvested, effectiveMortgageAmount,
     effectiveMortgageMonthlyPayment, mortgageInterestRate, mortgageYears, expectedMonthlyRent,
     annualOperatingCosts, holdingPeriodYears, baseAppreciation, customRates,
-    effectiveUpliftValue, urbanRenewalUpliftMode, urbanRenewalUpliftValue]);
+    effectiveUpliftValue, urbanRenewalUpliftMode, urbanRenewalUpliftValue, buyerType]);
+
+  // ציון חי לעסקה הנוכחית — אותו מנוע דירוג כמו בהשוואת העסקאות.
+  // עד עכשיו התלמיד קיבל ציון רק אחרי שמירה ומעבר לעמוד ההשוואה.
+  const liveAssessment = useMemo(() => {
+    if (!result) return null;
+    const scenario = result.scenarios[1];
+    const pessimistic = result.scenarios[0];
+    const metrics: DealMetricsInput = {
+      snapshotId: 'live',
+      name: 'העסקה הנוכחית',
+      scenarioLabel: scenario.label,
+      monthlyCashflow: result.monthlyCashflow,
+      cocYield: scenario.cocYield,
+      irr: scenario.irr,
+      totalProfit: scenario.totalProfit,
+      totalEquityReturn: scenario.totalEquityReturn,
+      initialInvestment: result.initialInvestment,
+      purchasePrice,
+      equityInvested,
+      mortgageAmount: effectiveMortgageAmount,
+      mortgageMonthlyPayment: effectiveMortgageMonthlyPayment,
+      expectedMonthlyRent,
+      holdingPeriodYears,
+      buyerType,
+      pessimisticTotalProfit: pessimistic.totalProfit,
+    };
+    return assessDeal(metrics);
+  }, [result, purchasePrice, equityInvested, effectiveMortgageAmount,
+    effectiveMortgageMonthlyPayment, expectedMonthlyRent, holdingPeriodYears, buyerType]);
 
   // Auto-complete business_plan milestone — only after real user input (not defaults).
   const { complete: completeMilestone, isDone } = useJourney();
@@ -401,9 +476,7 @@ export default function BusinessPlan() {
                   <BarChart3 className="w-3.5 h-3.5" /> השוואת עסקאות
                 </Button>
               </Link>
-              <Button variant="ghost" size="sm" onClick={handleReset} className="text-muted-foreground h-8 gap-1">
-                <RotateCcw className="w-3.5 h-3.5" /> אפס
-              </Button>
+              <ResetConfirmButton onConfirm={handleReset} />
             </div>
           </div>
           <p className="text-sm text-muted-foreground">
@@ -419,6 +492,13 @@ export default function BusinessPlan() {
             </div>
           )}
 
+          <StaleDataNotice sourceKey="budget" sourceLabel="מחשבון התקציב" targetKey="business_plan" onImport={handleImportBudget} />
+          <StaleDataNotice sourceKey="mortgage" sourceLabel="מחשבון המשכנתא" targetKey="business_plan" onImport={handleImportMortgage} />
+          {mortgageResults && mortgageResults.totalMonthlyPayment > 0 && (
+            <Button variant="outline" size="sm" onClick={handleImportMortgage} className="w-full gap-1.5 border-primary/30 text-primary">
+              <Import className="w-4 h-4" /> ייבא את התמהיל מהמשכנתא ({formatCurrency(Math.round(mortgageResults.totalMonthlyPayment))}/חודש)
+            </Button>
+          )}
           {budgetData && (
             <Button variant="outline" size="sm" onClick={handleImportBudget} className="w-full gap-1.5 border-primary/30 text-primary">
               <Import className="w-4 h-4" /> ייבא נתונים ממחשבון התקציב
@@ -435,7 +515,7 @@ export default function BusinessPlan() {
                   </div>
                   <div className="grid grid-cols-1 gap-3">
                     <Field label="מחיר רכישה">
-                      <Input className="h-10 text-base font-semibold" type="number" min="0" value={purchasePrice ?? ''} onChange={(e) => setPurchasePrice(numInput(e.target.value))} />
+                      <Input className="h-10 text-base font-semibold" type="number" min="0" value={purchasePrice || ''} onChange={(e) => setPurchasePrice(numInput(e.target.value))} />
                     </Field>
                   </div>
                   <Collapsible>
@@ -491,6 +571,7 @@ export default function BusinessPlan() {
                       <SelectContent>
                         <SelectItem value="additionalApartment">דירה נוספת / משקיע</SelectItem>
                         <SelectItem value="singleApartment">דירה יחידה</SelectItem>
+                        <SelectItem value="upgrade">משפר דיור (מוכר את הקיימת)</SelectItem>
                         <SelectItem value="foreignResident">תושב חוץ</SelectItem>
                       </SelectContent>
                     </Select>
@@ -502,10 +583,10 @@ export default function BusinessPlan() {
                 </div>
                 <div className="grid grid-cols-1 gap-2">
                   {[
-                    { key: 'broker', label: 'מתווך 2%', value: purchasePrice * 0.02 },
-                    { key: 'mortgageAdvice', label: 'ייעוץ משכנתא 7,000 ש״ח', value: 7000 },
-                    { key: 'lawyer', label: 'עו״ד 1%', value: purchasePrice * 0.01 },
-                    { key: 'appraiser', label: 'שמאי 2,000 ש״ח', value: 2000 },
+                    { key: 'broker', label: 'מתווך 2% + מע״מ', value: Math.round(purchasePrice * 0.02 * (1 + FINANCE.VAT_RATE)) },
+                    { key: 'mortgageAdvice', label: 'ליווי משכנתא', value: MORTGAGE_ADVISORY_FEE },
+                    { key: 'lawyer', label: 'עו״ד 0.5% + מע״מ', value: Math.round(purchasePrice * 0.005 * (1 + FINANCE.VAT_RATE)) },
+                    { key: 'appraiser', label: 'שמאי + מע״מ', value: Math.round(appraiserFee(purchasePrice) * (1 + FINANCE.VAT_RATE)) },
                     { key: 'extras', label: 'נוספים 5,000 ש״ח', value: 5000 },
                   ].map((item) => (
                     <label key={item.key} className="flex items-center gap-3 rounded-xl border bg-background px-3 py-2 text-sm">
@@ -521,7 +602,7 @@ export default function BusinessPlan() {
                 </div>
                 <div>
                   <Label className="text-xs">עלות שיפוץ (אם מתוכנן)</Label>
-                  <Input className="h-10" type="number" min="0" value={renovationCost ?? ''} onChange={(e) => setRenovationCost(numInput(e.target.value))} />
+                  <Input className="h-10" type="number" min="0" value={renovationCost || ''} onChange={(e) => setRenovationCost(numInput(e.target.value))} />
                 </div>
                 <div className="rounded-xl bg-background px-3 py-2 flex items-center justify-between">
                   <span className="text-sm font-medium">סה״כ מס + עלויות נלוות</span>
@@ -539,7 +620,7 @@ export default function BusinessPlan() {
                   </div>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <Field label="הון עצמי" className="sm:col-span-2">
-                      <Input className="h-10 text-base font-semibold" type="number" min="0" value={equityInvested ?? ''} onChange={(e) => setEquityInvested(numInput(e.target.value))} />
+                      <Input className="h-10 text-base font-semibold" type="number" min="0" value={equityInvested || ''} onChange={(e) => setEquityInvested(numInput(e.target.value))} />
                     </Field>
                     <Field
                       label="סכום משכנתא"
@@ -567,7 +648,7 @@ export default function BusinessPlan() {
                       <Input className="h-10" type="number" min="0" step="0.1" value={mortgageInterestRate} onChange={(e) => setMortgageInterestRate(numInput(e.target.value))} />
                     </Field>
                     <Field label="תקופת משכנתא" hint="בשנים">
-                      <Input className="h-10" type="number" min="0" value={mortgageYears ?? ''} onChange={(e) => setMortgageYears(numInput(e.target.value))} />
+                      <Input className="h-10" type="number" min="0" value={mortgageYears || ''} onChange={(e) => setMortgageYears(numInput(e.target.value))} />
                     </Field>
                   </div>
                 </div>
@@ -578,10 +659,10 @@ export default function BusinessPlan() {
           <InputSection title="4. הכנסה ותפעול" description="כמה שכירות ייכנס בחודש, וכמה עולה להחזיק את הנכס בשנה.">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Field label="שכ״ד חודשי צפוי">
-                <Input className="h-10" type="number" min="0" value={expectedMonthlyRent ?? ''} onChange={(e) => setExpectedMonthlyRent(numInput(e.target.value))} />
+                <Input className="h-10" type="number" min="0" value={expectedMonthlyRent || ''} onChange={(e) => setExpectedMonthlyRent(numInput(e.target.value))} />
               </Field>
               <Field label="הוצאות תפעול שנתיות">
-                <Input className="h-10" type="number" min="0" value={annualOperatingCosts ?? ''} onChange={(e) => setAnnualOperatingCosts(numInput(e.target.value))} />
+                <Input className="h-10" type="number" min="0" value={annualOperatingCosts || ''} onChange={(e) => setAnnualOperatingCosts(numInput(e.target.value))} />
               </Field>
             </div>
           </InputSection>
@@ -600,14 +681,14 @@ export default function BusinessPlan() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label className="text-xs">תקופת החזקה (שנים)</Label>
-                  <Input className="h-10" type="number" min="0" value={holdingPeriodYears ?? ''} onChange={(e) => setHoldingPeriodYears(numInput(e.target.value))} />
+                  <Input className="h-10" type="number" min="0" value={holdingPeriodYears || ''} onChange={(e) => setHoldingPeriodYears(numInput(e.target.value))} />
                 </div>
                 <div className="flex items-end text-[11px] text-muted-foreground">
                   כמה שנים מתכננים להחזיק לפני מכירה
                 </div>
                 <div>
                   <Label className="text-xs">השבחה צפויה (לא חובה)</Label>
-                <Input className="h-10" type="number" min="0" value={urbanRenewalUpliftValue ?? ''} onChange={(e) => setUrbanRenewalUpliftValue(numInput(e.target.value))} />
+                <Input className="h-10" type="number" min="0" value={urbanRenewalUpliftValue || ''} onChange={(e) => setUrbanRenewalUpliftValue(numInput(e.target.value))} />
                 </div>
                 <div className="flex items-end text-[11px] text-muted-foreground">
                   {urbanRenewalUpliftMode === 'amount' ? 'מוזן כש״ח ומתווסף לשווי הסופי' : 'מוזן כאחוז משווי הרכישה'}
@@ -628,6 +709,7 @@ export default function BusinessPlan() {
                 animate={{ opacity: 1 }}
                 className="space-y-4"
               >
+                {!touched && <ExampleDataBadge />}
                 {/* Cashflow Summary */}
                 <Card className="border-0 shadow-sm">
                   <CardContent className="p-4">
@@ -649,8 +731,40 @@ export default function BusinessPlan() {
                         </p>
                       </div>
                     </div>
+                    <p className="text-[11px] text-muted-foreground text-center mt-2 border-t pt-2">
+                      {result.rentalTaxTrack === 'flat10' ? (
+                        <>כולל מס שכירות במסלול 10% על המחזור: {formatCurrency(result.annualRentalTax)} לשנה (השכירות מעל תקרת הפטור)</>
+                      ) : (
+                        <>השכירות בתקרת הפטור ממס ({formatCurrency(RENTAL_TAX_EXEMPTION_CEILING_MONTHLY)}/חודש) — ללא מס שכירות</>
+                      )}
+                    </p>
                   </CardContent>
                 </Card>
+
+                {/* פסק דין חי — ציון העסקה לפי מנוע הדירוג של ההשוואה */}
+                {liveAssessment && (
+                  <Card className={cn(
+                    'border',
+                    liveAssessment.grade === 'מצוינת' || liveAssessment.grade === 'טובה'
+                      ? 'border-emerald-300 bg-emerald-50/60 dark:border-emerald-800 dark:bg-emerald-950/30'
+                      : liveAssessment.grade === 'סבירה'
+                        ? 'border-amber-300 bg-amber-50/60 dark:border-amber-700 dark:bg-amber-950/30'
+                        : 'border-red-300 bg-red-50/60 dark:border-red-800 dark:bg-red-950/30',
+                  )}>
+                    <CardContent className="p-4 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-bold">עסקה {liveAssessment.grade} · {liveAssessment.score}/100</p>
+                        <p className="text-[11px] text-muted-foreground">לפי התרחיש הבינוני</p>
+                      </div>
+                      {liveAssessment.strengths.length > 0 && (
+                        <p className="text-xs text-emerald-700 dark:text-emerald-400">✓ {liveAssessment.strengths[0]}</p>
+                      )}
+                      {liveAssessment.risks.length > 0 && (
+                        <p className="text-xs text-red-700 dark:text-red-400">✗ {liveAssessment.risks[0]}</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
 
                 {/* 3 Scenario Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -674,7 +788,7 @@ export default function BusinessPlan() {
                         <Input
                           type="number" step="0.5" className="h-8 text-sm"
                           value={customRates.pessimistic}
-                          onChange={(e) => setCustomRates({ ...customRates, pessimistic: numInput(e.target.value) })}
+                          onChange={(e) => setCustomRates({ ...customRates, pessimistic: numInputSigned(e.target.value) })}
                         />
                       </div>
                       <div>
@@ -682,7 +796,7 @@ export default function BusinessPlan() {
                         <Input
                           type="number" step="0.5" className="h-8 text-sm"
                           value={customRates.average}
-                          onChange={(e) => setCustomRates({ ...customRates, average: numInput(e.target.value) })}
+                          onChange={(e) => setCustomRates({ ...customRates, average: numInputSigned(e.target.value) })}
                         />
                       </div>
                       <div>
@@ -690,7 +804,7 @@ export default function BusinessPlan() {
                         <Input
                           type="number" step="0.5" className="h-8 text-sm"
                           value={customRates.optimistic}
-                          onChange={(e) => setCustomRates({ ...customRates, optimistic: numInput(e.target.value) })}
+                          onChange={(e) => setCustomRates({ ...customRates, optimistic: numInputSigned(e.target.value) })}
                         />
                       </div>
                     </div>
@@ -701,6 +815,7 @@ export default function BusinessPlan() {
                 </Card>
 
                 {/* Next step in the journey */}
+                {touched && <PageInsights tool="תוכנית עסקית" recomputeKey={result} />}
                 <NextStepCard currentMilestone="business_plan" />
 
                 {/* PDF Export */}
