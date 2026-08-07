@@ -14,7 +14,7 @@ import {
   MARKET_CONSTANTS,
   simulateMadadImpact,
 } from '@/lib/calculations/mortgage-calculator';
-import { FINANCE } from '@/lib/constants/financial';
+import { FINANCE, RATES_AS_OF } from '@/lib/constants/financial';
 import {
   MortgageTrack,
   MortgageCalculatorOutput,
@@ -22,7 +22,11 @@ import {
   AmortizationRow,
   SensitivityResult,
 } from '@/types/mortgage-calculator';
-import { Plus, Trash2, Home as HomeIcon, Import, RotateCcw, ArrowLeft } from 'lucide-react';
+import { Plus, Trash2, Home as HomeIcon, Import, ArrowLeft } from 'lucide-react';
+import { ResetConfirmButton } from '@/components/ResetConfirmButton';
+import { ExampleDataBadge } from '@/components/ExampleDataBadge';
+import { PageInsights } from '@/components/PageInsights';
+import { StaleDataNotice } from '@/components/StaleDataNotice';
 import { SaveSnapshotButton } from '@/components/SaveSnapshotButton';
 import { formatCurrency, numInput } from '@/lib/validation/validators';
 import {
@@ -107,7 +111,7 @@ export default function MortgageCalculator() {
   const [totalMortgageAmount, setTotalMortgageAmount] = useState(
     savedM?.totalMortgageAmount ?? bpData?.mortgageAmount ?? budgetData?.maxMortgage ?? DEFAULT_TRACK.principal,
   );
-  const [freeCashFlow, setFreeCashFlow] = useState(savedM?.freeCashFlow ?? budgetData?.freeCashFlow ?? 20000);
+  const [freeCashFlow, setFreeCashFlow] = useState(savedM?.freeCashFlow ?? budgetData?.freeCashFlowAfterPurchase ?? 20000);
   // הכנסה חודשית נטו — מגיעה מהתקציב; משמשת לבדיקת תקרת ה-40% של הבנקים
   const monthlyIncome = budgetData?.monthlyIncome ?? 0;
   const [isOffPlan, setIsOffPlan] = useState(savedM?.isOffPlan ?? false);
@@ -118,8 +122,9 @@ export default function MortgageCalculator() {
   const [touched, setTouched] = useState(!!savedM?.touched);
   const touch = () => setTouched(true);
 
-  // Auto-save
+  // Auto-save — רק אחרי קלט אמיתי (נתוני דוגמה לא נשמרים ולא מתפשטים)
   useEffect(() => {
+    if (!touched) return;
     save('mortgage', { tracks, totalMortgageAmount, freeCashFlow, monthlyIncome, isOffPlan, propertyPrice, madadRate, madadYears, touched }, uid);
   }, [tracks, totalMortgageAmount, freeCashFlow, monthlyIncome, isOffPlan, propertyPrice, madadRate, madadYears, touched, uid]);
 
@@ -127,7 +132,7 @@ export default function MortgageCalculator() {
     if (!budgetData) return;
     touch();
     setTotalMortgageAmount(budgetData.maxMortgage);
-    setFreeCashFlow(budgetData.freeCashFlow);
+    setFreeCashFlow(budgetData.freeCashFlowAfterPurchase);
     setTracks([{ ...DEFAULT_TRACK, principal: budgetData.maxMortgage, allocationMode: 'amount', allocationValue: budgetData.maxMortgage }]);
   };
 
@@ -146,7 +151,6 @@ export default function MortgageCalculator() {
   };
 
   const handleReset = () => {
-    if (!window.confirm('בטוח? כל הנתונים יימחקו')) return;
     setTracks([DEFAULT_TRACK]); setTotalMortgageAmount(DEFAULT_TRACK.principal); setFreeCashFlow(20000); setIsOffPlan(false);
     setPropertyPrice(1600000); setMadadRate(MARKET_CONSTANTS.DEFAULT_MADAD_RATE); setMadadYears(3);
     setTouched(false);
@@ -184,11 +188,12 @@ export default function MortgageCalculator() {
       : null;
   const dtiPercent = dtiRatio !== null ? dtiRatio * 100 : 0;
 
-  // Save results for flow (clear if null)
+  // Save results for flow (clear if null) — רק אחרי קלט אמיתי
   useEffect(() => {
+    if (!touched) return;
     if (results) save('mortgage_results', results, uid);
     else clear('mortgage_results', uid);
-  }, [results, uid]);
+  }, [results, touched, uid]);
 
   // Auto-mark mortgage milestone — only after real user input (not defaults).
   const { complete: completeMilestone, isDone } = useJourney();
@@ -252,15 +257,15 @@ export default function MortgageCalculator() {
                   results,
                 })}
               />
-              <Button variant="ghost" size="sm" onClick={handleReset} className="text-muted-foreground h-8 gap-1">
-                <RotateCcw className="w-3.5 h-3.5" /> אפס
-              </Button>
+              <ResetConfirmButton onConfirm={handleReset} />
             </div>
           </div>
           <p className="text-sm text-muted-foreground">
             בנה תמהיל, השווה מסלולים וראה כמה תשלם.
           </p>
 
+          <StaleDataNotice sourceKey="budget" sourceLabel="מחשבון התקציב" targetKey="mortgage" onImport={handleImportBudget} />
+          <StaleDataNotice sourceKey="business_plan" sourceLabel="התוכנית העסקית" targetKey="mortgage" onImport={handleImportBusinessPlan} />
           {bpData && (
             <Button variant="outline" size="sm" onClick={handleImportBusinessPlan} className="w-full gap-1.5 border-primary/30 text-primary">
               <Import className="w-4 h-4" /> ייבא מהתוכנית העסקית ({formatCurrency(bpData.mortgageAmount)})
@@ -272,25 +277,31 @@ export default function MortgageCalculator() {
             </Button>
           )}
           <div className="text-xs bg-muted/50 p-2.5 rounded-lg">
-            פריים {MARKET_CONSTANTS.PRIME_RATE}% · ריבית בנק ישראל {MARKET_CONSTANTS.BOI_RATE}%
+            פריים {MARKET_CONSTANTS.PRIME_RATE}% · ריבית בנק ישראל {MARKET_CONSTANTS.BOI_RATE}% · נכון ל{RATES_AS_OF} — ודא מול הבנק
           </div>
 
           <Card className="border-0 shadow-sm bg-muted/40">
-            <CardContent className="p-3 flex items-center justify-between gap-3">
-              <div>
-                <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">תזרים פנוי</p>
-                <p className="text-xs text-muted-foreground">מגיע ממחשבון התקציב ומשמש כמגבלת ההחזר החודשי</p>
-              </div>
-              <div className="text-left">
-                <p className="text-lg font-bold tabular-nums">{formatCurrency(freeCashFlow)}</p>
-                <p className="text-[11px] text-muted-foreground">לעריכה ידנית במקרה הצורך</p>
-              </div>
+            <CardContent className="p-3 space-y-1.5">
+              <Label htmlFor="free-cash-flow" className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                תזרים פנוי להחזר חודשי
+              </Label>
+              <Input
+                id="free-cash-flow"
+                type="number"
+                min="0"
+                className="h-9 font-semibold tabular-nums"
+                value={freeCashFlow || ''}
+                onChange={(e) => { touch(); setFreeCashFlow(numInput(e.target.value)); }}
+              />
+              <p className="text-[11px] text-muted-foreground">
+                מיובא ממחשבון התקציב (תזרים אחרי רכישה) — אפשר לערוך ידנית
+              </p>
             </CardContent>
           </Card>
 
           <div className="space-y-1.5">
             <Label className="text-xs">סך משכנתא כולל</Label>
-            <Input type="number" min="0" value={totalMortgageAmount ?? ''} onChange={(e) => { touch(); setTotalMortgageAmount(numInput(e.target.value)); }} />
+            <Input type="number" min="0" value={totalMortgageAmount || ''} onChange={(e) => { touch(); setTotalMortgageAmount(numInput(e.target.value)); }} />
             <p className="text-[11px] text-muted-foreground">זהו הסכום הכולל שצריך להתפזר בין המסלולים. אפשר לחלק באחוזים, בסכומים או כיתרה.</p>
           </div>
 
@@ -381,7 +392,7 @@ export default function MortgageCalculator() {
                 <div className="grid grid-cols-3 gap-2">
                   <div>
                     <Label className="text-[10px]">מחיר נכס</Label>
-                    <Input type="number" min="0" className="h-8 text-sm" value={propertyPrice ?? ''} onChange={(e) => { touch(); setPropertyPrice(numInput(e.target.value)); }} />
+                    <Input type="number" min="0" className="h-8 text-sm" value={propertyPrice || ''} onChange={(e) => { touch(); setPropertyPrice(numInput(e.target.value)); }} />
                   </div>
                   <div>
                     <Label className="text-[10px]">מדד שנתי %</Label>
@@ -407,6 +418,7 @@ export default function MortgageCalculator() {
         <div className="md:col-span-3 mt-6 md:mt-0 space-y-4">
           {results ? (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+              {!touched && <ExampleDataBadge />}
               {/* KPIs */}
               <div className="grid grid-cols-2 gap-3">
                 <KPICard
@@ -430,11 +442,19 @@ export default function MortgageCalculator() {
                   value={formatCurrency(totalPrincipal)}
                 />
                 <KPICard
-                  title="סך ריבית"
+                  title="סך ריבית והצמדה"
                   value={formatCurrency(results.totalInterestPaid)}
                   subtitle={totalPrincipal > 0 ? `${((results.totalInterestPaid / totalPrincipal) * 100).toFixed(0)}% מהקרן` : undefined}
                 />
               </div>
+
+              {(results.totalLinkageCost ?? 0) > 0 && (
+                <div className="rounded-xl border border-sky-300 bg-sky-50 dark:border-sky-700 dark:bg-sky-950/40 px-4 py-3 text-sm text-sky-800 dark:text-sky-300">
+                  במסלולים הצמודים למדד, הקרן וההחזר גדלים עם המדד: בהנחת מדד {FINANCE.DEFAULT_CPI_RATE}% בשנה,
+                  ההצמדה לבדה תוסיף כ-{formatCurrency(results.totalLinkageCost!)} לאורך חיי המשכנתא —
+                  זו הסיבה שריבית צמודה "זולה" אינה בהכרח זולה.
+                </div>
+              )}
 
               {/* אזהרות רגולטוריות — התמהיל מותר, אבל הבנק כנראה לא יאשר אותו */}
               {primeOverLimit && (
@@ -526,7 +546,10 @@ export default function MortgageCalculator() {
                 <Card className="border-0 shadow-sm">
                   <CardContent className="p-4">
                     <p className="text-sm font-semibold mb-2">ניתוח רגישות — מה קורה אם הריבית זזה</p>
-                    <p className="text-[11px] text-muted-foreground mb-3">התרשים מציג את ההחזר החודשי הכולל בכל תרחיש ריבית, ביחס למסלול הנוכחי.</p>
+                    <p className="text-[11px] text-muted-foreground mb-3">
+                      התרשים מציג את ההחזר החודשי הכולל בכל תרחיש ריבית. רק המסלולים תלויי-השוק
+                      (פריים, משתנה) זזים — ריבית קבועה נעולה בחוזה ואינה מושפעת משינויי בנק ישראל.
+                    </p>
                     <Tabs defaultValue="chart">
                       <TabsList className="grid w-full grid-cols-2 mb-4">
                         <TabsTrigger value="chart">גרף</TabsTrigger>
@@ -614,6 +637,7 @@ export default function MortgageCalculator() {
                 </Card>
               )}
               {/* Next step in the journey */}
+              {touched && <PageInsights tool="משכנתא" recomputeKey={results} />}
               <NextStepCard currentMilestone="mortgage" />
 
               {/* CTA + Export */}
