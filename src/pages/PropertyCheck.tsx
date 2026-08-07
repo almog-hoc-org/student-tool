@@ -29,6 +29,7 @@ import { GlossaryLink } from '@/components/GlossaryLink';
 import { EmptyState } from '@/components/ui/empty-state';
 import NextStepCard from '@/components/NextStepCard';
 import { PropertyAreaNav } from '@/components/PropertyAreaNav';
+import { ExampleDataBadge } from '@/components/ExampleDataBadge';
 import { cn } from '@/lib/utils';
 
 const DEFAULTS = {
@@ -46,7 +47,10 @@ export default function PropertyCheck() {
   const saved = load<typeof DEFAULTS & { touched?: boolean }>('property_check');
 
   const [purchasePrice, setPurchasePrice] = useState(saved?.purchasePrice ?? DEFAULTS.purchasePrice);
-  const [buyerType, setBuyerType] = useState<BuyerType>(saved?.buyerType ?? DEFAULTS.buyerType);
+  // סוג הרוכש נורש מהתקציב אם הוגדר שם — הזנה אחת בכל המערכת
+  const [buyerType, setBuyerType] = useState<BuyerType>(
+    saved?.buyerType ?? load<{ buyerType?: BuyerType }>('budget_profile')?.buyerType ?? DEFAULTS.buyerType,
+  );
   const [equityPercent, setEquityPercent] = useState(saved?.equityPercent ?? DEFAULTS.equityPercent);
   // רצפת הון עצמי לפי תקרת המימון החוקית של סוג הרוכש
   const minEquityPercent = Math.round(getMinEquityShare(buyerType) * 100);
@@ -59,7 +63,9 @@ export default function PropertyCheck() {
   const [touched, setTouched] = useState(!!saved?.touched);
   const touch = () => setTouched(true);
 
+  // שמירה רק אחרי קלט אמיתי — נתוני דוגמה לא נשמרים ולא מתפשטים
   useEffect(() => {
+    if (!touched) return;
     save('property_check', { purchasePrice, buyerType, equityPercent, area, sqm, touched }, uid);
   }, [purchasePrice, buyerType, equityPercent, area, sqm, touched, uid]);
 
@@ -95,6 +101,13 @@ export default function PropertyCheck() {
     if (!result) return;
     touch();
     const existing = load<Record<string, unknown>>('business_plan') ?? {};
+    // אם יש כבר תוכנית עסקית אמיתית — לא דורסים בשקט נכס קודם
+    if (existing.touched && existing.purchasePrice && existing.purchasePrice !== purchasePrice) {
+      const ok = window.confirm(
+        'יש כבר נכס בתוכנית העסקית. להחליף אותו בנכס הזה? (טיפ: שמור קודם את הנכס הקיים כתרחיש בעמוד התוכנית העסקית)',
+      );
+      if (!ok) return;
+    }
     save('business_plan', {
       ...existing,
       purchasePrice,
@@ -169,6 +182,7 @@ export default function PropertyCheck() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="singleApartment">דירה ראשונה (יחידה)</SelectItem>
+                <SelectItem value="upgrade">משפר דיור (מוכר את הקיימת)</SelectItem>
                 <SelectItem value="additionalApartment">דירה נוספת / משקיע</SelectItem>
                 <SelectItem value="foreignResident">תושב חוץ</SelectItem>
               </SelectContent>
@@ -184,6 +198,7 @@ export default function PropertyCheck() {
                 <span className="text-base font-bold text-primary">{equityPercent}%</span>
               </div>
               <Slider
+                aria-label="אחוז הון עצמי"
                 value={[equityPercent]}
                 onValueChange={([v]) => { touch(); setEquityPercent(v); }}
                 min={minEquityPercent}
@@ -204,6 +219,7 @@ export default function PropertyCheck() {
         <div className="md:col-span-3 mt-6 md:mt-0 space-y-4">
           {result ? (
             <>
+              {!touched && <ExampleDataBadge />}
               <Card className="border-0 bg-primary/5 dark:bg-primary/10">
                 <CardContent className="p-6 space-y-1 text-center">
                   <p className="text-sm text-muted-foreground">סך מזומן נדרש לעסקה</p>

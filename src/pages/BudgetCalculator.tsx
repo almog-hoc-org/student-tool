@@ -5,7 +5,10 @@ import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Wallet, Home, CreditCard, Receipt, PiggyBank, ArrowLeft, RotateCcw } from 'lucide-react';
+import { Wallet, Home, CreditCard, Receipt, PiggyBank, ArrowLeft } from 'lucide-react';
+import { ResetConfirmButton } from '@/components/ResetConfirmButton';
+import { ExampleDataBadge } from '@/components/ExampleDataBadge';
+import { PageInsights } from '@/components/PageInsights';
 import { calculateBudget, BudgetOutput } from '@/lib/calculations/budget-calculator';
 import { BuyerType } from '@/lib/calculations/purchase-tax';
 import { formatCurrency, numInput } from '@/lib/validation/validators';
@@ -98,8 +101,11 @@ export default function BudgetCalculator() {
   const [touched, setTouched] = useState(!!saved?.touched);
   const touch = () => setTouched(true);
 
-  // Auto-save inputs
+  // Auto-save inputs — רק אחרי קלט אמיתי. שמירת ברירות המחדל לפני מגע
+  // ראשון גרמה לנתוני דוגמה להישמר בענן, להסתמן כ"בוצע", להתייבא לכלים
+  // אחרים ולהצטטט ע"י יועץ ה-AI כאילו הם של התלמיד.
   useEffect(() => {
+    if (!touched) return;
     save('budget', { equity, monthlyIncome, currentRent, livingExpenses, monthlyObligations, buyerType, mortgageYears, touched }, uid);
     save('budget_profile', { equity, monthlyIncome, currentRent, livingExpenses, monthlyObligations, buyerType, mortgageYears }, uid);
   }, [equity, monthlyIncome, currentRent, livingExpenses, monthlyObligations, buyerType, mortgageYears, touched, uid]);
@@ -109,10 +115,10 @@ export default function BudgetCalculator() {
     return calculateBudget({ equity, monthlyIncome, currentRent, livingExpenses, monthlyObligations, buyerType, mortgageYears });
   }, [equity, monthlyIncome, currentRent, livingExpenses, monthlyObligations, buyerType, mortgageYears]);
 
-  // Save results for flow
+  // Save results for flow — גם כאן רק אחרי קלט אמיתי
   useEffect(() => {
-    if (result) save('budget_results', result, uid);
-  }, [result, uid]);
+    if (result && touched) save('budget_results', result, uid);
+  }, [result, touched, uid]);
 
   // Auto-mark budget milestone — only after real user input (not defaults).
   const { complete: completeMilestone, isDone } = useJourney();
@@ -135,8 +141,7 @@ export default function BudgetCalculator() {
     }
   }, [uid, touched, result, isDone, completeMilestone]);
 
-  const handleReset = () => {
-    if (!window.confirm('בטוח? כל הנתונים יימחקו')) return;
+  const doReset = () => {
     setEquity(DEFAULTS.equity); setMonthlyIncome(DEFAULTS.monthlyIncome);
     setCurrentRent(DEFAULTS.currentRent); setLivingExpenses(DEFAULTS.livingExpenses);
     setMonthlyObligations(DEFAULTS.monthlyObligations); setBuyerType(DEFAULTS.buyerType);
@@ -144,7 +149,14 @@ export default function BudgetCalculator() {
     clear('budget', uid); clear('budget_profile', uid); clear('budget_results', uid);
   };
 
-  const freeCashFlow = monthlyIncome - monthlyObligations;
+  // "התחל מנתונים ריקים" מהבאדג' — מאפס לשדות ריקים בלי דיאלוג
+  const handleStartEmpty = () => {
+    setEquity(0); setMonthlyIncome(0); setCurrentRent(0); setLivingExpenses(0);
+    setMonthlyObligations(0);
+  };
+
+  // אותה הגדרה בדיוק כמו במנוע (budget-calculator.ts) — ערך אחד לכל העמוד
+  const freeCashFlow = monthlyIncome - currentRent - livingExpenses - monthlyObligations;
   const obligationsExceedCashFlow = freeCashFlow <= 0 && monthlyIncome > 0;
 
   const pieData = result ? [
@@ -173,9 +185,7 @@ export default function BudgetCalculator() {
                   results: result,
                 })}
               />
-              <Button variant="ghost" size="sm" onClick={handleReset} className="text-muted-foreground h-8 gap-1">
-                <RotateCcw className="w-3.5 h-3.5" /> אפס
-              </Button>
+              <ResetConfirmButton onConfirm={doReset} />
             </div>
           </div>
           <p className="text-sm text-muted-foreground">
@@ -193,6 +203,7 @@ export default function BudgetCalculator() {
               className="text-lg font-semibold h-12"
             />
             <Slider
+              aria-label="הון עצמי זמין"
               value={[equity]}
               onValueChange={([v]) => { touch(); setEquity(v); }}
               min={0}
@@ -260,7 +271,7 @@ export default function BudgetCalculator() {
             <CardContent className="p-3 flex items-center justify-between">
               <div>
                 <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">תזרים פנוי מחושב</p>
-                <p className="text-xs text-muted-foreground">הכנסה נטו פחות התחייבויות</p>
+                <p className="text-xs text-muted-foreground">הכנסה נטו פחות שכירות, מחיה והתחייבויות</p>
               </div>
               <p className={cn('text-lg font-bold tabular-nums', freeCashFlow >= 0 ? 'text-green-600' : 'text-red-600')}>
                 {formatCurrency(freeCashFlow)}
@@ -277,6 +288,7 @@ export default function BudgetCalculator() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="singleApartment">דירה ראשונה (יחידה)</SelectItem>
+                <SelectItem value="upgrade">משפר דיור (מוכר את הקיימת)</SelectItem>
                 <SelectItem value="additionalApartment">דירה נוספת / משקיע</SelectItem>
                 <SelectItem value="foreignResident">תושב חוץ</SelectItem>
               </SelectContent>
@@ -291,6 +303,7 @@ export default function BudgetCalculator() {
               <span className="text-sm font-bold text-primary">{mortgageYears} שנים</span>
             </div>
             <Slider
+              aria-label="תקופת משכנתא בשנים"
               value={[mortgageYears]}
               onValueChange={([v]) => { touch(); setMortgageYears(v); }}
               min={15}
@@ -314,6 +327,7 @@ export default function BudgetCalculator() {
                 animate={{ opacity: 1 }}
                 className="space-y-4"
               >
+                {!touched && <ExampleDataBadge onReset={handleStartEmpty} />}
                 {/* Main KPI */}
                 <Card className="border-0 bg-primary/5 dark:bg-primary/10">
                   <CardContent className="p-6 text-center space-y-2">
@@ -337,7 +351,13 @@ export default function BudgetCalculator() {
 
                 {/* Secondary KPIs */}
                 <div className="grid grid-cols-2 gap-3">
-                  <KPICard title="תזרים פנוי" value={formatCurrency(result.freeCashFlow)} icon={Wallet} color="bg-emerald-500" />
+                  <KPICard
+                    title="תזרים פנוי אחרי רכישה"
+                    value={formatCurrency(result.freeCashFlowAfterPurchase)}
+                    icon={Wallet}
+                    color="bg-emerald-500"
+                    tooltip={`אחרי הקנייה שכר הדירה נפסק, ובמקומו נכנסות עלויות אחזקה (ארנונה, ועד, ביטוח ≈ ${formatCurrency(result.monthlyCarryingCosts)}/חודש). מזה משלמים את המשכנתא.`}
+                  />
                   <KPICard title="שכירות/דיור נוכחי" value={formatCurrency(currentRent)} icon={Home} color="bg-slate-500" />
                   <KPICard title="הוצאות מחיה" value={formatCurrency(livingExpenses)} icon={PiggyBank} color="bg-violet-500" />
                   <KPICard title="החזר חודשי מרבי" value={formatCurrency(result.maxAffordableMortgagePayment)} icon={CreditCard} color="bg-teal-600" />
@@ -396,18 +416,20 @@ export default function BudgetCalculator() {
                   </Card>
                 )}
                 {/* Actions */}
+                {/* הסדר הקנוני של המסע: תקציב → תוכנית עסקית → משכנתא */}
                 <div className="flex flex-col sm:flex-row gap-2">
-                  <Link to="/mortgage" className="flex-1">
+                  <Link to="/business-plan" className="flex-1">
                     <Button variant="default" className="w-full gap-1.5">
+                      המשך לתוכנית עסקית <ArrowLeft className="w-4 h-4" />
+                    </Button>
+                  </Link>
+                  <Link to="/mortgage" className="flex-1">
+                    <Button variant="outline" className="w-full gap-1.5">
                       בנה משכנתא <ArrowLeft className="w-4 h-4" />
                     </Button>
                   </Link>
-                  <Link to="/business-plan" className="flex-1">
-                    <Button variant="outline" className="w-full gap-1.5">
-                      תוכנית עסקית <ArrowLeft className="w-4 h-4" />
-                    </Button>
-                  </Link>
                 </div>
+                {touched && <PageInsights tool="תקציב" recomputeKey={result} />}
                 <NextStepCard currentMilestone="budget" />
                 <div className="flex justify-end">
                   <ExportButton
