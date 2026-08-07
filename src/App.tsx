@@ -31,6 +31,8 @@ const AdminBroadcasts = lazy(() => import("./pages/admin/AdminBroadcasts"));
 const AdminKnowledge = lazy(() => import("./pages/admin/AdminKnowledge"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const UsageGuide = lazy(() => import("./pages/UsageGuide"));
+const TransactionTimeline = lazy(() => import("./pages/TransactionTimeline"));
+const CapitalGainsCalculator = lazy(() => import("./pages/CapitalGainsCalculator"));
 
 const queryClient = new QueryClient({});
 
@@ -43,6 +45,7 @@ function RouteFallback() {
 }
 
 const App = () => (
+  <ErrorBoundary title="משהו השתבש" description="רענן את העמוד כדי להמשיך. הנתונים שלך שמורים.">
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
@@ -57,6 +60,7 @@ const App = () => (
               <ProtectedRoute>
                 <Layout>
                   <div className="animate-fade-in">
+                    <ErrorBoundary title="העמוד נתקל בשגיאה" description="רענן את העמוד כדי להמשיך. הנתונים שלך נשמרים אוטומטית ולא הלכו לאיבוד.">
                     <Suspense fallback={<RouteFallback />}>
                       <Routes>
                         <Route path="/" element={<BudgetCalculator />} />
@@ -66,6 +70,8 @@ const App = () => (
                         <Route path="/advisor" element={<Navigate to="/chat" replace />} />
                         <Route path="/chat" element={<ErrorBoundary title="הצ׳אט נתקל בשגיאה" description="רענן את העמוד. אם זה חוזר, הודעה בעייתית תבודד במקום להפיל את כל המסך."><Chat /></ErrorBoundary>} />
                         <Route path="/deal-comparison" element={<DealComparison />} />
+                        <Route path="/timeline" element={<TransactionTimeline />} />
+                        <Route path="/capital-gains" element={<CapitalGainsCalculator />} />
                         <Route path="/account" element={<Account />} />
                         <Route path="/onboarding" element={<Onboarding />} />
                         <Route path="/guide" element={<UsageGuide />} />
@@ -78,6 +84,7 @@ const App = () => (
                         <Route path="*" element={<NotFound />} />
                       </Routes>
                     </Suspense>
+                    </ErrorBoundary>
                   </div>
                 </Layout>
               </ProtectedRoute>
@@ -87,6 +94,7 @@ const App = () => (
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;

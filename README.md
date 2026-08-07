@@ -1,73 +1,50 @@
-# Welcome to your Lovable project
+# הדרך לדירה — פורטל התלמיד
 
-## Project info
+פלטפורמה דיגיטלית לליווי תלמידי קורס רכישת דירה והשקעות נדל"ן בישראל:
+מחשבונים פיננסיים מדויקים, מסע מודרך שלב-אחר-שלב, ויועץ AI שמכיר את תוכן הקורס
+ואת הנתונים של התלמיד.
 
-**URL**: https://lovable.dev/projects/310ed00f-21a6-4f6c-b5c9-dfaff9c065fc
+## הכלים
 
-## How can I edit this code?
+| כלי | מה הוא עושה |
+|---|---|
+| מחשבון תקציב | כמה דירה אפשר לקנות — LTV, DTI, מס רכישה ועלויות נלוות ביחד |
+| תוכנית עסקית | ניתוח עסקה: תזרים, מס שכירות, תרחישים, IRR, מס שבח באקזיט, ציון עסקה |
+| מחשבון משכנתא | תמהיל מסלולים עם הצמדה למדד, לוח סילוקין, ניתוח רגישות לפי סוג מסלול |
+| בדיקת נכס | בדיקה מהירה של נכס: מזומן נדרש, מימון, החזר משוער |
+| השוואת עסקאות | דירוג 0–100 עם חוזקות/סיכונים, ייצוא PDF |
+| ציר הזמן | 8 שלבי עסקת רכישה בישראל עם מעקב התקדמות |
+| מס שבח | אומדן מס למוכרים — שבח ריאלי, פטור דירה יחידה |
+| יועץ AI | Gemini + RAG על תוכן הקורס, עם ייחוס מקורות והסלמה לנציג אנושי |
 
-There are several ways of editing your application.
+## סטאק
 
-**Use Lovable**
+React 18 + TypeScript + Vite · shadcn/ui + Tailwind (RTL) · Supabase (Postgres,
+Auth, Edge Functions, pgvector) · Google Gemini · PWA · Vercel
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/310ed00f-21a6-4f6c-b5c9-dfaff9c065fc) and start prompting.
+## פיתוח
 
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```bash
+npm install
+npm run dev        # http://localhost:8080
+npm run typecheck  # tsc -b
+npm test           # vitest
+npm run build
 ```
 
-**Edit a file directly in GitHub**
+משתני סביבה (`.env`): `VITE_SUPABASE_PROJECT_ID`, `VITE_SUPABASE_URL`,
+`VITE_SUPABASE_PUBLISHABLE_KEY`. מפתח Gemini נשמר כ-secret של Supabase
+(`supabase secrets set GEMINI_API_KEY=...`).
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## עקרונות בקוד
 
-**Use GitHub Codespaces**
+- **מנועי חישוב טהורים** ב-`src/lib/calculations/` — בדוקים ביחידה, משותפים
+  ל-UI ולפונקציות ה-Edge. קבועי שוק ורגולציה ב-`src/lib/constants/`.
+- **גרסת מנוע** (`BUSINESS_PLAN_ENGINE_VERSION`) נחתמת בכל עסקה שמורה;
+  שינוי נוסחה מחייב העלאת גרסה כדי שעסקאות ישנות יסומנו לחישוב מחדש.
+- **דגל `touched`** מבדיל נתוני דוגמה מקלט אמיתי — נתוני דוגמה לא נשמרים,
+  לא משלימים אבני דרך ולא מגיעים ל-AI.
+- **סנכרון** localStorage ↔ Supabase לפי "החדש מנצח" עם שעון לקוח אחיד,
+  דיבאונס כתיבות, ו-re-sync בחזרה לטאב.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/310ed00f-21a6-4f6c-b5c9-dfaff9c065fc) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+תוכנית הבדיקות המלאה: `TESTING.md`.
