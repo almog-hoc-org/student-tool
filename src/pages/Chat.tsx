@@ -278,7 +278,8 @@ function MessageBubble({ message }: { message: ChatDbMessage }) {
   const isHuman = message.role === 'human';
   const [previewSource, setPreviewSource] = useState<{ source_id: string | null; source_file: string } | null>(null);
 
-  const rawSources = (message.metadata as { sources?: unknown } | null)?.sources;
+  const meta = message.metadata as { sources?: unknown; web_sources?: unknown; rag_status?: unknown } | null;
+  const rawSources = meta?.sources;
   const sources = Array.isArray(rawSources)
     ? rawSources.filter(
         (source): source is { source_file: string; source_id?: string } =>
@@ -292,6 +293,12 @@ function MessageBubble({ message }: { message: ChatDbMessage }) {
           ),
       )
     : [];
+  // מקורות רשת (Google Search grounding) — נשמרו תמיד אך מעולם לא הוצגו.
+  // מספרים רגולטוריים בלי ייחוס = תלמיד שלא יכול לוודא כלום.
+  const webSources = Array.isArray(meta?.web_sources)
+    ? (meta!.web_sources as unknown[]).filter((u): u is string => typeof u === 'string')
+    : [];
+  const ragEmpty = meta?.rag_status === 'empty' && message.role === 'ai';
 
   if (isSystem) {
     return (
@@ -336,6 +343,27 @@ function MessageBubble({ message }: { message: ChatDbMessage }) {
         >
           {message.content}
         </div>
+        {ragEmpty && sources.length === 0 && (
+          <div className="text-xs text-muted-foreground italic">
+            התשובה מבוססת על ידע כללי — לא נמצא תוכן קורס רלוונטי לשאלה זו
+          </div>
+        )}
+        {webSources.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+            <span>מקורות מהרשת:</span>
+            {webSources.slice(0, 3).map((url, i) => (
+              <a
+                key={url}
+                href={url}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="underline underline-offset-2 hover:text-foreground transition"
+              >
+                [{i + 1}]
+              </a>
+            ))}
+          </div>
+        )}
         {sources.length > 0 && (
           <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
             <BookOpen className="w-3 h-3 shrink-0" />

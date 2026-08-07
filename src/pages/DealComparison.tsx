@@ -43,10 +43,12 @@ import { formatCurrency } from '@/lib/validation/validators';
 import { cn } from '@/lib/utils';
 import { PropertyAreaNav } from '@/components/PropertyAreaNav';
 import { save } from '@/lib/storage';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 export default function DealComparison() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [scenarioFilter, setScenarioFilter] = useState<DealScenarioFilter>('בינוני');
@@ -141,7 +143,9 @@ export default function DealComparison() {
       toast.error('לא ניתן לערוך את העסקה — חסרים נתוני מקור');
       return;
     }
-    save('business_plan', data.inputs);
+    // עם uid — כמו כל שאר נתיבי השמירה, אחרת העריכה לא הסתנכרנה לענן
+    save('business_plan', data.inputs, user?.id);
+    // מצב עריכה הוא scratch של ה-UI — נשאר מקומי בלבד, לא מזהם את הענן ואת ה-AI
     save('business_plan_editing', { id: snapshot.id, name: snapshot.name, notes: snapshot.notes });
     navigate('/business-plan');
   };
@@ -149,27 +153,50 @@ export default function DealComparison() {
   const [deleteTarget, setDeleteTarget] = useState<Snapshot | null>(null);
   const [quickAddOpen, setQuickAddOpen] = useState(false);
 
-  // דוח PDF של ההשוואה — פסק הדין, סקשן לכל עסקה, וצילום הגרפים
+  // דוח PDF של ההשוואה — פסק הדין, סקשן לכל עסקה, הנחות החישוב, וצילום הגרפים
   const exportSections = useMemo(() => {
     const fmtPct = (v: number | null) => (v === null ? '—' : `${(v * 100).toFixed(1)}%`);
-    return ranking.ranked.map((assessment) => {
+    const buyerLabel = (b?: string) => ({
+      singleApartment: 'דירה יחידה',
+      upgrade: 'משפר דיור',
+      additionalApartment: 'דירה נוספת / משקיע',
+      foreignResident: 'תושב חוץ',
+    } as Record<string, string>)[b ?? ''] ?? '—';
+    const dealSections = ranking.ranked.map((assessment) => {
       const deal = comparisonDeals.find((d) => d.metrics.snapshotId === assessment.snapshotId);
       const m = deal?.metrics;
       return {
         title: `${assessment.rank}. ${assessment.name} — ${assessment.score}/100 (${assessment.grade})`,
         items: m ? [
           { label: 'מחיר רכישה', value: formatCurrency(m.purchasePrice) },
+          ...(m.propertyArea ? [{ label: 'אזור', value: m.propertyArea }] : []),
+          ...(m.propertySqm ? [{ label: 'שטח', value: `${m.propertySqm} מ״ר` }] : []),
+          { label: 'סוג רוכש', value: buyerLabel(m.buyerType) },
           { label: 'הון עצמי', value: formatCurrency(m.equityInvested) },
+          { label: 'החזר משכנתא חודשי', value: formatCurrency(m.mortgageMonthlyPayment) },
           { label: 'תזרים חודשי', value: formatCurrency(m.monthlyCashflow) },
           { label: 'IRR', value: fmtPct(m.irr) },
           { label: 'תשואה על ההון (COC)', value: fmtPct(m.cocYield) },
-          { label: 'רווח כולל (בינוני)', value: formatCurrency(m.totalProfit) },
+          { label: `רווח כולל (תרחיש ${m.scenarioLabel})`, value: formatCurrency(m.totalProfit) },
+          { label: 'תקופת החזקה', value: `${m.holdingPeriodYears} שנים` },
           ...(assessment.strengths.length ? [{ label: 'חוזקות', value: assessment.strengths.join(' · ') }] : []),
           ...(assessment.risks.length ? [{ label: 'סיכונים', value: assessment.risks.join(' · ') }] : []),
         ] : [],
       };
     });
-  }, [ranking, comparisonDeals]);
+    // בלוק ההנחות — בלעדיו בנק/שותף לא יכול לדעת מה מאחורי המספרים
+    const assumptions = {
+      title: 'הנחות החישוב',
+      items: [
+        { label: 'תרחיש הדירוג', value: 'בינוני (עליית ערך שמרנית)' },
+        { label: 'מודל האקזיט', value: 'עלויות מכירה (תיווך + עו״ד + מע״מ) ומס שבח לפי סוג הרוכש' },
+        { label: 'מס שכירות', value: 'פטור עד התקרה; 10% על המחזור מעליה' },
+        { label: 'העדפת דירוג', value: PREFERENCE_LABELS[preference] },
+        { label: 'תאריך ההפקה', value: new Date().toLocaleDateString('he-IL') },
+      ],
+    };
+    return [...dealSections, assumptions];
+  }, [ranking, comparisonDeals, preference]);
 
   const handleQuickAdded = (snapshot: Snapshot) => {
     setSnapshots((current) => [snapshot, ...current]);

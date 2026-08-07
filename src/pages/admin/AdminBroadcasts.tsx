@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 
 interface BroadcastRow {
@@ -37,7 +38,7 @@ export default function AdminBroadcasts() {
   const [history, setHistory] = useState<BroadcastRow[]>([]);
 
   const buildFilter = useCallback(() => {
-    const f: Record<string, unknown> = {};
+    const f: { [key: string]: Json | undefined } = {};
     if (status && status !== 'all') f.status = status;
     if (inactiveDays.trim()) {
       const n = Number(inactiveDays);
